@@ -6,7 +6,7 @@
   import {
     boundaries,
     mainWays,
-    orderedWays,
+    wayColor,
     wayFilters,
     wiring,
     type FilterSetting,
@@ -16,7 +16,6 @@
 
   let { topo }: { topo: Topology } = $props();
 
-  const COLORS = ["#3ddc97", "#4da3ff", "#ffb020", "#c38bff", "#ff7a59", "#5ad1e6", "#e6d75a", "#ff5fa2"];
   const MIN_HZ = 20;
   const MAX_HZ = 20000;
   const TICKS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
@@ -25,7 +24,6 @@
   const draft = $derived(wizard.draft);
   const ways = $derived(wiring(draft, topo).ways);
   const main = $derived(mainWays(ways));
-  const colors = $derived(new Map(orderedWays(ways).map((w, i) => [w.key, COLORS[i % COLORS.length]!])));
   const filters = $derived(wayFilters(draft, ways, topo.slopes));
 
   interface Handle {
@@ -39,12 +37,12 @@
   const handles = $derived.by(() => {
     const list: Handle[] = [];
     const lowest = main[0];
-    const sub = lowest ? filters.get(lowest.key)?.hpf : null;
-    if (lowest && sub) list.push({ key: "subsonic", label: `${lowest.key} subsonic`, setting: draft.subsonic, hz: sub.freq_hz });
+    const sub = lowest ? filters.get(lowest.id)?.hpf : null;
+    if (lowest && sub) list.push({ key: "subsonic", label: `${lowest.name} subsonic`, setting: draft.subsonic, hz: sub.freq_hz });
     for (const b of boundaries(ways)) {
       const setting = draft.crossovers[b.key];
-      const f = filters.get(b.lower.key)?.lpf;
-      if (setting && f) list.push({ key: b.key, label: `${b.lower.key} ↔ ${b.upper.key}`, setting, hz: f.freq_hz });
+      const f = filters.get(b.lower.id)?.lpf;
+      if (setting && f) list.push({ key: b.key, label: `${b.lower.name} ↔ ${b.upper.name}`, setting, hz: f.freq_hz });
     }
     return list;
   });
@@ -96,8 +94,8 @@
   <section class="card">
     <h2>The system, 20 Hz – 20 kHz</h2>
     <div class="bar" bind:this={bar}>
-      {#each main as way (way.key)}
-        {@const f = filters.get(way.key)}
+      {#each main as way (way.id)}
+        {@const f = filters.get(way.id)}
         {@const from = f?.hpf?.freq_hz ?? MIN_HZ}
         {@const to = f?.lpf?.freq_hz ?? MAX_HZ}
         {#if Number.isFinite(way.lowHz) && Number.isFinite(way.highHz)}
@@ -105,17 +103,17 @@
             class="range"
             style:left={`${pos(way.lowHz)}%`}
             style:width={`${pos(way.highHz) - pos(way.lowHz)}%`}
-            style:--c={colors.get(way.key)}
-            title={`${way.key}: speakers ${Math.round(way.lowHz)}–${Math.round(way.highHz)} Hz`}
+            style:--c={wayColor(way.props)}
+            title={`${way.name}: speakers ${Math.round(way.lowHz)}–${Math.round(way.highHz)} Hz`}
           ></div>
         {/if}
         <div
           class="band"
           style:left={`${pos(from)}%`}
           style:width={`${pos(to) - pos(from)}%`}
-          style:--c={colors.get(way.key)}
+          style:--c={wayColor(way.props)}
         >
-          <span>{way.key}</span>
+          <span>{way.name}</span>
         </div>
       {/each}
       {#each handles as handle, i (handle.key)}

@@ -5,25 +5,30 @@
 // muted while it is written, inputs left muted at the end).
 //
 //   speakers     each cabinet placed has its own specs (a library model's are copied in), a
-//                side (left, right, or mono L+R) and one section per way it plays (two for a
-//                bi-amped cabinet)
+//                side (left, right, or mono L+R) and one section per band it plays (two for a
+//                bi-amped cabinet); a section's label ("Sub", "High") is only a hint
 //   bridging     a speaker's link output feeds another speaker (daisy chain): it plays the
 //                same signal, in parallel on the same amplifier channel
-//   ways         by channel name: the outputs that drive sections called "Sub" form the Sub way,
-//                their outputs linked; an output (or an amplifier channel) drives one name only.
-//                The way's settings (auxiliary, polarity, limiter, gain) are shared
+//   ways         a list the user orders from low to high (main ways), plus auxiliary ones; each
+//                DSP output picks its way (wiring an output to sections labelled "Sub" picks or
+//                makes the Sub way). Cabinets of different kinds can play the same way
+//   groups       the outputs of a way that drive the same load (same amplifier gain and
+//                ratings, same cabinets per channel) are linked: one limiter, one gain. An
+//                output with another load gets the same filters, but its own limiter and a
+//                trim, so that each kind of cabinet plays at the same level
 //   routing      each output plays a source; its side comes from its speakers' (left, right or
 //                both, L+R)
-//   crossovers   between two main ways, at √(top of the lower × bottom of the upper range),
-//                LR-24; a subsonic high-pass at the bottom of the lowest way, BW-24; the
-//                auxiliary ways are filtered to their speakers' range, BW-24
+//   crossovers   between two consecutive main ways, at √(top of the lower × bottom of the
+//                upper range) (usual values without ranges), LR-24; a subsonic high-pass at the
+//                bottom of the lowest way, BW-24; the auxiliary ways are filtered to their
+//                speakers' range, BW-24
 //   limiters     the limiter calculator (lib/limiter.ts) per amplifier channel, with the
-//                cabinets wired to it (in parallel); a way takes its lowest threshold (its
-//                outputs are linked)
-//   gains        each way's SPL for the same mono programme: the cabinets' powers added up
+//                cabinets wired to it (in parallel); a group takes its lowest threshold
+//   gains        each group's SPL for the same mono programme: the cabinets' powers added up
 //                (sensitivity + 10·log10(power of the cabinet), +6 dB on an output that sums
-//                both sides of a stereo source); the output gains turn the louder main ways down
-//                to the quietest
+//                both sides of a stereo source); within a way, each group is trimmed to the
+//                quietest kind of cabinet (per cabinet); the output gains then turn the louder
+//                main ways down to the quietest
 
 import {
   computeLimiter,
@@ -127,9 +132,9 @@ export interface Source {
   stereo: boolean;
 }
 
-/** One section of a cabinet (one way it plays). */
+/** One section of a cabinet (one band it plays). */
 export interface Section {
-  /** Channel name: the way it belongs to (" L", " R" or a number is added on the outputs). */
+  /** Label ("Sub", "High"; may be empty): wiring an output to it picks the way of that name. */
   name: string;
   lowHz: Num;
   highHz: Num;
@@ -169,8 +174,13 @@ export interface AmpNode {
   y: number;
 }
 
-/** Settings of a way (by channel name), shared by its outputs. */
-export interface WayProps {
+/** A way: a band of the system, played by the outputs that pick it. */
+export interface Way {
+  id: number;
+  /** Channel name of its outputs (" L", " R" or a number is added when it has several). */
+  name: string;
+  /** Index in WAY_COLORS. */
+  color: number;
   /** Auxiliary (monitor, fill…): outside the crossover chain and the level matching. */
   aux: boolean;
   phase: boolean;
@@ -179,6 +189,20 @@ export interface WayProps {
   /** Output gain typed over the computed one. */
   gainDb: Num;
 }
+
+export const WAY_COLORS = [
+  "#3ddc97",
+  "#4da3ff",
+  "#ffb020",
+  "#c38bff",
+  "#ff7a59",
+  "#5ad1e6",
+  "#e6d75a",
+  "#ff5fa2",
+];
+
+export const wayColor = (way: Way | null | undefined): string =>
+  way ? WAY_COLORS[way.color % WAY_COLORS.length]! : "#888";
 
 /** A link of the plan: DSP output → amplifier channel, amplifier channel → speaker section,
  * DSP output → section of an active speaker, or a speaker's link output → another speaker
@@ -203,14 +227,17 @@ export interface Draft {
   wires: Wire[];
   /** The source each DSP output plays, by output index. */
   routes: Record<number, number | null>;
-  /** Way settings, by channel name. */
-  ways: Record<string, WayProps>;
+  /** The ways: the main ones from low to high (in this order), the auxiliary ones anywhere. */
+  ways: Way[];
+  /** The way each DSP output plays, by output index (not set yet: picked from the labels of
+   * the sections it drives; null: none, chosen so). */
+  outputWays: Record<number, number | null>;
   lowShelf: { enabled: boolean; freqHz: Num; gainDb: Num; q: Num };
-  /** Crossovers between two main ways, by "lower|upper" way names. */
+  /** Crossovers between two main ways, by "lower|upper" way ids. */
   crossovers: Record<string, FilterSetting>;
   subsonic: FilterSetting;
-  /** Filters of the auxiliary ways, by way name. */
-  aux: Record<string, { hpf: FilterSetting; lpf: FilterSetting }>;
+  /** Filters of the auxiliary ways, by way id. */
+  aux: Record<number, { hpf: FilterSetting; lpf: FilterSetting }>;
   slot: number;
   presetName: string;
   nextId: number;
@@ -234,7 +261,8 @@ export function newDraft(slopes: string[]): Draft {
     amps: [],
     wires: [],
     routes: {},
-    ways: {},
+    ways: [],
+    outputWays: {},
     lowShelf: {
       enabled: false,
       freqHz: String(DEFAULT_SHELF_HZ),
@@ -250,31 +278,66 @@ export function newDraft(slopes: string[]): Draft {
   };
 }
 
-export const DEFAULT_WAY: Readonly<WayProps> = {
-  aux: false,
-  phase: false,
-  mode: "hard",
-  rounding: "up",
-  gainDb: "",
-};
+// --- ways ----------------------------------------------------------------------------------------
 
-export function wayProps(draft: Draft, name: string): WayProps {
-  return draft.ways[name] ?? { ...DEFAULT_WAY };
+/** A new way, at `at` in the list (the end by default), in a colour not used yet if any. */
+export function addWay(draft: Draft, name: string, at = draft.ways.length): Way {
+  const used = new Set(draft.ways.map((w) => w.color % WAY_COLORS.length));
+  const free = WAY_COLORS.findIndex((_, i) => !used.has(i));
+  const way: Way = {
+    id: draft.nextId++,
+    name,
+    color: free >= 0 ? free : draft.ways.length,
+    aux: false,
+    phase: false,
+    mode: "hard",
+    rounding: "up",
+    gainDb: "",
+  };
+  draft.ways.splice(Math.max(0, Math.min(draft.ways.length, at)), 0, way);
+  return way;
 }
 
-/** Change one setting of a way (from an event handler). */
-export function setWayProp<K extends keyof WayProps>(
-  draft: Draft,
-  name: string,
-  key: K,
-  value: WayProps[K],
-): void {
-  (draft.ways[name] ??= { ...DEFAULT_WAY })[key] = value;
+/** A name for a new way: "Way 1", "Way 2"… (not taken). */
+export function freshWayName(draft: Draft): string {
+  for (let n = draft.ways.length + 1; ; n++) {
+    const name = `Way${n}`;
+    if (!findWay(draft, name)) return name;
+  }
 }
 
-export function newSection(index: number): Section {
+export function removeWay(draft: Draft, id: number): void {
+  draft.ways = draft.ways.filter((w) => w.id !== id);
+  for (const [o, way] of Object.entries(draft.outputWays))
+    if (way === id) draft.outputWays[Number(o)] = null;
+  for (const key of Object.keys(draft.crossovers))
+    if (key.split("|").includes(String(id))) delete draft.crossovers[key];
+  delete draft.aux[id];
+}
+
+/** One place lower (-1) or higher (+1) in the list. */
+export function moveWay(draft: Draft, id: number, delta: number): void {
+  const i = draft.ways.findIndex((w) => w.id === id);
+  const j = i + delta;
+  if (i < 0 || j < 0 || j >= draft.ways.length) return;
+  const [way] = draft.ways.splice(i, 1);
+  draft.ways.splice(j, 0, way!);
+}
+
+export function findWay(draft: Draft, name: string): Way | null {
+  const key = name.trim().toLowerCase();
+  return draft.ways.find((w) => w.name.trim().toLowerCase() === key) ?? null;
+}
+
+/** The way an output plays, null when none is picked. */
+export function wayOfOutput(draft: Draft, output: number): Way | null {
+  const id = draft.outputWays[output];
+  return id == null ? null : (draft.ways.find((w) => w.id === id) ?? null);
+}
+
+export function newSection(): Section {
   return {
-    name: index === 0 ? "Spk" : `Spk${index + 1}`,
+    name: "",
     lowHz: "",
     highHz: "",
     aesW: "",
@@ -308,7 +371,7 @@ export function addSpeaker(draft: Draft, ref: string | null, x: number, y: numbe
     ref: model?.id ?? null,
     model: model?.name ?? "Generic",
     side: "LR",
-    sections: model ? model.sections.map(librarySectionSpec) : [newSection(0)],
+    sections: model ? model.sections.map(librarySectionSpec) : [newSection()],
     x,
     y,
   };
@@ -502,7 +565,7 @@ export function disconnect(draft: Draft, wire: Wire): void {
   draft.wires = draft.wires.filter((w) => !sameWire(w, wire));
 }
 
-// --- ways ------------------------------------------------------------------------------------
+// --- wiring ----------------------------------------------------------------------------------
 
 export function num(text: Num): number {
   return text.trim() === "" ? NaN : Number(text.replace(",", "."));
@@ -524,15 +587,26 @@ export interface ChannelLoad {
   cabinets: Cabinet[];
 }
 
-export interface WayInfo {
-  /** Its channel name. */
-  key: string;
-  props: WayProps;
+/** Outputs of a way that drive the same load: linked, one limiter, one gain. */
+export interface OutputGroup {
   outputs: number[];
   channels: ChannelLoad[];
   cabinets: number;
+  /** The speaker models it is made of. */
+  models: string[];
+}
+
+export interface WayInfo {
+  id: number;
+  name: string;
+  /** The way itself (in the draft: its settings can be changed through it). */
+  props: Way;
+  outputs: number[];
+  channels: ChannelLoad[];
+  groups: OutputGroup[];
+  cabinets: number;
   active: boolean;
-  /** Its range: the highest bottom and the lowest top of its cabinets (NaN when unknown). */
+  /** Its range: where its cabinets' known ranges overlap (NaN when unknown). */
   lowHz: number;
   highHz: number;
   /** The speaker models it is made of. */
@@ -540,17 +614,20 @@ export interface WayInfo {
 }
 
 export interface Wiring {
+  /** The ways played by an output, in the draft's order. */
   ways: WayInfo[];
-  /** Way of each used output. */
-  wayOf: Map<number, string>;
+  /** Way (id) of each used output. */
+  wayOf: Map<number, number>;
   /** Side each used output plays, from its speakers. */
   sideOf: Map<number, Side>;
+  /** Way (id) of each speaker section reached by an output, by "speaker:section". */
+  sectionWay: Map<string, number>;
   errors: string[];
 }
 
-/** The ways the plan's wiring makes, and what is wrong with it. */
-export function wiring(draft: Draft, topo: Topology): Wiring {
-  const errors: string[] = [];
+/** What each DSP output drives: per amplifier channel (or its active speakers), the cabinets,
+ * the bridged ones included. */
+export function outputLoads(draft: Draft, topo: Topology): Map<number, ChannelLoad[]> {
   const speakers = new Map(draft.speakers.map((s) => [s.id, s]));
   const amps = new Map(draft.amps.map((a) => [a.id, a]));
   const cabinet = (speaker: number, section: number): Cabinet | null => {
@@ -558,29 +635,17 @@ export function wiring(draft: Draft, topo: Topology): Wiring {
     const spec = node?.sections[section];
     return node && spec ? { node, section: spec } : null;
   };
-  // A section and the ones bridged from it.
   const withBridged = (speaker: number, section: number): Cabinet[] =>
     [{ speaker, section }, ...bridged(draft, speaker, section)]
       .map((b) => cabinet(b.speaker, b.section))
       .filter((c): c is Cabinet => c !== null);
-  // What each amplifier channel drives.
   const driven = new Map<string, Cabinet[]>();
   for (const w of draft.wires) {
     if (w.type !== "drive") continue;
     const key = `${w.amp}:${w.channel}`;
     driven.set(key, [...(driven.get(key) ?? []), ...withBridged(w.speaker, w.section)]);
   }
-  for (const [key, list] of driven) {
-    if (new Set(list.map((c) => c.section.name)).size > 1) {
-      const [ampId = 0, channel = 0] = key.split(":").map(Number);
-      errors.push(
-        `${amps.get(ampId)?.model ?? "Amplifier"} ch ${channel + 1} drives two different channels (${[...new Set(list.map((c) => c.section.name))].join(", ")}).`,
-      );
-    }
-  }
-  const ways = new Map<string, WayInfo>();
-  const wayOf = new Map<number, string>();
-  const sideOf = new Map<number, Side>();
+  const result = new Map<number, ChannelLoad[]>();
   for (let o = 0; o < topo.outputs; o++) {
     const loads: ChannelLoad[] = [];
     const direct: Cabinet[] = [];
@@ -594,55 +659,159 @@ export function wiring(draft: Draft, topo: Topology): Wiring {
       }
     }
     if (direct.length) loads.push({ output: o, amp: null, channel: 0, cabinets: direct });
-    const all = loads.flatMap((l) => l.cabinets);
-    const names = [...new Set(all.map((c) => c.section.name))];
-    if (names.length === 0) continue;
-    if (names.length > 1) {
-      errors.push(`Out ${o + 1} drives two different channels (${names.join(", ")}): give each its own output.`);
-      continue;
+    if (loads.length) result.set(o, loads);
+  }
+  return result;
+}
+
+/** The range where the known ranges of these cabinets overlap (NaN where unknown). */
+function rangeOf(cabinets: Cabinet[]): { lowHz: number; highHz: number } {
+  const lows = cabinets.map((c) => num(c.section.lowHz)).filter(positive);
+  const highs = cabinets.map((c) => num(c.section.highHz)).filter(positive);
+  return {
+    lowHz: lows.length ? Math.max(...lows) : NaN,
+    highHz: highs.length ? Math.min(...highs) : NaN,
+  };
+}
+
+/** Roughly where a range plays: its centre, or near its one known end (NaN when unknown). */
+function centreHz(range: { lowHz: number; highHz: number }): number {
+  const low = positive(range.lowHz);
+  const high = positive(range.highHz);
+  if (low && high) return Math.sqrt(range.lowHz * range.highHz);
+  if (low) return range.lowHz * 2;
+  if (high) return range.highHz / 2;
+  return NaN;
+}
+
+/** What makes two outputs' loads the same (then they can be linked). */
+function loadSignature(loads: ChannelLoad[]): string {
+  return JSON.stringify(
+    loads
+      .map((l) => ({
+        amp: l.amp
+          ? [ampGain(l.amp), Object.entries(ampRatings(l.amp)).sort(([a], [b]) => a.localeCompare(b))]
+          : null,
+        cabinets: l.cabinets
+          .map((c) =>
+            [c.section.aesW, c.section.impedanceOhm, c.section.sensitivityDb, c.section.load]
+              .map((v) => v.trim())
+              .join("|"),
+          )
+          .sort(),
+      }))
+      .map((l) => JSON.stringify(l))
+      .sort(),
+  );
+}
+
+/** Give a way to each output wired to speakers that has none yet: the one named like the
+ * labels of the sections it drives (when they all agree), made if needed and placed among the
+ * main ways by its range. From an event handler (it changes the draft). */
+export function autoAssignWays(draft: Draft, topo: Topology): void {
+  const loads = outputLoads(draft, topo);
+  const cabinetsOf = (o: number) => (loads.get(o) ?? []).flatMap((l) => l.cabinets);
+  for (const [o] of loads) {
+    if (draft.outputWays[o] !== undefined && wayOfOutput(draft, o)) continue;
+    if (draft.outputWays[o] === null) continue; // left without a way on purpose
+    const labels = [...new Set(cabinetsOf(o).map((c) => c.section.name.trim()))];
+    if (labels.length !== 1 || labels[0] === "") continue;
+    const name = labels[0]!.slice(0, CHANNEL_NAME_LENGTH - 2);
+    let way = findWay(draft, name);
+    if (!way) {
+      // Among the main ways, before the first one that plays higher.
+      const centre = centreHz(rangeOf(cabinetsOf(o)));
+      let at = draft.ways.length;
+      if (Number.isFinite(centre)) {
+        const index = draft.ways.findIndex((w) => {
+          if (w.aux) return false;
+          const cabinets = [...loads.keys()]
+            .filter((p) => draft.outputWays[p] === w.id)
+            .flatMap(cabinetsOf);
+          return centreHz(rangeOf(cabinets)) > centre;
+        });
+        if (index >= 0) at = index;
+      }
+      way = addWay(draft, name, at);
     }
+    draft.outputWays[o] = way.id;
+  }
+}
+
+/** The ways the plan's wiring makes, and what is wrong with it. */
+export function wiring(draft: Draft, topo: Topology): Wiring {
+  const errors: string[] = [];
+  const infos = new Map<number, WayInfo>();
+  const wayOf = new Map<number, number>();
+  const sideOf = new Map<number, Side>();
+  const sectionWay = new Map<string, number>();
+  const signatures = new Map<number, string>();
+  for (const [o, loads] of outputLoads(draft, topo)) {
+    const all = loads.flatMap((l) => l.cabinets);
     const sides = [...new Set(all.map((c) => c.node.side))];
     if (sides.length > 1) {
       errors.push(`Out ${o + 1} drives speakers of different sides: give each side its own output.`);
       continue;
     }
-    const key = names[0]!;
-    let way = ways.get(key);
+    const way = wayOfOutput(draft, o);
     if (!way) {
-      way = {
-        key,
-        props: wayProps(draft, key),
+      errors.push(`Out ${o + 1}: pick its way.`);
+      continue;
+    }
+    let info = infos.get(way.id);
+    if (!info) {
+      info = {
+        id: way.id,
+        name: way.name,
+        props: way,
         outputs: [],
         channels: [],
+        groups: [],
         cabinets: 0,
         active: false,
         lowHz: NaN,
         highHz: NaN,
         models: [],
       };
-      ways.set(key, way);
+      infos.set(way.id, info);
     }
-    way.outputs.push(o);
-    way.channels.push(...loads);
-    way.cabinets += all.length;
-    wayOf.set(o, key);
+    info.outputs.push(o);
+    info.channels.push(...loads);
+    info.cabinets += all.length;
+    wayOf.set(o, way.id);
     sideOf.set(o, sides[0]!);
+    signatures.set(o, loadSignature(loads));
+    for (const c of all) {
+      const index = c.node.sections.indexOf(c.section);
+      sectionWay.set(`${c.node.id}:${index}`, way.id);
+    }
   }
-  for (const way of ways.values()) {
-    const direct = way.channels.filter((c) => c.amp === null).length;
-    if (direct && direct < way.channels.length)
-      errors.push(`${way.key}: some cabinets have an amplifier, some are fed directly (active).`);
-    way.active = direct === way.channels.length;
-    const sections = way.channels.flatMap((c) => c.cabinets);
-    // The range is optional (a generic speaker may not give it): the way's range is where the
-    // known ones overlap.
-    const lows = sections.map((c) => num(c.section.lowHz)).filter(positive);
-    const highs = sections.map((c) => num(c.section.highHz)).filter(positive);
-    way.lowHz = lows.length ? Math.max(...lows) : NaN;
-    way.highHz = highs.length ? Math.min(...highs) : NaN;
-    way.models = [...new Set(sections.map((c) => c.node.model))];
+  for (const info of infos.values()) {
+    const direct = info.channels.filter((c) => c.amp === null).length;
+    if (direct && direct < info.channels.length)
+      errors.push(`${info.name}: some cabinets have an amplifier, some are fed directly (active).`);
+    info.active = direct === info.channels.length;
+    const sections = info.channels.flatMap((c) => c.cabinets);
+    Object.assign(info, rangeOf(sections));
+    info.models = [...new Set(sections.map((c) => c.node.model))];
+    const bySignature = new Map<string, OutputGroup>();
+    for (const o of info.outputs) {
+      const key = signatures.get(o)!;
+      let group = bySignature.get(key);
+      if (!group) {
+        group = { outputs: [], channels: [], cabinets: 0, models: [] };
+        bySignature.set(key, group);
+        info.groups.push(group);
+      }
+      const channels = info.channels.filter((c) => c.output === o);
+      group.outputs.push(o);
+      group.channels.push(...channels);
+      group.cabinets += channels.reduce((n, c) => n + c.cabinets.length, 0);
+      group.models = [...new Set([...group.models, ...channels.flatMap((c) => c.cabinets.map((k) => k.node.model))])];
+    }
   }
-  return { ways: [...ways.values()], wayOf, sideOf, errors };
+  const ways = draft.ways.map((w) => infos.get(w.id)).filter((w): w is WayInfo => w !== undefined);
+  return { ways, wayOf, sideOf, sectionWay, errors };
 }
 
 /** Channel names of a way's outputs: its name, plus " L" / " R" when its outputs play one side
@@ -653,9 +822,9 @@ export function outputNames(way: WayInfo, sideOf: Map<number, Side>): Map<number
   const distinct = new Set(sides).size === sides.length;
   way.outputs.forEach((o, i) => {
     const side = sides[i]!;
-    if (way.outputs.length === 1) names.set(o, way.key);
-    else if (distinct) names.set(o, side === "LR" ? way.key : `${way.key} ${side}`);
-    else names.set(o, `${way.key}${i + 1}`);
+    if (way.outputs.length === 1) names.set(o, way.name);
+    else if (distinct) names.set(o, side === "LR" ? way.name : `${way.name} ${side}`);
+    else names.set(o, `${way.name}${i + 1}`);
   });
   return names;
 }
@@ -683,7 +852,7 @@ export interface ChannelResult {
 
 /** The load and the limiter of one amplifier channel (its cabinets in parallel; a closed box
  * among them makes the load closed, the safe side). */
-export function channelResult(props: WayProps, load: ChannelLoad): ChannelResult {
+export function channelResult(props: Pick<Way, "mode" | "rounding">, load: ChannelLoad): ChannelResult {
   const zs = load.cabinets.map((c) => num(c.section.impedanceOhm));
   const aes = load.cabinets.map((c) => num(c.section.aesW));
   const z = zs.every(positive) ? 1 / zs.reduce((sum, v) => sum + 1 / v, 0) : NaN;
@@ -705,100 +874,123 @@ export function channelResult(props: WayProps, load: ChannelLoad): ChannelResult
   return { ...base, powerW: power, limiter: error ? null : computeLimiter(input), error };
 }
 
-export interface WayLevel {
+export interface GroupLevel {
+  group: OutputGroup;
   channels: ChannelResult[];
   /** The lowest of its channels' (its outputs are linked); null for active speakers. */
   limiter: LimiterResult | null;
-  error: string | null;
-  /** SPL at 1 m of all its cabinets at the limiter threshold. */
+  /** SPL at 1 m of its cabinets at the limiter threshold. */
   splMaxDb: number | null;
-  /** SPL for a mono programme at 0 dBu on the source, before the output gain. */
+  /** SPL for a mono programme at 0 dBu on the source, before any gain. */
+  splAt0Db: number | null;
+  /** Gain that brings its kind of cabinet to the way's quietest (0 or below). */
+  trimDb: number;
+}
+
+export interface WayLevel {
+  channels: ChannelResult[];
+  groups: GroupLevel[];
+  error: string | null;
+  /** SPL at 1 m of all its cabinets at their limiter thresholds. */
+  splMaxDb: number | null;
+  /** SPL for a mono programme at 0 dBu on the source, with the groups' trims, before the
+   * way's output gain. */
   splAt0Db: number | null;
 }
 
+const powerSum = (dbs: number[]) => 10 * Math.log10(dbs.reduce((sum, db) => sum + 10 ** (db / 10), 0));
+
 export function wayLevel(draft: Draft, way: WayInfo, sideOf: Map<number, Side>): WayLevel {
   const channels = way.channels.map((c) => channelResult(way.props, c));
-  const empty = { channels, limiter: null, splMaxDb: null, splAt0Db: null };
-  if (way.active || channels.length === 0) return { ...empty, error: null };
+  const noLevel = (limiterOf: (g: OutputGroup) => LimiterResult | null) =>
+    way.groups.map((group) => ({
+      group,
+      channels: channels.filter((c) => group.outputs.includes(c.load.output)),
+      limiter: limiterOf(group),
+      splMaxDb: null,
+      splAt0Db: null,
+      trimDb: 0,
+    }));
+  const empty = { channels, splMaxDb: null, splAt0Db: null };
+  if (way.active || channels.length === 0) return { ...empty, groups: noLevel(() => null), error: null };
   const error = channels.find((c) => c.error)?.error ?? null;
-  if (error) return { ...empty, error };
-  const limiter = channels
-    .map((c) => c.limiter!)
-    .reduce((low, l) => (l.compThresholdDbu < low.compThresholdDbu ? l : low));
+  if (error) return { ...empty, groups: noLevel(() => null), error };
+  const lowest = (results: ChannelResult[]) =>
+    results.map((c) => c.limiter!).reduce((low, l) => (l.compThresholdDbu < low.compThresholdDbu ? l : low));
+  const limiterOf = (g: OutputGroup) => lowest(channels.filter((c) => g.outputs.includes(c.load.output)));
   const all = channels.flatMap((c) => c.load.cabinets);
   if (!all.every((c) => Number.isFinite(num(c.section.sensitivityDb))))
-    return { ...empty, limiter, error: null };
+    return { ...empty, groups: noLevel(limiterOf), error: null };
   const sources = new Map(draft.sources.map((s) => [s.id, s]));
-  // Power sum of every cabinet, each output at `level(output)` dBu (cabinets in parallel: each
-  // takes the channel's voltage).
-  const spl = (level: (output: number) => number) => {
-    let total = 0;
-    for (const c of channels) {
+  // Power sum of the cabinets of some channels, each output at `level(output)` dBu (cabinets
+  // in parallel: each takes the channel's voltage).
+  const spl = (results: ChannelResult[], level: (output: number) => number) => {
+    const dbs: number[] = [];
+    for (const c of results) {
       const volts = DBU_REF_V * 10 ** ((level(c.load.output) + ampGain(c.load.amp!)) / 20);
       for (const cab of c.load.cabinets) {
         const power = volts ** 2 / num(cab.section.impedanceOhm);
-        total += 10 ** ((num(cab.section.sensitivityDb) + 10 * Math.log10(power)) / 10);
+        dbs.push(num(cab.section.sensitivityDb) + 10 * Math.log10(power));
       }
     }
-    return 10 * Math.log10(total);
+    return powerSum(dbs);
   };
   const boost = (output: number) =>
     (sideOf.get(output) ?? "LR") === "LR" && sources.get(routeOf(draft, output) ?? -1)?.stereo
       ? SUM_DB
       : 0;
+  const groups: GroupLevel[] = way.groups.map((group) => {
+    const own = channels.filter((c) => group.outputs.includes(c.load.output));
+    const limiter = lowest(own);
+    return {
+      group,
+      channels: own,
+      limiter,
+      splMaxDb: spl(own, () => limiter.compThresholdDbu),
+      splAt0Db: spl(own, boost),
+      trimDb: 0,
+    };
+  });
+  // Each kind of cabinet at the level of the quietest one (per cabinet).
+  const perCabinet = (g: GroupLevel) => g.splAt0Db! - 10 * Math.log10(g.group.cabinets);
+  const quietest = Math.min(...groups.map(perCabinet));
+  for (const g of groups) g.trimDb = Math.round((quietest - perCabinet(g)) * 10) / 10;
   return {
     channels,
-    limiter,
+    groups,
     error: null,
-    splMaxDb: spl(() => limiter.compThresholdDbu),
-    splAt0Db: spl(boost),
+    splMaxDb: powerSum(groups.map((g) => g.splMaxDb!)),
+    splAt0Db: powerSum(groups.map((g) => g.splAt0Db! + g.trimDb)),
   };
 }
 
-/** Output gain of each way: the main ways matched to the quietest one, the others at 0 dB; a
- * gain typed by hand wins. */
+/** Output gain of each way (by id): the main ways matched to the quietest one, the others at
+ * 0 dB; a gain typed by hand wins. */
 export function wayGains(
   draft: Draft,
   wired: Wiring,
-): Map<string, { gainDb: number; computed: number }> {
-  const levels = new Map(wired.ways.map((w) => [w.key, wayLevel(draft, w, wired.sideOf)]));
+): Map<number, { gainDb: number; computed: number }> {
+  const levels = new Map(wired.ways.map((w) => [w.id, wayLevel(draft, w, wired.sideOf)]));
   const aligned = wired.ways
     .filter((w) => !w.props.aux)
-    .map((w) => levels.get(w.key)?.splAt0Db ?? null)
+    .map((w) => levels.get(w.id)?.splAt0Db ?? null)
     .filter((v): v is number => v !== null);
   const reference = aligned.length ? Math.min(...aligned) : 0;
-  const gains = new Map<string, { gainDb: number; computed: number }>();
+  const gains = new Map<number, { gainDb: number; computed: number }>();
   for (const way of wired.ways) {
-    const at0 = levels.get(way.key)?.splAt0Db ?? null;
+    const at0 = levels.get(way.id)?.splAt0Db ?? null;
     const computed = !way.props.aux && at0 !== null ? Math.round((reference - at0) * 10) / 10 : 0;
     const typed = num(way.props.gainDb);
-    gains.set(way.key, { gainDb: Number.isFinite(typed) ? typed : computed, computed });
+    gains.set(way.id, { gainDb: Number.isFinite(typed) ? typed : computed, computed });
   }
   return gains;
 }
 
 // --- filters -----------------------------------------------------------------------------------
 
-/** Roughly where a way plays: the centre of its range, or near its one known end. */
-function centreHz(way: WayInfo): number {
-  const low = positive(way.lowHz);
-  const high = positive(way.highHz);
-  if (low && high) return Math.sqrt(way.lowHz * way.highHz);
-  if (low) return way.lowHz * 2;
-  if (high) return way.highHz / 2;
-  return NaN;
-}
-
-/** Main ways from low to high: by where they play when every way gives a range, otherwise in
- * the order of their DSP outputs. */
+/** Main ways from low to high: in the order of the list. */
 export function mainWays(ways: WayInfo[]): WayInfo[] {
-  const main = ways.filter((w) => !w.props.aux);
-  const centres = main.map(centreHz);
-  if (!centres.every(Number.isFinite)) return main;
-  return main
-    .map((w, order) => ({ w, order, centre: centres[order]! }))
-    .sort((a, b) => (a.centre === b.centre ? a.order - b.order : a.centre - b.centre))
-    .map(({ w }) => w);
+  return ways.filter((w) => !w.props.aux);
 }
 
 /** Main ways from low to high, then the auxiliary ones. */
@@ -813,6 +1005,8 @@ export interface Boundary {
   proposedHz: number;
   /** The two speakers' ranges do not meet. */
   gap: boolean;
+  /** The upper way's range sits below the lower one's: check the order of the ways. */
+  reversed: boolean;
 }
 
 /** Crossover proposed between two ranges: the geometric mean of where they meet. */
@@ -840,8 +1034,10 @@ export function boundaries(ways: WayInfo[]): Boundary[] {
     const upper = main[i + 1]!;
     const top = positive(lower.highHz);
     const bottom = positive(upper.lowHz);
+    const lowerCentre = centreHz(lower);
+    const upperCentre = centreHz(upper);
     result.push({
-      key: `${lower.key}|${upper.key}`,
+      key: `${lower.id}|${upper.id}`,
       lower,
       upper,
       proposedHz:
@@ -853,6 +1049,7 @@ export function boundaries(ways: WayInfo[]): Boundary[] {
               ? Math.round(upper.lowHz)
               : typicalCrossover(i, main.length - 1),
       gap: top && bottom && upper.lowHz > lower.highHz,
+      reversed: upperCentre < lowerCentre,
     });
   }
   return result;
@@ -874,7 +1071,7 @@ function defaultAux(slopes: string[]): { hpf: FilterSetting; lpf: FilterSetting 
  * the computations only read the draft). */
 export function ensureFilters(draft: Draft, ways: WayInfo[], slopes: string[]): void {
   for (const b of boundaries(ways)) draft.crossovers[b.key] ??= defaultCrossover(slopes);
-  for (const way of ways.filter((w) => w.props.aux)) draft.aux[way.key] ??= defaultAux(slopes);
+  for (const way of ways.filter((w) => w.props.aux)) draft.aux[way.id] ??= defaultAux(slopes);
 }
 
 export interface Filter {
@@ -888,28 +1085,31 @@ function resolved(setting: FilterSetting, proposedHz: number): Filter | null {
   return { freq_hz: positive(typed) ? typed : proposedHz, slope: setting.slope };
 }
 
-/** The high-pass and low-pass of every way. */
+/** The high-pass and low-pass of every way, by way id. */
 export function wayFilters(
   draft: Draft,
   ways: WayInfo[],
   slopes: string[],
-): Map<string, { hpf: Filter | null; lpf: Filter | null }> {
-  const filters = new Map<string, { hpf: Filter | null; lpf: Filter | null }>();
+): Map<number, { hpf: Filter | null; lpf: Filter | null }> {
+  const filters = new Map<number, { hpf: Filter | null; lpf: Filter | null }>();
   const main = mainWays(ways);
-  for (const way of main) filters.set(way.key, { hpf: null, lpf: null });
+  for (const way of main) filters.set(way.id, { hpf: null, lpf: null });
   const lowest = main[0];
   if (lowest)
-    filters.get(lowest.key)!.hpf = resolved(draft.subsonic, positive(lowest.lowHz) ? lowest.lowHz : SUBSONIC_HZ);
+    filters.get(lowest.id)!.hpf = resolved(
+      draft.subsonic,
+      positive(lowest.lowHz) ? lowest.lowHz : SUBSONIC_HZ,
+    );
   for (const b of boundaries(ways)) {
     const filter = resolved(draft.crossovers[b.key] ?? defaultCrossover(slopes), b.proposedHz);
-    filters.get(b.lower.key)!.lpf = filter;
-    filters.get(b.upper.key)!.hpf = filter;
+    filters.get(b.lower.id)!.lpf = filter;
+    filters.get(b.upper.id)!.hpf = filter;
   }
   for (const way of ways.filter((w) => w.props.aux)) {
-    const setting = draft.aux[way.key] ?? defaultAux(slopes);
+    const setting = draft.aux[way.id] ?? defaultAux(slopes);
     // Without a range, an auxiliary way is filtered only at a frequency typed for it.
     const typed = (s: FilterSetting) => positive(num(s.freqHz));
-    filters.set(way.key, {
+    filters.set(way.id, {
       hpf: positive(way.lowHz) || typed(setting.hpf) ? resolved(setting.hpf, way.lowHz) : null,
       lpf:
         (positive(way.highHz) && way.highHz < 20000) || typed(setting.lpf)
@@ -975,7 +1175,11 @@ export function planErrors(draft: Draft, topo: Topology): string[] {
     );
   const sources = new Set(draft.sources.map((s) => s.id));
   const amps = new Set<AmpNode>();
+  const names = new Map<string, number>();
   for (const way of w.ways) {
+    const key = way.name.trim().toLowerCase();
+    names.set(key, (names.get(key) ?? 0) + 1);
+    if (names.get(key) === 2) errors.push(`Two ways are called "${way.name}": rename one.`);
     for (const [o, name] of outputNames(way, w.sideOf)) {
       const e = nameError(name, CHANNEL_NAME_LENGTH);
       if (e) errors.push(`Out ${o + 1}: ${e} (channel name "${name}").`);
@@ -983,7 +1187,7 @@ export function planErrors(draft: Draft, topo: Topology): string[] {
       if (source === null || !sources.has(source)) errors.push(`Out ${o + 1}: pick what it plays.`);
     }
     for (const { node, section: s } of way.channels.flatMap((c) => c.cabinets)) {
-      const label = `${node.model} (${s.name})`;
+      const label = s.name.trim() ? `${node.model} (${s.name})` : node.model;
       // The range is optional: without it the crossovers get usual values.
       const low = num(s.lowHz);
       const high = num(s.highHz);
@@ -1002,7 +1206,7 @@ export function planErrors(draft: Draft, topo: Topology): string[] {
   if (errors.length === 0) {
     for (const way of w.ways) {
       const error = wayLevel(draft, way, w.sideOf).error;
-      if (error) errors.push(`${way.key}: ${error}.`);
+      if (error) errors.push(`${way.name}: ${error}.`);
     }
   }
   return [...new Set(errors)];
@@ -1011,9 +1215,10 @@ export function planErrors(draft: Draft, topo: Topology): string[] {
 export function filterErrors(draft: Draft, topo: Topology): string[] {
   const { ways } = wiring(draft, topo);
   const errors: string[] = [];
-  for (const [key, f] of wayFilters(draft, ways, topo.slopes)) {
+  const name = new Map(ways.map((w) => [w.id, w.name]));
+  for (const [id, f] of wayFilters(draft, ways, topo.slopes)) {
     if (f.hpf && f.lpf && f.hpf.freq_hz >= f.lpf.freq_hz)
-      errors.push(`${key}: the high-pass is above the low-pass.`);
+      errors.push(`${name.get(id)}: the high-pass is above the low-pass.`);
   }
   return errors;
 }
@@ -1110,25 +1315,29 @@ export function buildPlan(draft: Draft, topo: Topology): SetupPlan {
   for (const way of wired.ways) {
     const level = wayLevel(draft, way, wired.sideOf);
     const names = outputNames(way, wired.sideOf);
-    const f = filters.get(way.key);
-    for (const o of way.outputs) {
-      outputs[o] = {
-        name: names.get(o) ?? way.key,
-        used: true,
-        sources: outputMatrix(draft, o, wired.sideOf.get(o) ?? "LR", topo.inputs),
-        gain_db: gains.get(way.key)?.gainDb ?? 0,
-        phase: way.props.phase,
-        hpf: f?.hpf ?? null,
-        lpf: f?.lpf ?? null,
-        dynamics: level.limiter
-          ? {
-              compressor_threshold_db: level.limiter.compThresholdDbu,
-              limiter_threshold_db: level.limiter.limitThresholdDbu,
-            }
-          : null,
-      };
+    const f = filters.get(way.id);
+    const gain = gains.get(way.id)?.gainDb ?? 0;
+    for (const g of level.groups) {
+      for (const o of g.group.outputs) {
+        outputs[o] = {
+          name: names.get(o) ?? way.name,
+          used: true,
+          sources: outputMatrix(draft, o, wired.sideOf.get(o) ?? "LR", topo.inputs),
+          gain_db: Math.round((gain + g.trimDb) * 10) / 10,
+          phase: way.props.phase,
+          hpf: f?.hpf ?? null,
+          lpf: f?.lpf ?? null,
+          dynamics: g.limiter
+            ? {
+                compressor_threshold_db: g.limiter.compThresholdDbu,
+                limiter_threshold_db: g.limiter.limitThresholdDbu,
+              }
+            : null,
+        };
+      }
+      // The outputs of a group share everything: linked.
+      if (g.group.outputs.length > 1) outputLinks.push([...g.group.outputs]);
     }
-    if (way.outputs.length > 1) outputLinks.push([...way.outputs]);
   }
   outputLinks.sort((a, b) => a[0]! - b[0]!);
   return { inputs, outputs, input_links: inputLinks, output_links: outputLinks };

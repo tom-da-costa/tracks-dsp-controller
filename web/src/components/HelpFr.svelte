@@ -115,8 +115,12 @@
       génériques) et les reliez aux sorties du DSP (glisser d'un point à l'autre, ou toucher l'un
       puis l'autre ; toucher un bloc, une sortie ou un fil pour le modifier) ; les coupures qu'il
       propose d'après les plages des enceintes (des valeurs usuelles si une enceinte générique n'en donne pas) ; puis un récapitulatif. Chaque enceinte a
-      ses propres caractéristiques et un côté (gauche, droite ou mono L+R) ; les sorties qui
-      alimentent des sections de même nom de canal forment une voie, liées entre elles. Le point
+      ses propres caractéristiques et un côté (gauche, droite ou mono L+R). Les voies sont au-dessus
+      du plan, du grave à l'aigu (touchez-en une pour la renommer, la déplacer ou la régler) ;
+      chaque sortie DSP choisit sa voie, et la relier à des sections étiquetées « Sub » choisit la
+      voie Sub. Des enceintes différentes peuvent jouer la même voie : les sorties de même charge
+      sont liées, les autres gardent leur propre limiteur et reçoivent un trim au niveau du type
+      d'enceinte le plus faible. Le point
       carré d'une enceinte, sous son entrée, est sa sortie link : reliez-le à une autre enceinte pour la ponter
       (en parallèle). Il calcule le routing, les noms des canaux, les liens, les filtres, les
       limiteurs (comme le calculateur de limiteur) et les gains de sortie, pour que toutes les

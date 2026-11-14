@@ -11,10 +11,10 @@
     orderedWays,
     outputNames,
     routeOf,
-    setWayProp,
     sourceInputs,
     storeErrors,
     wayFilters,
+    wayColor,
     wayGains,
     wayLevel,
     wiring,
@@ -88,37 +88,55 @@
     <h2>Outputs</h2>
     <p class="muted hint">
       Output gains match the main ways' levels: for the same input, every way gives the same SPL
-      at 1 m (the loudest are turned down). Type a gain to replace it.
+      at 1 m (the loudest are turned down). Type a gain to replace it. Within a way, the outputs
+      with the same load are linked; an output with other cabinets keeps its own limiter and a
+      trim that brings its kind of cabinet to the level of the quietest.
     </p>
     <div class="ways">
-      {#each ways as way (way.key)}
+      {#each ways as way (way.id)}
         {@const level = wayLevel(draft, way, wired.sideOf)}
-        {@const gain = gains.get(way.key)}
-        {@const f = filters.get(way.key)}
-        <article class="way">
+        {@const gain = gains.get(way.id)}
+        {@const f = filters.get(way.id)}
+        {@const names = outputNames(way, wired.sideOf)}
+        <article class="way" style:--c={wayColor(way.props)}>
           <h3>
-            {way.key}
+            {way.name}
             <small
               >{way.models.join(", ")} ×{way.cabinets}{way.active ? ", active" : ""}{way.props.aux
                 ? ", auxiliary"
-                : ""}{way.outputs.length > 1 ? ", outputs linked" : ""}</small
+                : ""}</small
             >
           </h3>
           <dl>
-            {#each [...outputNames(way, wired.sideOf)] as [o, name] (o)}
-              <dt>Out {o + 1} {name}</dt>
-              <dd>{plays(o)}</dd>
-            {/each}
             <dt>High-pass</dt>
             <dd class="nowrap">{describe(f?.hpf)}</dd>
             <dt>Low-pass</dt>
             <dd class="nowrap">{describe(f?.lpf)}</dd>
-            <dt>Comp · limit</dt>
-            <dd class="nowrap">
-              {level.limiter
-                ? `${formatDb(level.limiter.compThresholdDbu)} · ${formatDb(level.limiter.limitThresholdDbu)} dBu`
-                : "off"}
-            </dd>
+          </dl>
+          {#each level.groups as g (g.group.outputs[0])}
+            <div class="group">
+              <p class="group-head">
+                {g.group.cabinets}× {g.group.models.join(", ")}{g.group.outputs.length > 1 ? " · linked" : ""}
+              </p>
+              <dl>
+                {#each g.group.outputs as o (o)}
+                  <dt>Out {o + 1} {names.get(o)}</dt>
+                  <dd>{plays(o)}</dd>
+                {/each}
+                <dt>Comp · limit</dt>
+                <dd class="nowrap">
+                  {g.limiter
+                    ? `${formatDb(g.limiter.compThresholdDbu)} · ${formatDb(g.limiter.limitThresholdDbu)} dBu`
+                    : "off"}
+                </dd>
+                {#if level.groups.length > 1}
+                  <dt>Trim</dt>
+                  <dd>{formatDb(g.trimDb)} dB</dd>
+                {/if}
+              </dl>
+            </div>
+          {/each}
+          <dl>
             {#if level.splMaxDb !== null}
               <dt>SPL max</dt>
               <dd>{level.splMaxDb.toFixed(1)} dB</dd>
@@ -131,10 +149,9 @@
             <input
               type="text"
               inputmode="decimal"
-              aria-label={`${way.key} output gain`}
+              aria-label={`${way.name} output gain`}
               placeholder={gain ? formatDb(gain.computed) : "0"}
-              value={way.props.gainDb}
-              oninput={(e) => setWayProp(draft, way.key, "gainDb", e.currentTarget.value)}
+              bind:value={way.props.gainDb}
             />
             <small>dB</small>
           </label>
@@ -252,6 +269,17 @@
     padding: 10px;
     border-radius: 8px;
     background: var(--panel-2);
+    box-shadow: inset 3px 0 0 var(--c);
+  }
+  .group {
+    margin: 0 0 8px;
+    padding: 6px 0 0;
+    border-top: 1px solid var(--line);
+  }
+  .group-head {
+    margin: 0 0 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
   }
   h3 {
     font-size: 1rem;

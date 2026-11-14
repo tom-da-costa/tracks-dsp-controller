@@ -58,8 +58,10 @@ On a phone, in landscape:
 - **Setup wizard**: describe the sources, then draw the system on a plan: amplifiers and
   speakers (from a small library in `web/src/data/`, or generic) wired to the DSP's outputs.
   Each speaker has its own specs and a side (left, right or mono), and can be bridged from
-  another one (link output, in parallel). The ways come from the
-  wiring, by channel name (two outputs to four subs: one Sub way, its outputs linked); the
+  another one (link output, in parallel). The ways are listed from low to high above the plan
+  and each DSP output picks one (wired to sections labelled "Sub", it takes the Sub way).
+  Different cabinets can play the same way: outputs with the same load are linked, the others
+  keep their own limiter and get a trim to the quietest kind of cabinet. The
   wizard works out the routing, channel names, links, crossovers, subsonic filter, limiters and
   output gains (every main way at the same level), then writes the whole setup (outputs muted
   meanwhile, inputs left muted) and stores it in a preset

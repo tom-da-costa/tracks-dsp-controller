@@ -1,12 +1,11 @@
 <script lang="ts">
   // Setup wizard: the system as it stands, inputs on the left, outputs on the right, one line
   // per route of the matrix, in the colour of its way. Redrawn at every change.
-  import { buildPlan, orderedWays, wiring, type Topology } from "../lib/setup";
+  import { buildPlan, wayColor, wiring, type Topology } from "../lib/setup";
   import { wizard } from "../lib/wizard.svelte";
 
   let { topo }: { topo: Topology } = $props();
 
-  const COLORS = ["#3ddc97", "#4da3ff", "#ffb020", "#c38bff", "#ff7a59", "#5ad1e6", "#e6d75a", "#ff5fa2"];
   const ROW = 26;
   const TOP = 18;
   const IN_W = 112;
@@ -20,14 +19,15 @@
   // The way's colour (the same as on the plan) and its speakers, per output.
   const byOutput = $derived.by(() => {
     const map = new Map<number, { color: string; speaker: string }>();
-    orderedWays(wiring(draft, topo).ways).forEach((way, n) => {
-      const perOutput = Math.round(way.cabinets / way.outputs.length);
-      for (const o of way.outputs)
-        map.set(o, {
-          color: COLORS[n % COLORS.length]!,
-          speaker: `${perOutput > 1 ? `${perOutput}× ` : ""}${way.models.join(", ")}`,
-        });
-    });
+    for (const way of wiring(draft, topo).ways)
+      for (const group of way.groups) {
+        const perOutput = Math.round(group.cabinets / group.outputs.length);
+        for (const o of group.outputs)
+          map.set(o, {
+            color: wayColor(way.props),
+            speaker: `${perOutput > 1 ? `${perOutput}× ` : ""}${group.models.join(", ")}`,
+          });
+      }
     return map;
   });
   const inputUsed = (i: number) => plan.outputs.some((o) => o.used && o.sources[i]);

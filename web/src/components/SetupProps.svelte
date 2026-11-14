@@ -5,34 +5,41 @@
     | { type: "dsp"; output: number }
     | { type: "amp"; id: number }
     | { type: "speaker"; id: number }
+    | { type: "way"; id: number }
     | { type: "wire"; wire: Wire };
 </script>
 
 <script lang="ts">
-  // Setup wizard, plan: the properties of the element picked on the plan (a DSP output, an
-  // amplifier, a speaker, a wire). Each speaker has its own specs and side; the settings of a
-  // way (by channel name) are shared by every cabinet and output of that way.
+  // Setup wizard, plan: the properties of the element picked on the plan (a DSP output, a way,
+  // an amplifier, a speaker, a wire). Each speaker has its own specs and side; each DSP output
+  // picks its way, whose settings are shared by its outputs.
   import { formatDb } from "../lib/scale";
   import {
+    addWay,
     amplifierModel,
     ampGain,
     disconnect,
     duplicateSpeaker,
+    freshWayName,
     librarySection,
+    moveWay,
     newSection,
+    outputLoads,
     outputNames,
     RATED_LOADS,
     removeNode,
     removeSection,
+    removeWay,
     routeOf,
     sameWire,
     setAmpChannels,
-    setWayProp,
+    wayColor,
     wayLevel,
-    wayProps,
+    wayOfOutput,
     wiring,
     type Side,
     type Topology,
+    type WayInfo,
   } from "../lib/setup";
   import { wizard } from "../lib/wizard.svelte";
 
@@ -43,10 +50,15 @@
   const ohms = (z: number) => `${Number(z.toFixed(2))} Ω`;
   const dbu = (v: number) => `${formatDb(v)} dBu`;
 
-  const selectedId = (type: "amp" | "speaker"): number | null =>
+  const selectedId = (type: "amp" | "speaker" | "way"): number | null =>
     selection?.type === type ? selection.id : null;
   const amp = $derived(draft.amps.find((a) => a.id === selectedId("amp")));
   const speaker = $derived(draft.speakers.find((s) => s.id === selectedId("speaker")));
+  const way = $derived(draft.ways.find((w) => w.id === selectedId("way")));
+  const wayInfo = $derived(way ? wired.ways.find((w) => w.id === way.id) : undefined);
+  const mainIds = $derived(draft.ways.filter((w) => !w.aux).map((w) => w.id));
+  const ordinal = (n: number) => `${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"}`;
+  const outs = (list: number[]) => list.map((o) => `Out ${o + 1}`).join(" + ");
   const SIDES: [Side, string][] = [
     ["L", "Left"],
     ["R", "Right"],
@@ -58,6 +70,23 @@
   const outputWay = $derived(
     output === null ? undefined : wired.ways.find((w) => w.outputs.includes(output)),
   );
+  const pickedWay = $derived(output === null ? null : wayOfOutput(draft, output));
+  const drives = $derived(output !== null && outputLoads(draft, topo).has(output));
+  const groupOf = (info: WayInfo, o: number) => info.groups.find((g) => g.outputs.includes(o));
+
+  function pickWay(o: number, value: string) {
+    if (value === "new") {
+      const created = addWay(draft, freshWayName(draft));
+      draft.outputWays[o] = created.id;
+    } else {
+      draft.outputWays[o] = value === "" ? null : Number(value);
+    }
+  }
+
+  function deleteWay(id: number) {
+    removeWay(draft, id);
+    selection = null;
+  }
   const source = $derived(output === null ? null : routeOf(draft, output));
   const side = $derived(output === null ? "LR" : (wired.sideOf.get(output) ?? "LR"));
 
@@ -69,7 +98,7 @@
       if (!c) continue;
       const limit = c.limiter ? ` · comp ${dbu(c.limiter.compThresholdDbu)}` : "";
       const power = c.powerW ? `, ${c.powerW} W` : ", below its rated loads";
-      return `${c.load.cabinets.length}× ${way.key} (${ohms(c.impedanceOhm)}${power})${limit} → Out ${c.load.output + 1}`;
+      return `${c.load.cabinets.length}× ${way.name} (${ohms(c.impedanceOhm)}${power})${limit} → Out ${c.load.output + 1}`;
     }
     return "not wired";
   }
@@ -78,7 +107,7 @@
     const ampName = (id: number) => draft.amps.find((a) => a.id === id)?.model ?? "amplifier";
     const spkName = (id: number, section: number) => {
       const k = draft.speakers.find((s) => s.id === id);
-      return `${k?.model ?? "speaker"}${k && k.sections.length > 1 ? ` · ${k.sections[section]?.name}` : ""}`;
+      return `${k?.model ?? "speaker"}${k && k.sections.length > 1 ? ` · ${k.sections[section]?.name || `section ${section + 1}`}` : ""}`;
     };
     if (w.type === "feed") return `Out ${w.output + 1} → ${ampName(w.amp)} ch ${w.channel + 1}`;
     if (w.type === "drive") return `${ampName(w.amp)} ch ${w.channel + 1} → ${spkName(w.speaker, w.section)}`;
@@ -106,14 +135,44 @@
 
 {#if selection?.type === "dsp" && output !== null}
   <h2>Out {output + 1}</h2>
+  <div class="field">
+    <span>Way</span>
+    <select
+      aria-label="Way"
+      value={pickedWay ? String(pickedWay.id) : ""}
+      onchange={(e) => pickWay(output, e.currentTarget.value)}
+    >
+      <option value="">—</option>
+      {#each draft.ways as w (w.id)}<option value={String(w.id)}>{w.name}{w.aux ? " (aux)" : ""}</option>{/each}
+      <option value="new">+ New way</option>
+    </select>
+  </div>
+  {#if pickedWay}
+    <label class="field">
+      <span>Way name</span>
+      <input type="text" maxlength="8" bind:value={pickedWay.name} />
+    </label>
+  {/if}
   {#if outputWay}
+    {@const group = groupOf(outputWay, output)}
     <p class="muted note">
-      {outputNames(outputWay, wired.sideOf).get(output)} — way {outputWay.key}, {outputWay.outputs.length > 1
-        ? `linked with ${outputWay.outputs.filter((o) => o !== output).map((o) => `Out ${o + 1}`).join(", ")}`
-        : "one output"}.
+      Channel name {outputNames(outputWay, wired.sideOf).get(output)}.
+      {#if group && group.outputs.length > 1}
+        Linked with {outs(group.outputs.filter((o) => o !== output))} (the same load).
+      {:else if outputWay.groups.length > 1}
+        Not linked: its load differs from the way's other outputs, so it has its own limiter and
+        gain (same filters).
+      {/if}
     </p>
-  {:else}
+  {:else if drives && !pickedWay}
+    <p class="warn note">It drives speakers: pick the way it plays.</p>
+  {:else if !drives}
     <p class="muted note">Not wired: muted, named Out{output + 1}.</p>
+  {/if}
+  {#if pickedWay}
+    <button class="small" onclick={() => pickedWay && (selection = { type: "way", id: pickedWay.id })}
+      >The way's settings →</button
+    >
   {/if}
   <div class="field">
     <span>Plays</span>
@@ -130,6 +189,78 @@
       its speakers (set the side on a speaker).
     </p>
   {/if}
+{:else if way}
+  {@const rank = mainIds.indexOf(way.id)}
+  <h2><span class="dot" style:--c={wayColor(way)}></span> Way</h2>
+  <label class="field">
+    <span>Name</span>
+    <input type="text" maxlength="8" bind:value={way.name} />
+  </label>
+  <div class="field">
+    <span>Role</span>
+    <div class="seg" role="group" aria-label="Role">
+      <button class:on={!way.aux} onclick={() => (way.aux = false)}>Main</button>
+      <button class:on={way.aux} onclick={() => (way.aux = true)}>Auxiliary</button>
+    </div>
+  </div>
+  {#if !way.aux}
+    <div class="field">
+      <span>Order <small>{ordinal(rank + 1)} of {mainIds.length}, from the lowest</small></span>
+      <div class="seg" role="group" aria-label="Order">
+        <button disabled={rank <= 0} onclick={() => moveWay(draft, way.id, -1)}>◀ Lower</button>
+        <button disabled={rank >= mainIds.length - 1} onclick={() => moveWay(draft, way.id, 1)}
+          >Higher ▶</button
+        >
+      </div>
+    </div>
+    <p class="muted note">The crossovers go between consecutive main ways, in this order.</p>
+  {:else}
+    <p class="muted note">
+      Outside the crossover chain (monitor, fill…): filtered to its speakers' range, at 0 dB.
+    </p>
+  {/if}
+  <div class="field">
+    <span>Limiter</span>
+    <div class="seg" role="group" aria-label="Hard or soft">
+      <button class:on={way.mode === "hard"} onclick={() => (way.mode = "hard")}>Hard</button>
+      <button class:on={way.mode === "soft"} onclick={() => (way.mode = "soft")}>Soft +2</button>
+    </div>
+  </div>
+  <div class="field">
+    <span>0.5 dB step</span>
+    <div class="seg" role="group" aria-label="Rounding">
+      <button class:on={way.rounding === "up"} onclick={() => (way.rounding = "up")}>Up</button>
+      <button class:on={way.rounding === "down"} onclick={() => (way.rounding = "down")}>Down</button>
+    </div>
+  </div>
+  <label class="check">
+    <input type="checkbox" bind:checked={way.phase} /> Inverted polarity
+  </label>
+  <h3>Outputs</h3>
+  {#if wayInfo}
+    {@const level = wayLevel(draft, wayInfo, wired.sideOf)}
+    <ul class="list">
+      {#each level.groups as g (g.group.outputs[0])}
+        <li>
+          <b>{outs(g.group.outputs)}</b>{g.group.outputs.length > 1 ? " linked" : ""}:
+          {g.group.cabinets}× {g.group.models.join(", ")}{g.limiter
+            ? ` · comp ${dbu(g.limiter.compThresholdDbu)}`
+            : ""}{g.trimDb ? ` · trim ${formatDb(g.trimDb)} dB` : ""}
+        </li>
+      {/each}
+    </ul>
+    {#if level.groups.length > 1}
+      <p class="muted note">
+        Outputs with different loads are not linked: each has its own limiter, and a trim brings
+        each kind of cabinet to the level of the quietest.
+      </p>
+    {/if}
+  {:else}
+    <p class="muted note">No output plays it yet: pick it on a DSP output.</p>
+  {/if}
+  <div class="actions">
+    <button class="danger" onclick={() => deleteWay(way.id)}>Remove the way</button>
+  </div>
 {:else if selection?.type === "wire"}
   <h2>Wire</h2>
   <p>{describeWire(selection.wire)}</p>
@@ -237,13 +368,22 @@
   {#each speaker.sections as section, i (i)}
     {@const lib = librarySection(speaker, i)}
     {@const estimated = new Set(lib?.estimated ?? [])}
-    {@const props = wayProps(draft, section.name)}
+    {@const sectionWay = draft.ways.find((w) => w.id === wired.sectionWay.get(`${speaker.id}:${i}`))}
     <fieldset>
       <legend>{speaker.sections.length > 1 ? `Section ${i + 1}` : "This speaker"}</legend>
       <label class="field">
-        <span>Channel name</span>
-        <input type="text" maxlength="8" bind:value={section.name} />
+        <span>Label</span>
+        <input type="text" maxlength="8" placeholder="e.g. Sub" bind:value={section.name} />
       </label>
+      <p class="muted note">
+        {#if sectionWay}
+          Way <button class="link" onclick={() => sectionWay && (selection = { type: "way", id: sectionWay.id })}
+            ><span class="dot" style:--c={wayColor(sectionWay)}></span>{sectionWay.name}</button
+          >, set on its DSP output.
+        {:else}
+          Its way is set on the DSP output that feeds it (the label picks it when it matches).
+        {/if}
+      </p>
       <label class="field">
         <span>Range, bottom</span>
         <input type="text" inputmode="decimal" placeholder="optional" bind:value={section.lowHz} />
@@ -280,49 +420,6 @@
       </div>
       {#if lib}<p class="muted note">{lib.drivers}. {lib.source}</p>{/if}
 
-      <h3>Way "{section.name}" <small>shared by its cabinets and outputs</small></h3>
-      <div class="field">
-        <span>Role</span>
-        <div class="seg" role="group" aria-label="Role">
-          <button class:on={!props.aux} onclick={() => setWayProp(draft, section.name, "aux", false)}
-            >Main</button
-          >
-          <button class:on={props.aux} onclick={() => setWayProp(draft, section.name, "aux", true)}
-            >Auxiliary</button
-          >
-        </div>
-      </div>
-      <div class="field">
-        <span>Limiter</span>
-        <div class="seg" role="group" aria-label="Hard or soft">
-          <button class:on={props.mode === "hard"} onclick={() => setWayProp(draft, section.name, "mode", "hard")}
-            >Hard</button
-          >
-          <button class:on={props.mode === "soft"} onclick={() => setWayProp(draft, section.name, "mode", "soft")}
-            >Soft +2</button
-          >
-        </div>
-      </div>
-      <div class="field">
-        <span>0.5 dB step</span>
-        <div class="seg" role="group" aria-label="Rounding">
-          <button
-            class:on={props.rounding === "up"}
-            onclick={() => setWayProp(draft, section.name, "rounding", "up")}>Up</button
-          >
-          <button
-            class:on={props.rounding === "down"}
-            onclick={() => setWayProp(draft, section.name, "rounding", "down")}>Down</button
-          >
-        </div>
-      </div>
-      <label class="check">
-        <input
-          type="checkbox"
-          checked={props.phase}
-          onchange={(e) => setWayProp(draft, section.name, "phase", e.currentTarget.checked)}
-        /> Inverted polarity
-      </label>
       {#if speaker.ref === null && speaker.sections.length > 1}
         <button class="small" onclick={() => removeSection(draft, speaker, i)}>Remove this section</button>
       {/if}
@@ -330,7 +427,7 @@
   {/each}
   </div>
   {#if speaker.ref === null}
-    <button class="small" onclick={() => speaker.sections.push(newSection(speaker.sections.length))}
+    <button class="small" onclick={() => speaker.sections.push(newSection())}
       >+ Section (bi-amp)</button
     >
   {/if}
@@ -443,9 +540,6 @@
   .sections.two .field small {
     min-width: 2.5em;
   }
-  .sections.two h3 {
-    font-size: 0.85rem;
-  }
   legend {
     color: var(--muted);
     font-size: 0.85rem;
@@ -476,5 +570,26 @@
   button.small {
     min-height: 36px;
     font-size: 0.85rem;
+  }
+  .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+    border-radius: 50%;
+    background: var(--c);
+  }
+  button.link {
+    min-height: 0;
+    padding: 0 2px;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+  }
+  .warn {
+    color: var(--warn);
   }
 </style>

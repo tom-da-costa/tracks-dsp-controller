@@ -59,28 +59,32 @@
   </p>
   {#if unranged}
     <p class="muted hint">
-      Some speakers do not give their range: the ways go from low to high in the order of their
-      DSP outputs, and the crossovers get usual values (100 Hz to 2 kHz). Check them on the bar.
+      Some speakers do not give their range: their crossovers get usual values (100 Hz to 2 kHz).
+      Check them on the bar.
     </p>
   {/if}
   {#if lowest}
-    <h3>{lowest.key} <small>{range(lowest)}</small></h3>
+    <h3>{lowest.name} <small>{range(lowest)}</small></h3>
     {@render filter(draft.subsonic, "Subsonic high-pass", known(lowest.lowHz) ?? SUBSONIC_HZ)}
     <p class="muted note">Protects the lowest way below its range (the cone's excursion).</p>
   {/if}
   {#each bounds as b (b.key)}
     {@const setting = draft.crossovers[b.key]}
     <h3>
-      {b.lower.key} ↔ {b.upper.key}
+      {b.lower.name} ↔ {b.upper.name}
       <small>{range(b.lower)} · {range(b.upper)}</small>
     </h3>
     {#if setting}{@render filter(setting, "Crossover", b.proposedHz)}{/if}
-    {#if b.gap}
+    {#if b.reversed}
+      <p class="warn note">
+        {b.upper.name} plays lower than {b.lower.name}: check the order of the ways on the plan.
+      </p>
+    {:else if b.gap}
       <p class="warn note">The two ranges do not meet: there is a hole around the crossover.</p>
     {/if}
   {/each}
   {#if highest}
-    <p class="muted note">{highest.key}: no low-pass, it plays up to the top of its range.</p>
+    <p class="muted note">{highest.name}: no low-pass, it plays up to the top of its range.</p>
   {/if}
 </section>
 
@@ -88,9 +92,9 @@
   <section class="card">
     <h2>Auxiliary outputs</h2>
     <p class="muted hint">Filtered to their speakers' range, Butterworth 24 dB/oct.</p>
-    {#each auxWays as way (way.key)}
-      {@const setting = draft.aux[way.key]}
-      <h3>{way.key} <small>{range(way)}</small></h3>
+    {#each auxWays as way (way.id)}
+      {@const setting = draft.aux[way.id]}
+      <h3>{way.name} <small>{range(way)}</small></h3>
       {#if setting}
         {@render filter(setting.hpf, "High-pass", known(way.lowHz))}
         {@render filter(setting.lpf, "Low-pass", known(way.highHz))}

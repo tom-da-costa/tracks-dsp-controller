@@ -117,8 +117,11 @@
       ziehen oder beide nacheinander antippen; einen Block, Ausgang oder Draht antippen, um ihn zu
       bearbeiten); die aus den Frequenzbereichen vorgeschlagenen Trennfrequenzen (übliche Werte, wenn ein generischer Lautsprecher keinen angibt); dann eine
       Zusammenfassung. Jeder Lautsprecher hat eigene Daten und eine Seite (links, rechts oder mono
-      L+R); Ausgänge, die Sektionen mit demselben Kanalnamen speisen, bilden einen Weg und werden
-      verlinkt. Der eckige Punkt eines Lautsprechers unter seinem Eingang ist sein Link-Ausgang: mit einem anderen
+      L+R). Die Wege stehen über dem Plan, von tief nach hoch (antippen zum Umbenennen, Verschieben
+      oder Einstellen); jeder DSP-Ausgang wählt seinen Weg, und das Verbinden mit Sektionen mit dem
+      Label „Sub“ wählt den Weg Sub. Verschiedene Gehäuse können denselben Weg spielen: Ausgänge mit
+      gleicher Last werden verlinkt, die anderen behalten ihren eigenen Limiter und erhalten einen
+      Trim auf den Pegel des leisesten Gehäusetyps. Der eckige Punkt eines Lautsprechers unter seinem Eingang ist sein Link-Ausgang: mit einem anderen
       Lautsprecher verbinden, um ihn durchzuschleifen (parallel). Er berechnet Routing, Kanalnamen, Links, Filter, Limiter (wie der
       Limiter-Rechner) und Ausgangspegel, sodass alle Hauptwege gleich laut spielen. Das Schreiben
       ersetzt alle Einstellungen (Delays 0, EQ flach), schaltet die Ausgänge währenddessen stumm

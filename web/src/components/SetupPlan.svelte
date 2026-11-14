@@ -4,20 +4,28 @@
   // output → amplifier channel → speaker section (or straight to an active speaker), and a
   // speaker's link output → another speaker (bridged, in parallel). A wire is
   // drawn by dragging from a port to another, or by tapping one port then the other. Tapping
-  // an element opens its properties on the right (below on a phone).
+  // an element opens its properties on the right (below on a phone). The ways sit above the
+  // plan, from low to high: each DSP output picks one (wiring it to labelled sections picks
+  // the way of that name), and the wires take its colour.
   import { app } from "../lib/app.svelte";
   import {
     addAmp,
     addSpeaker,
+    addWay,
     AMPLIFIERS,
+    autoAssignWays,
     connect,
+    freshWayName,
     orderedWays,
+    outputLoads,
     outputNames,
     parsePort,
     portKey,
     routeOf,
     sourceInputs,
     SPEAKERS,
+    wayColor,
+    wayOfOutput,
     wireBetween,
     wiring,
     type Port,
@@ -40,16 +48,13 @@
   const SPK_IN_Y = 11;
   const SPK_LINK_Y = 25;
   const DSP_Y = 8;
-  const COLORS = ["#3ddc97", "#4da3ff", "#ffb020", "#c38bff", "#ff7a59", "#5ad1e6", "#e6d75a", "#ff5fa2"];
 
   const draft = $derived(wizard.draft);
   const wired = $derived(wiring(draft, topo));
   const dspOutTop = $derived(DSP_Y + HEAD + topo.inputs * IN_ROW + 8);
   const dspHeight = $derived(dspOutTop - DSP_Y + topo.outputs * ROW + 6);
-  // A colour per way: main ways from low to high, then the auxiliary ones.
-  const wayColor = $derived(
-    new Map(orderedWays(wired.ways).map((w, i) => [w.key, COLORS[i % COLORS.length]!])),
-  );
+  const driven = $derived(new Set(outputLoads(draft, topo).keys()));
+  const wayById = (id: number | undefined) => draft.ways.find((w) => w.id === id);
   const names = $derived.by(() => {
     const map = new Map<number, string>();
     for (const way of wired.ways) for (const [o, n] of outputNames(way, wired.sideOf)) map.set(o, n);
@@ -101,11 +106,9 @@
   }
 
   function wireColor(w: Wire): string {
-    if (w.type === "drive" || w.type === "chain") {
-      const name = draft.speakers.find((s) => s.id === w.speaker)?.sections[w.section]?.name;
-      return wayColor.get(name ?? "") ?? "#888";
-    }
-    return wayColor.get(wired.wayOf.get(w.output) ?? "") ?? "#888";
+    if (w.type === "drive" || w.type === "chain")
+      return wayColor(wayById(wired.sectionWay.get(`${w.speaker}:${w.section}`)));
+    return wayColor(wayOfOutput(draft, w.output));
   }
 
   /** A wire from `a` (leaving to the right, or to the left from a speaker's link output) to
@@ -221,6 +224,7 @@
       app.toast("That bridge would loop back to the speaker it comes from", "error");
       return true;
     }
+    autoAssignWays(draft, topo);
     selection = { type: "wire", wire };
     return true;
   }
@@ -256,6 +260,11 @@
 
   const isSelected = (type: string, id: number) =>
     selection !== null && selection.type === type && "id" in selection && selection.id === id;
+
+  function newWay() {
+    const way = addWay(draft, freshWayName(draft));
+    selection = { type: "way", id: way.id };
+  }
 </script>
 
 {#snippet port(p: Port, side: "left" | "right" | "spk-in" | "link")}
@@ -292,12 +301,27 @@
         <button class="primary" onclick={addAmpNode}>+ Amplifier</button>
       </div>
     </div>
+    <div class="waybar" role="group" aria-label="Ways">
+      <span class="muted">Ways, low → high</span>
+      {#each [...draft.ways.filter((w) => !w.aux), ...draft.ways.filter((w) => w.aux)] as way (way.id)}
+        <button
+          class="way"
+          class:selected={isSelected("way", way.id)}
+          style:--c={wayColor(way)}
+          onclick={() => (selection = { type: "way", id: way.id })}
+        >
+          {way.name || "?"}{way.aux ? " (aux)" : ""}
+        </button>
+      {/each}
+      <button class="way add" onclick={newWay}>+ Way</button>
+    </div>
     <p class="muted hint">
       Move a block by its title. Wire a DSP output to an amplifier channel, and the channel to
       its speakers (several in parallel): drag from one dot to the other, or tap one then the
       other. A speaker's square dot, under its input, is its link output: wire it to another
-      speaker to bridge it (same signal, in parallel). Wire an output straight to an active speaker. Tap a block, an
-      output or a wire to edit it.
+      speaker to bridge it (same signal, in parallel). Wire an output straight to an active
+      speaker. Each output plays a way: wired to sections labelled "Sub", it takes the Sub way;
+      otherwise tap it and pick one. Tap a block, an output, a way or a wire to edit it.
     </p>
     <div class="scroll">
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -336,19 +360,22 @@
           {/each}
           <div class="outs">
             {#each Array.from({ length: topo.outputs }, (_, o) => o) as o (o)}
-              {@const way = wired.wayOf.get(o)}
+              {@const used = wired.wayOf.has(o)}
+              {@const way = wayOfOutput(draft, o)}
               {@const side = wired.sideOf.get(o) ?? "LR"}
+              {@const missing = driven.has(o) && !way}
               <div class="outrow">
                 <button
                   class="row out"
-                  class:dim={!way}
+                  class:dim={!used && !missing}
+                  class:missing
                   class:selected={selection?.type === "dsp" && selection.output === o}
-                  style:--c={wayColor.get(way ?? "")}
+                  style:--c={way ? wayColor(way) : "transparent"}
                   onclick={() => (selection = { type: "dsp", output: o })}
                 >
                   <b>{o + 1}</b>
-                  <span class="label">{names.get(o) ?? `Out${o + 1}`}</span>
-                  {#if way}<small>{sourceName(routeOf(draft, o))} {SIDE_LABEL[side]}</small>{/if}
+                  <span class="label">{missing ? "pick a way" : (names.get(o) ?? way?.name ?? `Out${o + 1}`)}</span>
+                  {#if used}<small>{sourceName(routeOf(draft, o))} {SIDE_LABEL[side]}</small>{/if}
                 </button>
                 {@render port({ node: "dsp", port: o }, "right")}
               </div>
@@ -406,8 +433,13 @@
               {spk.model}
             </div>
             {#each spk.sections as section, i (i)}
-              <div class="row ch" style:top={`${HEAD + i * SPK_ROW}px`} style:--c={wayColor.get(section.name)}>
-                {section.name}{draft.ways[section.name]?.aux ? " (aux)" : ""}
+              {@const sectionWay = wayById(wired.sectionWay.get(`${spk.id}:${i}`))}
+              <div
+                class="row ch"
+                style:top={`${HEAD + i * SPK_ROW}px`}
+                style:--c={sectionWay ? wayColor(sectionWay) : "transparent"}
+              >
+                {section.name || sectionWay?.name || (spk.sections.length > 1 ? `Section ${i + 1}` : "—")}
               </div>
               <div class="anchor tall" style:top={`${HEAD + i * SPK_ROW}px`}>
                 {@render port({ node: "spk", id: spk.id, port: i }, "spk-in")}
@@ -429,18 +461,20 @@
     {:else}
       <h2>Properties</h2>
       <p class="muted hint">
-        Tap a block, a DSP output or a wire to see and change its properties. The ways come from
-        the wiring, by channel name: the outputs that drive sections called "Sub" form the Sub
-        way, their outputs linked (two outputs to four subs: one Sub way). Each speaker is left,
-        right or mono (L+R): its outputs play that side.
+        Tap a block, a DSP output, a way or a wire to see and change its properties. Each DSP
+        output plays a way; the ways above the plan go from low to high, and the crossovers sit
+        between consecutive main ways. Several outputs, and different cabinets, can play the
+        same way: the outputs with the same load are linked, the others keep their own limiter
+        and get a trim. Each speaker is left, right or mono (L+R): its outputs play that side.
       </p>
       {#if wired.ways.length}
         <h3>Ways</h3>
         <ul class="ways">
-          {#each orderedWays(wired.ways) as way (way.key)}
-            <li style:--c={wayColor.get(way.key)}>
-              <b>{way.key}</b>
-              {way.outputs.map((o) => `Out ${o + 1}`).join(", ")} · {way.cabinets} cabinet{way.cabinets > 1 ? "s" : ""}{way.active ? " · active" : ""}
+          {#each orderedWays(wired.ways) as way (way.id)}
+            <li style:--c={wayColor(way.props)}>
+              <b>{way.name}</b>
+              {way.groups.map((g) => g.outputs.map((o) => `Out ${o + 1}`).join("+")).join(", ")} · {way.cabinets}
+              cabinet{way.cabinets > 1 ? "s" : ""}{way.active ? " · active" : ""}
             </li>
           {/each}
         </ul>
@@ -584,6 +618,38 @@
   }
   .row.out.selected {
     background: color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  .row.out.missing .label {
+    color: var(--warn);
+    font-style: italic;
+  }
+  .waybar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 0.85rem;
+  }
+  .waybar .way {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--c, var(--muted)) 22%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--c, var(--line));
+    font-weight: 700;
+  }
+  .waybar .way.selected {
+    box-shadow:
+      inset 0 0 0 1.5px var(--c),
+      0 0 0 2px var(--accent);
+  }
+  .waybar .way.add {
+    font-weight: 400;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line);
   }
   .row .label {
     flex: 1;
