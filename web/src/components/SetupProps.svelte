@@ -246,12 +246,12 @@
       </label>
       <label class="field">
         <span>Range, bottom</span>
-        <input type="text" inputmode="decimal" bind:value={section.lowHz} />
+        <input type="text" inputmode="decimal" placeholder="optional" bind:value={section.lowHz} />
         <small>Hz</small>
       </label>
       <label class="field">
         <span>Range, top</span>
-        <input type="text" inputmode="decimal" bind:value={section.highHz} />
+        <input type="text" inputmode="decimal" placeholder="optional" bind:value={section.highHz} />
         <small>Hz</small>
       </label>
       <label class="field">

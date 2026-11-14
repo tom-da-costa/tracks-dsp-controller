@@ -634,10 +634,12 @@ export function wiring(draft: Draft, topo: Topology): Wiring {
       errors.push(`${way.key}: some cabinets have an amplifier, some are fed directly (active).`);
     way.active = direct === way.channels.length;
     const sections = way.channels.flatMap((c) => c.cabinets);
-    const lows = sections.map((c) => num(c.section.lowHz));
-    const highs = sections.map((c) => num(c.section.highHz));
-    way.lowHz = lows.every(positive) ? Math.max(...lows) : NaN;
-    way.highHz = highs.every(positive) ? Math.min(...highs) : NaN;
+    // The range is optional (a generic speaker may not give it): the way's range is where the
+    // known ones overlap.
+    const lows = sections.map((c) => num(c.section.lowHz)).filter(positive);
+    const highs = sections.map((c) => num(c.section.highHz)).filter(positive);
+    way.lowHz = lows.length ? Math.max(...lows) : NaN;
+    way.highHz = highs.length ? Math.min(...highs) : NaN;
     way.models = [...new Set(sections.map((c) => c.node.model))];
   }
   return { ways: [...ways.values()], wayOf, sideOf, errors };
@@ -777,15 +779,24 @@ export function wayGains(
 
 // --- filters -----------------------------------------------------------------------------------
 
+/** Roughly where a way plays: the centre of its range, or near its one known end. */
 function centreHz(way: WayInfo): number {
-  return positive(way.lowHz) && positive(way.highHz) ? Math.sqrt(way.lowHz * way.highHz) : Infinity;
+  const low = positive(way.lowHz);
+  const high = positive(way.highHz);
+  if (low && high) return Math.sqrt(way.lowHz * way.highHz);
+  if (low) return way.lowHz * 2;
+  if (high) return way.highHz / 2;
+  return NaN;
 }
 
-/** Main ways from low to high (by the centre of their range). */
+/** Main ways from low to high: by where they play when every way gives a range, otherwise in
+ * the order of their DSP outputs. */
 export function mainWays(ways: WayInfo[]): WayInfo[] {
-  return ways
-    .filter((w) => !w.props.aux)
-    .map((w, order) => ({ w, order, centre: centreHz(w) }))
+  const main = ways.filter((w) => !w.props.aux);
+  const centres = main.map(centreHz);
+  if (!centres.every(Number.isFinite)) return main;
+  return main
+    .map((w, order) => ({ w, order, centre: centres[order]! }))
     .sort((a, b) => (a.centre === b.centre ? a.order - b.order : a.centre - b.centre))
     .map(({ w }) => w);
 }
@@ -809,19 +820,39 @@ export function proposeCrossover(lowerTopHz: number, upperBottomHz: number): num
   return Math.round(Math.sqrt(lowerTopHz * upperBottomHz));
 }
 
+/** The subsonic high-pass when the lowest way does not give its range. */
+export const SUBSONIC_HZ = 30;
+
+/** A usual crossover when the ranges are not given: the `i`-th of `count`, spread from 100 Hz
+ * (sub / top) to 2 kHz (mid / high) on a log scale. */
+export function typicalCrossover(i: number, count: number): number {
+  if (count <= 1) return 100;
+  const hz = 100 * 20 ** (i / (count - 1));
+  const step = 10 ** Math.max(0, Math.floor(Math.log10(hz)) - 1);
+  return Math.round(hz / step) * step;
+}
+
 export function boundaries(ways: WayInfo[]): Boundary[] {
   const main = mainWays(ways);
   const result: Boundary[] = [];
   for (let i = 0; i + 1 < main.length; i++) {
     const lower = main[i]!;
     const upper = main[i + 1]!;
-    const known = positive(lower.highHz) && positive(upper.lowHz);
+    const top = positive(lower.highHz);
+    const bottom = positive(upper.lowHz);
     result.push({
       key: `${lower.key}|${upper.key}`,
       lower,
       upper,
-      proposedHz: known ? proposeCrossover(lower.highHz, upper.lowHz) : 1000,
-      gap: known && upper.lowHz > lower.highHz,
+      proposedHz:
+        top && bottom
+          ? proposeCrossover(lower.highHz, upper.lowHz)
+          : top
+            ? Math.round(lower.highHz)
+            : bottom
+              ? Math.round(upper.lowHz)
+              : typicalCrossover(i, main.length - 1),
+      gap: top && bottom && upper.lowHz > lower.highHz,
     });
   }
   return result;
@@ -868,7 +899,7 @@ export function wayFilters(
   for (const way of main) filters.set(way.key, { hpf: null, lpf: null });
   const lowest = main[0];
   if (lowest)
-    filters.get(lowest.key)!.hpf = resolved(draft.subsonic, positive(lowest.lowHz) ? lowest.lowHz : 30);
+    filters.get(lowest.key)!.hpf = resolved(draft.subsonic, positive(lowest.lowHz) ? lowest.lowHz : SUBSONIC_HZ);
   for (const b of boundaries(ways)) {
     const filter = resolved(draft.crossovers[b.key] ?? defaultCrossover(slopes), b.proposedHz);
     filters.get(b.lower.key)!.lpf = filter;
@@ -876,9 +907,14 @@ export function wayFilters(
   }
   for (const way of ways.filter((w) => w.props.aux)) {
     const setting = draft.aux[way.key] ?? defaultAux(slopes);
+    // Without a range, an auxiliary way is filtered only at a frequency typed for it.
+    const typed = (s: FilterSetting) => positive(num(s.freqHz));
     filters.set(way.key, {
-      hpf: positive(way.lowHz) ? resolved(setting.hpf, way.lowHz) : null,
-      lpf: positive(way.highHz) && way.highHz < 20000 ? resolved(setting.lpf, way.highHz) : null,
+      hpf: positive(way.lowHz) || typed(setting.hpf) ? resolved(setting.hpf, way.lowHz) : null,
+      lpf:
+        (positive(way.highHz) && way.highHz < 20000) || typed(setting.lpf)
+          ? resolved(setting.lpf, way.highHz)
+          : null,
     });
   }
   return filters;
@@ -948,9 +984,13 @@ export function planErrors(draft: Draft, topo: Topology): string[] {
     }
     for (const { node, section: s } of way.channels.flatMap((c) => c.cabinets)) {
       const label = `${node.model} (${s.name})`;
-      if (!positive(num(s.lowHz)) || !positive(num(s.highHz)))
-        errors.push(`${label}: the frequency range is needed.`);
-      else if (num(s.lowHz) >= num(s.highHz)) errors.push(`${label}: the range's bottom must be below its top.`);
+      // The range is optional: without it the crossovers get usual values.
+      const low = num(s.lowHz);
+      const high = num(s.highHz);
+      if (s.lowHz.trim() !== "" && !positive(low)) errors.push(`${label}: the range's bottom is not a frequency.`);
+      if (s.highHz.trim() !== "" && !positive(high)) errors.push(`${label}: the range's top is not a frequency.`);
+      if (positive(low) && positive(high) && low >= high)
+        errors.push(`${label}: the range's bottom must be below its top.`);
       if (way.active) continue;
       if (!positive(num(s.aesW))) errors.push(`${label}: the AES power is needed.`);
       if (!positive(num(s.impedanceOhm))) errors.push(`${label}: the impedance is needed.`);

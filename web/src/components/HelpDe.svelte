@@ -115,7 +115,7 @@
       Quellen (Stereo oder Mono); ein Plan, auf dem Sie Endstufen und Lautsprecher (Bibliothek
       oder generisch) hinzufügen und mit den DSP-Ausgängen verbinden (von einem Punkt zum anderen
       ziehen oder beide nacheinander antippen; einen Block, Ausgang oder Draht antippen, um ihn zu
-      bearbeiten); die aus den Frequenzbereichen vorgeschlagenen Trennfrequenzen; dann eine
+      bearbeiten); die aus den Frequenzbereichen vorgeschlagenen Trennfrequenzen (übliche Werte, wenn ein generischer Lautsprecher keinen angibt); dann eine
       Zusammenfassung. Jeder Lautsprecher hat eigene Daten und eine Seite (links, rechts oder mono
       L+R); Ausgänge, die Sektionen mit demselben Kanalnamen speisen, bilden einen Weg und werden
       verlinkt. Der eckige Punkt eines Lautsprechers unter seinem Eingang ist sein Link-Ausgang: mit einem anderen

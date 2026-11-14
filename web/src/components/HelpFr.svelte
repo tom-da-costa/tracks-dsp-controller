@@ -114,7 +114,7 @@
       sources (stéréo ou mono) ; un plan où vous ajoutez amplis et enceintes (bibliothèque ou
       génériques) et les reliez aux sorties du DSP (glisser d'un point à l'autre, ou toucher l'un
       puis l'autre ; toucher un bloc, une sortie ou un fil pour le modifier) ; les coupures qu'il
-      propose d'après les plages des enceintes ; puis un récapitulatif. Chaque enceinte a
+      propose d'après les plages des enceintes (des valeurs usuelles si une enceinte générique n'en donne pas) ; puis un récapitulatif. Chaque enceinte a
       ses propres caractéristiques et un côté (gauche, droite ou mono L+R) ; les sorties qui
       alimentent des sections de même nom de canal forment une voie, liées entre elles. Le point
       carré d'une enceinte, sous son entrée, est sa sortie link : reliez-le à une autre enceinte pour la ponter

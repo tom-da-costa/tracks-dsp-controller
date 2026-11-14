@@ -21,6 +21,7 @@ import {
   planErrors,
   portKey,
   proposeCrossover,
+  typicalCrossover,
   removeNode,
   setAmpChannels,
   setWayProp,
@@ -278,6 +279,45 @@ describe("filters", () => {
       lpf: { freq_hz: 18000, slope: BW24 },
     });
     expect(mainWays(ways).map((w) => w.key)).not.toContain("Mon");
+  });
+  it("works without the speakers' ranges: output order and usual crossovers", () => {
+    const d = newDraft(SLOPES);
+    const amp = addAmp(d, "admark-ad416", 0, 0);
+    // Three generic speakers, no range given, wired high to low on purpose.
+    const names = ["Sub", "Mid", "High"];
+    names.forEach((name, i) => {
+      const spk = addSpeaker(d, null, 0, i * 60);
+      Object.assign(spk.sections[0]!, { name, aesW: "500", impedanceOhm: "8", sensitivityDb: "100" });
+      connect(d, { type: "feed", output: i, amp: amp.id, channel: i });
+      connect(d, { type: "drive", amp: amp.id, channel: i, speaker: spk.id, section: 0 });
+    });
+    expect(planErrors(d, DSP408)).toEqual([]);
+    const { ways } = wiring(d, DSP408);
+    expect(mainWays(ways).map((w) => w.key)).toEqual(names);
+    ensureFilters(d, ways, SLOPES);
+    const f = wayFilters(d, ways, SLOPES);
+    expect(f.get("Sub")!.hpf?.freq_hz).toBe(30);
+    expect(f.get("Sub")!.lpf?.freq_hz).toBe(100);
+    expect(f.get("High")!.hpf?.freq_hz).toBe(2000);
+    expect(f.get("High")!.lpf).toBeNull();
+    expect(filterErrors(d, DSP408)).toEqual([]);
+
+    // One known end is enough to propose from it; a typed range is still checked.
+    d.speakers[1]!.sections[0]!.lowHz = "150";
+    expect(boundaries(wiring(d, DSP408).ways)[0]!.proposedHz).toBe(150);
+    d.speakers[1]!.sections[0]!.highHz = "abc";
+    d.speakers[2]!.sections[0]!.lowHz = "5000";
+    d.speakers[2]!.sections[0]!.highHz = "1000";
+    expect(planErrors(d, DSP408)).toEqual([
+      "Generic (Mid): the range's top is not a frequency.",
+      "Generic (High): the range's bottom must be below its top.",
+    ]);
+  });
+
+  it("spreads usual crossovers from 100 Hz to 2 kHz", () => {
+    expect([0].map((i) => typicalCrossover(i, 1))).toEqual([100]);
+    expect([0, 1].map((i) => typicalCrossover(i, 2))).toEqual([100, 2000]);
+    expect([0, 1, 2].map((i) => typicalCrossover(i, 3))).toEqual([100, 450, 2000]);
   });
 });
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   // Setup wizard, step 3 (Crossover): the bar of the whole system, then the crossovers between the main ways (proposed from the speakers'
   // ranges, editable), the subsonic high-pass of the lowest way and the auxiliary ways' filters.
-  import { boundaries, mainWays, wiring, type FilterSetting, type Topology } from "../lib/setup";
+  import { boundaries, mainWays, SUBSONIC_HZ, wiring, type FilterSetting, type Topology } from "../lib/setup";
   import { wizard } from "../lib/wizard.svelte";
   import SetupCrossoverBar from "./SetupCrossoverBar.svelte";
 
@@ -16,7 +16,11 @@
   const auxWays = $derived(ways.filter((w) => w.props.aux));
   const slopeOptions = $derived(topo.slopes.map((name, i) => ({ name, i })).slice(1));
   const hz = (v: number) => (Number.isFinite(v) ? String(Math.round(v)) : "?");
-  const range = (way: { lowHz: number; highHz: number }) => `${hz(way.lowHz)}–${hz(way.highHz)} Hz`;
+  const range = (way: { lowHz: number; highHz: number }) =>
+    Number.isFinite(way.lowHz) || Number.isFinite(way.highHz)
+      ? `${hz(way.lowHz)}–${hz(way.highHz)} Hz`
+      : "range not given";
+  const unranged = $derived(main.some((w) => !Number.isFinite(w.lowHz) && !Number.isFinite(w.highHz)));
   const known = (v: number) => (Number.isFinite(v) && v > 0 ? Math.round(v) : null);
 </script>
 
@@ -53,9 +57,15 @@
     Proposed where the speakers' ranges meet (the geometric mean of the top of the lower way and
     the bottom of the upper one), Linkwitz-Riley 24 dB/oct. An empty frequency takes the proposal.
   </p>
+  {#if unranged}
+    <p class="muted hint">
+      Some speakers do not give their range: the ways go from low to high in the order of their
+      DSP outputs, and the crossovers get usual values (100 Hz to 2 kHz). Check them on the bar.
+    </p>
+  {/if}
   {#if lowest}
     <h3>{lowest.key} <small>{range(lowest)}</small></h3>
-    {@render filter(draft.subsonic, "Subsonic high-pass", known(lowest.lowHz))}
+    {@render filter(draft.subsonic, "Subsonic high-pass", known(lowest.lowHz) ?? SUBSONIC_HZ)}
     <p class="muted note">Protects the lowest way below its range (the cone's excursion).</p>
   {/if}
   {#each bounds as b (b.key)}
