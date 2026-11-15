@@ -316,13 +316,33 @@ export function removeWay(draft: Draft, id: number): void {
   delete draft.aux[id];
 }
 
-/** One place lower (-1) or higher (+1) in the list. */
+/** One place lower (-1) or higher (+1) among the ways of its role (main or auxiliary). */
 export function moveWay(draft: Draft, id: number, delta: number): void {
   const i = draft.ways.findIndex((w) => w.id === id);
-  const j = i + delta;
-  if (i < 0 || j < 0 || j >= draft.ways.length) return;
-  const [way] = draft.ways.splice(i, 1);
-  draft.ways.splice(j, 0, way!);
+  const way = draft.ways[i];
+  if (!way) return;
+  let j = i + Math.sign(delta);
+  while (j >= 0 && j < draft.ways.length && draft.ways[j]!.aux !== way.aux) j += Math.sign(delta);
+  if (j < 0 || j >= draft.ways.length) return;
+  draft.ways.splice(i, 1);
+  draft.ways.splice(j, 0, way);
+}
+
+/** Usual way names, offered on the Ways step (the auxiliary ones as such). */
+export const WAY_SUGGESTIONS: { name: string; aux: boolean }[] = [
+  { name: "Sub", aux: false },
+  { name: "Kick", aux: false },
+  { name: "Low", aux: false },
+  { name: "Mid", aux: false },
+  { name: "High", aux: false },
+  { name: "Top", aux: false },
+  { name: "Mon", aux: true },
+  { name: "Fill", aux: true },
+];
+
+/** The main ways from low to high, then the auxiliary ones. */
+export function waysInOrder(draft: Draft): Way[] {
+  return [...draft.ways.filter((w) => !w.aux), ...draft.ways.filter((w) => w.aux)];
 }
 
 export function findWay(draft: Draft, name: string): Way | null {
@@ -1192,6 +1212,20 @@ export function inputErrors(draft: Draft, topo: Topology): string[] {
     }
   }
   return errors;
+}
+
+/** What is wrong with the ways (their names: a way's name is its outputs' channel name). */
+export function waysErrors(draft: Draft): string[] {
+  const errors: string[] = [];
+  const seen = new Set<string>();
+  waysInOrder(draft).forEach((way) => {
+    const e = nameError(way.name, CHANNEL_NAME_LENGTH);
+    if (e) errors.push(`${way.name.trim() ? `Way "${way.name}"` : "A way"}: ${e}.`);
+    const key = way.name.trim().toLowerCase();
+    if (key && seen.has(key)) errors.push(`Two ways are called "${way.name}": rename one.`);
+    seen.add(key);
+  });
+  return [...new Set(errors)];
 }
 
 export function planErrors(draft: Draft, topo: Topology): string[] {

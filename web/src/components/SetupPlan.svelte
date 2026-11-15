@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Setup wizard, step 2: the plan of the system. The DSP is fixed on the left; amplifiers and
+  // Setup wizard, step 3: the plan of the system. The DSP is fixed on the left; amplifiers and
   // speakers are added from the library (or generic), moved by their title, and wired: DSP
   // output → amplifier channel → speaker section (or straight to an active speaker), and a
   // speaker's link output → another speaker (bridged, in parallel). A wire is

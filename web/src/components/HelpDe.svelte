@@ -111,8 +111,9 @@
     </dd>
     <dt>🪄 Setup</dt>
     <dd>
-      Ein Assistent, der den ganzen DSP aus Ihrer Anlage einrichtet, in vier Schritten: die
-      Quellen (Stereo oder Mono); ein Plan, auf dem Sie Endstufen und Lautsprecher (Bibliothek
+      Ein Assistent, der den ganzen DSP aus Ihrer Anlage einrichtet, in fünf Schritten: die
+      Quellen (Stereo oder Mono); die Wege (die Frequenzbereiche: Namen, Hauptwege von tief nach
+      hoch oder Hilfswege); ein Plan, auf dem Sie Endstufen und Lautsprecher (Bibliothek
       oder generisch) hinzufügen und mit den DSP-Ausgängen verbinden (von einem Punkt zum anderen
       ziehen oder beide nacheinander antippen; einen Block, Ausgang oder Draht antippen, um ihn zu
       bearbeiten); die aus den Frequenzbereichen vorgeschlagenen Trennfrequenzen (übliche Werte, wenn ein generischer Lautsprecher keinen angibt); dann eine

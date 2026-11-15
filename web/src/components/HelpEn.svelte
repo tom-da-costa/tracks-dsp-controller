@@ -95,8 +95,8 @@
     </dd>
     <dt>🪄 Setup</dt>
     <dd>
-      A wizard that sets up the whole DSP from your system, in four steps: the sources (stereo
-      or mono); a plan where you add amplifiers and speakers (library or generic) and wire them
+      A wizard that sets up the whole DSP from your system, in five steps: the sources (stereo
+      or mono); the ways (the frequency ranges: names, main from low to high or auxiliary); a plan where you add amplifiers and speakers (library or generic) and wire them
       to the DSP's outputs (drag from one dot to another, or tap one then the other; tap a block,
       an output or a wire to edit it); the crossovers it proposes from the speakers' ranges (usual values when a generic speaker gives none); then
       a summary. Each speaker has its own specs, a count (that many identical cabinets on the

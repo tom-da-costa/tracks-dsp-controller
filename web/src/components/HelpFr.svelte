@@ -110,8 +110,9 @@
     </dd>
     <dt>🪄 Setup</dt>
     <dd>
-      Un assistant qui règle tout le DSP à partir de votre système, en quatre étapes : les
-      sources (stéréo ou mono) ; un plan où vous ajoutez amplis et enceintes (bibliothèque ou
+      Un assistant qui règle tout le DSP à partir de votre système, en cinq étapes : les
+      sources (stéréo ou mono) ; les voies (les plages de fréquences : noms, principales du grave à
+      l'aigu ou auxiliaires) ; un plan où vous ajoutez amplis et enceintes (bibliothèque ou
       génériques) et les reliez aux sorties du DSP (glisser d'un point à l'autre, ou toucher l'un
       puis l'autre ; toucher un bloc, une sortie ou un fil pour le modifier) ; les coupures qu'il
       propose d'après les plages des enceintes (des valeurs usuelles si une enceinte générique n'en donne pas) ; puis un récapitulatif. Chaque enceinte a

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Setup wizard, step 3 (Crossover): the bar of the whole system, then the crossovers between the main ways (proposed from the speakers'
+  // Setup wizard, step 4 (Crossover): the bar of the whole system, then the crossovers between the main ways (proposed from the speakers'
   // ranges, editable), the subsonic high-pass of the lowest way and the auxiliary ways' filters.
   import { boundaries, mainWays, SUBSONIC_HZ, wiring, type FilterSetting, type Topology } from "../lib/setup";
   import { wizard } from "../lib/wizard.svelte";

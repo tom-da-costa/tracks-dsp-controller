@@ -39,6 +39,8 @@ import {
   wayForLabel,
   wayGains,
   wayLevel,
+  waysErrors,
+  waysInOrder,
   wireBetween,
   wiring,
 } from "./setup";
@@ -235,6 +237,28 @@ describe("wiring", () => {
     expect(result(x2).slice(0, 2)).toEqual([4, 3400]); // 2 × 1700 W AES, 8 Ω ∥ 8 Ω
     expect(buildPlan(x2, DSP408).outputs[0]).toEqual(buildPlan(two, DSP408).outputs[0]);
     expect(countOf({ ...x2.speakers[0]!, count: 0 })).toBe(1);
+  });
+
+  it("defines the ways in advance: names checked, order kept per role", () => {
+    const d = newDraft(SLOPES);
+    const [sub, mon, high] = [addWay(d, "Sub"), addWay(d, "Mon"), addWay(d, "High")];
+    mon.aux = true;
+    moveWay(d, high.id, -1); // over the auxiliary way, before Sub
+    expect(waysInOrder(d).map((w) => w.name)).toEqual(["High", "Sub", "Mon"]);
+    moveWay(d, mon.id, -1); // the only auxiliary way: stays
+    expect(waysInOrder(d).map((w) => w.name)).toEqual(["High", "Sub", "Mon"]);
+    expect(waysErrors(d)).toEqual([]);
+    sub.name = "high";
+    mon.name = "Monitor 1";
+    expect(waysErrors(d)).toEqual([
+      'Two ways are called "high": rename one.',
+      'Way "Monitor 1": 8 characters at most.',
+    ]);
+    mon.name = " ";
+    expect(waysErrors(d)).toContain("A way: a name is required.");
+    // A library speaker takes the way already made.
+    sub.name = "Sub";
+    expect(addSpeaker(d, "th1821", 0, 0).sections[0]!.way).toBe(sub.id);
   });
 
   it("orders the main ways as the list", () => {
