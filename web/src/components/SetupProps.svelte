@@ -11,17 +11,20 @@
 
 <script lang="ts">
   // Setup wizard, plan: the properties of the element picked on the plan (a DSP output, a way,
-  // an amplifier, a speaker, a wire). Each speaker has its own specs and side; each DSP output
-  // picks its way, whose settings are shared by its outputs.
+  // an amplifier, a speaker, a wire). Each speaker has its own specs, count and side; each of
+  // its sections plays a way (picked there, or on the DSP output that drives it), whose
+  // settings are shared by its outputs.
   import { formatDb } from "../lib/scale";
   import {
     addWay,
     amplifierModel,
     ampGain,
+    countOf,
     disconnect,
     duplicateSpeaker,
     freshWayName,
     librarySection,
+    MAX_COUNT,
     moveWay,
     newSection,
     outputLoads,
@@ -32,11 +35,14 @@
     removeWay,
     routeOf,
     sameWire,
+    sectionLabel,
     setAmpChannels,
+    setOutputWay,
+    wayById,
     wayColor,
     wayLevel,
-    wayOfOutput,
     wiring,
+    type Section,
     type Side,
     type Topology,
     type WayInfo,
@@ -70,17 +76,18 @@
   const outputWay = $derived(
     output === null ? undefined : wired.ways.find((w) => w.outputs.includes(output)),
   );
-  const pickedWay = $derived(output === null ? null : wayOfOutput(draft, output));
+  const pickedWay = $derived(output === null ? null : wayById(draft, wired.wayOf.get(output)));
   const drives = $derived(output !== null && outputLoads(draft, topo).has(output));
   const groupOf = (info: WayInfo, o: number) => info.groups.find((g) => g.outputs.includes(o));
 
-  function pickWay(o: number, value: string) {
-    if (value === "new") {
-      const created = addWay(draft, freshWayName(draft));
-      draft.outputWays[o] = created.id;
-    } else {
-      draft.outputWays[o] = value === "" ? null : Number(value);
-    }
+  /** The way picked in a select: an existing one, a new one, or none. */
+  function chosenWay(value: string): number | null {
+    if (value === "new") return addWay(draft, freshWayName(draft)).id;
+    return value === "" ? null : Number(value);
+  }
+
+  function pickSectionWay(section: Section, value: string) {
+    section.way = chosenWay(value);
   }
 
   function deleteWay(id: number) {
@@ -107,7 +114,7 @@
     const ampName = (id: number) => draft.amps.find((a) => a.id === id)?.model ?? "amplifier";
     const spkName = (id: number, section: number) => {
       const k = draft.speakers.find((s) => s.id === id);
-      return `${k?.model ?? "speaker"}${k && k.sections.length > 1 ? ` · ${k.sections[section]?.name || `section ${section + 1}`}` : ""}`;
+      return `${k?.model ?? "speaker"}${k && k.sections.length > 1 ? ` · ${sectionLabel(k, section)}` : ""}`;
     };
     if (w.type === "feed") return `Out ${w.output + 1} → ${ampName(w.amp)} ch ${w.channel + 1}`;
     if (w.type === "drive") return `${ampName(w.amp)} ch ${w.channel + 1} → ${spkName(w.speaker, w.section)}`;
@@ -139,8 +146,9 @@
     <span>Way</span>
     <select
       aria-label="Way"
+      disabled={!drives}
       value={pickedWay ? String(pickedWay.id) : ""}
-      onchange={(e) => pickWay(output, e.currentTarget.value)}
+      onchange={(e) => setOutputWay(draft, topo, output, chosenWay(e.currentTarget.value))}
     >
       <option value="">—</option>
       {#each draft.ways as w (w.id)}<option value={String(w.id)}>{w.name}{w.aux ? " (aux)" : ""}</option>{/each}
@@ -165,7 +173,11 @@
       {/if}
     </p>
   {:else if drives && !pickedWay}
-    <p class="warn note">It drives speakers: pick the way it plays.</p>
+    <p class="warn note">
+      {wired.unassigned.get(output) === "several ways"
+        ? "Its speakers play different ways: give them one, or give each way its own output."
+        : "Pick the way it plays: its speakers take it."}
+    </p>
   {:else if !drives}
     <p class="muted note">Not wired: muted, named Out{output + 1}.</p>
   {/if}
@@ -256,7 +268,7 @@
       </p>
     {/if}
   {:else}
-    <p class="muted note">No output plays it yet: pick it on a DSP output.</p>
+    <p class="muted note">No output plays it yet: pick it on a speaker, or on a DSP output.</p>
   {/if}
   <div class="actions">
     <button class="danger" onclick={() => deleteWay(way.id)}>Remove the way</button>
@@ -352,6 +364,21 @@
     <span>Model</span>
     <input type="text" bind:value={speaker.model} />
   </label>
+  <label class="field">
+    <span>Count</span>
+    <input
+      type="number"
+      min="1"
+      max={MAX_COUNT}
+      value={countOf(speaker)}
+      onchange={(e) => (speaker.count = Math.max(1, Math.min(MAX_COUNT, Math.round(Number(e.currentTarget.value)) || 1)))}
+    />
+    <small>cabinets</small>
+  </label>
+  <p class="muted note">
+    That many identical cabinets, wired in parallel on the same channel (or bridged): their
+    power adds up, their impedance divides.
+  </p>
   <div class="field stack">
     <span>Side</span>
     <div class="seg" role="group" aria-label="Side">
@@ -368,20 +395,28 @@
   {#each speaker.sections as section, i (i)}
     {@const lib = librarySection(speaker, i)}
     {@const estimated = new Set(lib?.estimated ?? [])}
-    {@const sectionWay = draft.ways.find((w) => w.id === wired.sectionWay.get(`${speaker.id}:${i}`))}
+    {@const sectionWay = wayById(draft, section.way)}
     <fieldset>
-      <legend>{speaker.sections.length > 1 ? `Section ${i + 1}` : "This speaker"}</legend>
-      <label class="field">
-        <span>Label</span>
-        <input type="text" maxlength="8" placeholder="e.g. Sub" bind:value={section.name} />
-      </label>
+      <legend>{speaker.sections.length > 1 ? sectionLabel(speaker, i) : "This speaker"}</legend>
+      <div class="field">
+        <span>Way</span>
+        <select
+          aria-label="Way"
+          value={sectionWay ? String(sectionWay.id) : ""}
+          onchange={(e) => pickSectionWay(section, e.currentTarget.value)}
+        >
+          <option value="">—</option>
+          {#each draft.ways as w (w.id)}<option value={String(w.id)}>{w.name}{w.aux ? " (aux)" : ""}</option>{/each}
+          <option value="new">+ New way</option>
+        </select>
+      </div>
       <p class="muted note">
         {#if sectionWay}
-          Way <button class="link" onclick={() => sectionWay && (selection = { type: "way", id: sectionWay.id })}
+          <button class="link" onclick={() => sectionWay && (selection = { type: "way", id: sectionWay.id })}
             ><span class="dot" style:--c={wayColor(sectionWay)}></span>{sectionWay.name}</button
-          >, set on its DSP output.
+          >: the band it plays, with the other speakers of this way.
         {:else}
-          Its way is set on the DSP output that feeds it (the label picks it when it matches).
+          The band it plays: pick a way (a frequency range), or a new one.
         {/if}
       </p>
       <label class="field">

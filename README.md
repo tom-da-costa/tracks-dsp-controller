@@ -57,9 +57,12 @@ On a phone, in landscape:
   power, impedance and load
 - **Setup wizard**: describe the sources, then draw the system on a plan: amplifiers and
   speakers (from a small library in `web/src/data/`, or generic) wired to the DSP's outputs.
-  Each speaker has its own specs and a side (left, right or mono), and can be bridged from
-  another one (link output, in parallel). The ways are listed from low to high above the plan
-  and each DSP output picks one (wired to sections labelled "Sub", it takes the Sub way).
+  Each speaker has its own specs, a count (that many identical cabinets on the same channel,
+  shown ×N) and a side (left, right or mono), and can be bridged from another one (link output,
+  in parallel). The ways (frequency ranges) are listed from low to high above the plan and can
+  be made in advance; each speaker section plays one, picked on the speaker or on the DSP
+  output that drives it (a library speaker picks its own; a section wired with others takes
+  their way).
   Different cabinets can play the same way: outputs with the same load are linked, the others
   keep their own limiter and get a trim to the quietest kind of cabinet. The
   wizard works out the routing, channel names, links, crossovers, subsonic filter, limiters and

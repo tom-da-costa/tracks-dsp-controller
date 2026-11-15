@@ -9,6 +9,7 @@ import {
   boundaries,
   buildPlan,
   connect,
+  countOf,
   disconnect,
   type Draft,
   duplicateSpeaker,
@@ -29,10 +30,13 @@ import {
   removeNode,
   removeWay,
   setAmpChannels,
+  setOutputWay,
   storeErrors,
   type Topology,
   type Wire,
+  wayById,
   wayFilters,
+  wayForLabel,
   wayGains,
   wayLevel,
   wireBetween,
@@ -73,7 +77,7 @@ function ownerStack(): Draft {
   drive(mid.id, 3, tops[1]!.id, 0);
   drive(high.id, 0, tops[0]!.id, 1);
   drive(high.id, 1, tops[1]!.id, 1);
-  autoAssignWays(d, DSP408); // the ways from the sections' labels
+  autoAssignWays(d, DSP408); // nothing to do: library sections pick their ways
   d.slot = 5;
   d.presetName = "Owner";
   return d;
@@ -109,7 +113,8 @@ describe("library", () => {
     const d = newDraft(SLOPES);
     const a = addSpeaker(d, "t24n-clone", 0, 0);
     const b = addSpeaker(d, "t24n-clone", 0, 0);
-    expect(a.sections.map((s) => s.name)).toEqual(["Mid", "High"]);
+    expect(a.sections.map((s) => wayById(d, s.way)?.name)).toEqual(["Mid", "High"]);
+    expect(b.sections.map((s) => s.way)).toEqual(a.sections.map((s) => s.way));
     a.sections[0]!.aesW = "600";
     expect(b.sections[0]!.aesW).toBe("800");
     a.side = "L";
@@ -164,35 +169,72 @@ describe("wiring", () => {
       "Out 4 drives speakers of different sides: give each side its own output.",
     );
     const d = ownerStack();
-    d.outputWays[1] = null;
-    expect(wiring(d, DSP408).errors).toEqual(["Out 2: pick its way."]);
+    setOutputWay(d, DSP408, 1, null);
+    expect(wiring(d, DSP408).errors).toEqual(["Out 2: pick the way of the speakers it drives."]);
+    expect(wiring(d, DSP408).unassigned.get(1)).toBe("pick a way");
   });
 
-  it("picks an output's way from the labels of the sections it drives", () => {
+  it("gives each speaker section a way: from the library, the wiring or a pick", () => {
     const d = ownerStack();
-    // Ordered from low to high by the speakers' ranges, whatever the wiring order.
+    // Library sections make their ways, ordered from low to high by the speakers' ranges.
     expect(d.ways.map((w) => w.name)).toEqual(["Sub", "Kick", "Mid", "High"]);
-    expect([0, 1].map((o) => d.outputWays[o])).toEqual([idOf(d, "Sub"), idOf(d, "Sub")]);
-    // Sections with no label, or with labels that disagree: the user picks.
+    expect(wiring(d, DSP408).wayOf.get(0)).toBe(idOf(d, "Sub"));
+    // A generic section has none until it is picked or wired with sections that have one.
     const e = newDraft(SLOPES);
     const amp = addAmp(e, "admark-ad42", 0, 0);
     const generic = addSpeaker(e, null, 0, 0);
-    const sub = addSpeaker(e, "th1821", 0, 0);
+    expect(generic.sections[0]!.way).toBeNull();
     connect(e, { type: "feed", output: 0, amp: amp.id, channel: 0 });
     connect(e, { type: "drive", amp: amp.id, channel: 0, speaker: generic.id, section: 0 });
     autoAssignWays(e, DSP408);
-    expect(e.outputWays[0]).toBeUndefined();
-    generic.sections[0]!.name = "Low";
+    expect(wiring(e, DSP408).unassigned.get(0)).toBe("pick a way");
+    const sub = addSpeaker(e, "th1821", 0, 0);
     connect(e, { type: "drive", amp: amp.id, channel: 0, speaker: sub.id, section: 0 });
-    autoAssignWays(e, DSP408);
-    expect(e.outputWays[0]).toBeUndefined();
-    // Picked by hand: the two kinds of cabinet play the Sub way.
-    e.outputWays[0] = addWay(e, "Sub").id;
+    autoAssignWays(e, DSP408); // the generic one joins the Sub way of its channel
+    expect(generic.sections[0]!.way).toBe(idOf(e, "Sub"));
     expect(wiring(e, DSP408).errors).toEqual([]);
-    // A way removed leaves its outputs without one (not picked again from the labels).
-    removeWay(e, e.ways[0]!.id);
-    autoAssignWays(e, DSP408);
-    expect([e.ways.length, e.outputWays[0]]).toEqual([0, null]);
+    // Picked on the output: every section it drives takes it.
+    const top = addWay(e, "Top");
+    setOutputWay(e, DSP408, 0, top.id);
+    expect([generic, sub].map((s) => s.sections[0]!.way)).toEqual([top.id, top.id]);
+    // Two ways on one output are refused.
+    sub.sections[0]!.way = idOf(e, "Sub");
+    expect(wiring(e, DSP408).errors).toEqual([
+      "Out 1 drives speakers of different ways (Top, Sub): one way per output.",
+    ]);
+    autoAssignWays(e, DSP408); // not changed: the user decides
+    expect(wiring(e, DSP408).unassigned.get(0)).toBe("several ways");
+    // A way removed leaves its sections without one.
+    removeWay(e, top.id);
+    expect(generic.sections[0]!.way).toBeNull();
+    // A way made from a label goes among the main ways by its range.
+    expect(wayForLabel(e, "Low", { lowHz: 20, highHz: 60 }).name).toBe("Low");
+    expect(e.ways.map((w) => w.name)).toEqual(["Low", "Sub"]);
+  });
+
+  it("counts a speaker standing for several identical cabinets", () => {
+    const build = (count: number) => {
+      const d = newDraft(SLOPES);
+      const amp = addAmp(d, "admark-ad42", 0, 0);
+      connect(d, { type: "feed", output: 0, amp: amp.id, channel: 0 });
+      for (let n = 0; n < (count > 1 ? 1 : 2); n++) {
+        const sub = addSpeaker(d, "th1821", 0, 0);
+        sub.count = count;
+        connect(d, { type: "drive", amp: amp.id, channel: 0, speaker: sub.id, section: 0 });
+      }
+      return d;
+    };
+    const two = build(1); // two speakers on the channel
+    const x2 = build(2); // one speaker ×2
+    expect(wayNamed(x2, "Sub").cabinets).toBe(2);
+    const result = (d: Draft) => {
+      const c = levelOf(d, "Sub").channels[0]!;
+      return [c.impedanceOhm, c.aesW, c.limiter?.compThresholdDbu, levelOf(d, "Sub").splAt0Db];
+    };
+    expect(result(x2)).toEqual(result(two));
+    expect(result(x2).slice(0, 2)).toEqual([4, 3400]); // 2 × 1700 W AES, 8 Ω ∥ 8 Ω
+    expect(buildPlan(x2, DSP408).outputs[0]).toEqual(buildPlan(two, DSP408).outputs[0]);
+    expect(countOf({ ...x2.speakers[0]!, count: 0 })).toBe(1);
   });
 
   it("orders the main ways as the list", () => {
@@ -254,7 +296,7 @@ describe("wiring", () => {
     const d = newDraft(SLOPES);
     const spk = addSpeaker(d, null, 0, 0);
     connect(d, { type: "direct", output: 0, speaker: spk.id, section: 0 });
-    d.outputWays[0] = addWay(d, "Top").id;
+    spk.sections[0]!.way = addWay(d, "Top").id;
     const w = wiring(d, DSP408);
     expect(w.ways[0]?.active).toBe(true);
     expect(wayLevel(d, w.ways[0]!, w.sideOf).groups[0]!.limiter).toBeNull();
@@ -293,13 +335,11 @@ describe("filters", () => {
     const d = ownerStack();
     const amp = addAmp(d, "admark-ad42", 0, 0);
     const mon = addSpeaker(d, null, 0, 0);
-    Object.assign(mon.sections[0]!, { name: "Mon", lowHz: "80", highHz: "18000", aesW: "300" });
+    Object.assign(mon.sections[0]!, { way: addWay(d, "Mon").id, lowHz: "80", highHz: "18000", aesW: "300" });
     // The DSP 408 has 8 outputs: the monitor takes Out 8 from High R.
     disconnect(d, { type: "feed", output: 7, amp: d.amps[2]!.id, channel: 1 });
     connect(d, { type: "feed", output: 7, amp: amp.id, channel: 0 });
     connect(d, { type: "drive", amp: amp.id, channel: 0, speaker: mon.id, section: 0 });
-    delete d.outputWays[7]; // free to be picked again, from its label
-    autoAssignWays(d, DSP408);
     findWay(d, "Mon")!.aux = true;
     const { ways } = wiring(d, DSP408);
     expect(wayFilters(d, ways, SLOPES).get(idOf(d, "Mon"))).toEqual({
@@ -311,11 +351,16 @@ describe("filters", () => {
   it("works without the speakers' ranges: output order and usual crossovers", () => {
     const d = newDraft(SLOPES);
     const amp = addAmp(d, "admark-ad416", 0, 0);
-    // Three generic speakers, labelled, no range given: the ways in the order they are made.
+    // Three generic speakers, no range given: the ways in the order they are made.
     const names = ["Sub", "Mid", "High"];
     names.forEach((name, i) => {
       const spk = addSpeaker(d, null, 0, i * 60);
-      Object.assign(spk.sections[0]!, { name, aesW: "500", impedanceOhm: "8", sensitivityDb: "100" });
+      Object.assign(spk.sections[0]!, {
+        way: wayForLabel(d, name, { lowHz: NaN, highHz: NaN }).id,
+        aesW: "500",
+        impedanceOhm: "8",
+        sensitivityDb: "100",
+      });
       connect(d, { type: "feed", output: i, amp: amp.id, channel: i });
       connect(d, { type: "drive", amp: amp.id, channel: i, speaker: spk.id, section: 0 });
     });
@@ -407,7 +452,7 @@ describe("levels", () => {
       connect(d, { type: "drive", amp: ad42.id, channel, speaker: sub.id, section: 0 });
     }
     const other = addSpeaker(d, null, 0, 0);
-    Object.assign(other.sections[0]!, { name: "Sub", aesW: "1000", impedanceOhm: "8", sensitivityDb: "98" });
+    Object.assign(other.sections[0]!, { way: idOf(d, "Sub"), aesW: "1000", impedanceOhm: "8", sensitivityDb: "98" });
     connect(d, { type: "feed", output: 2, amp: ad416.id, channel: 0 });
     connect(d, { type: "drive", amp: ad416.id, channel: 0, speaker: other.id, section: 0 });
     autoAssignWays(d, DSP408);

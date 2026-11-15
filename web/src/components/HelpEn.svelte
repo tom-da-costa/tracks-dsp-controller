@@ -99,9 +99,11 @@
       or mono); a plan where you add amplifiers and speakers (library or generic) and wire them
       to the DSP's outputs (drag from one dot to another, or tap one then the other; tap a block,
       an output or a wire to edit it); the crossovers it proposes from the speakers' ranges (usual values when a generic speaker gives none); then
-      a summary. Each speaker has its own specs and a side (left, right or mono L+R). The ways
-      sit above the plan, from low to high (tap one to rename, reorder or set it); each DSP output
-      picks its way, and wiring it to sections labelled "Sub" picks the Sub way. Different
+      a summary. Each speaker has its own specs, a count (that many identical cabinets on the
+      same channel, shown ×N) and a side (left, right or mono L+R). The ways (frequency ranges)
+      sit above the plan, from low to high, and can be made in advance (tap one to rename,
+      reorder or set it); each speaker section plays a way, picked on the speaker or on the DSP
+      output that drives it (a library speaker picks its own). Different
       cabinets can play the same way: outputs with the same load are linked, the others keep
       their own limiter and get a trim to the level of the quietest kind of cabinet. A
       speaker's square dot, under its input, is its link output: wire it to another speaker to bridge it (in

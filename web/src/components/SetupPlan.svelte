@@ -5,8 +5,9 @@
   // speaker's link output → another speaker (bridged, in parallel). A wire is
   // drawn by dragging from a port to another, or by tapping one port then the other. Tapping
   // an element opens its properties on the right (below on a phone). The ways sit above the
-  // plan, from low to high: each DSP output picks one (wiring it to labelled sections picks
-  // the way of that name), and the wires take its colour.
+  // plan, from low to high: each speaker section plays one (picked on the section, or on the
+  // DSP output that drives it), and the wires take its colour. A speaker can stand for several
+  // identical cabinets (×N).
   import { app } from "../lib/app.svelte";
   import {
     addAmp,
@@ -24,8 +25,8 @@
     routeOf,
     sourceInputs,
     SPEAKERS,
+    countOf,
     wayColor,
-    wayOfOutput,
     wireBetween,
     wiring,
     type Port,
@@ -53,8 +54,10 @@
   const wired = $derived(wiring(draft, topo));
   const dspOutTop = $derived(DSP_Y + HEAD + topo.inputs * IN_ROW + 8);
   const dspHeight = $derived(dspOutTop - DSP_Y + topo.outputs * ROW + 6);
-  const driven = $derived(new Set(outputLoads(draft, topo).keys()));
-  const wayById = (id: number | undefined) => draft.ways.find((w) => w.id === id);
+  const wayById = (id: number | null | undefined) => draft.ways.find((w) => w.id === id);
+  const outputWay = (o: number) => wayById(wired.wayOf.get(o));
+  const sectionWay = (speaker: number, section: number) =>
+    wayById(draft.speakers.find((s) => s.id === speaker)?.sections[section]?.way);
   const names = $derived.by(() => {
     const map = new Map<number, string>();
     for (const way of wired.ways) for (const [o, n] of outputNames(way, wired.sideOf)) map.set(o, n);
@@ -107,8 +110,9 @@
 
   function wireColor(w: Wire): string {
     if (w.type === "drive" || w.type === "chain")
-      return wayColor(wayById(wired.sectionWay.get(`${w.speaker}:${w.section}`)));
-    return wayColor(wayOfOutput(draft, w.output));
+      return wayColor(sectionWay(w.speaker, w.section));
+    if (w.type === "direct") return wayColor(outputWay(w.output) ?? sectionWay(w.speaker, w.section));
+    return wayColor(outputWay(w.output));
   }
 
   /** A wire from `a` (leaving to the right, or to the left from a speaker's link output) to
@@ -320,8 +324,10 @@
       its speakers (several in parallel): drag from one dot to the other, or tap one then the
       other. A speaker's square dot, under its input, is its link output: wire it to another
       speaker to bridge it (same signal, in parallel). Wire an output straight to an active
-      speaker. Each output plays a way: wired to sections labelled "Sub", it takes the Sub way;
-      otherwise tap it and pick one. Tap a block, an output, a way or a wire to edit it.
+      speaker. Each speaker section plays a way (a frequency range): a library speaker picks
+      its own, pick a generic one's on the speaker or on its DSP output. Set a speaker's count
+      for several identical cabinets on the same channel. Tap a block, an output, a way or a
+      wire to edit it.
     </p>
     <div class="scroll">
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -361,20 +367,20 @@
           <div class="outs">
             {#each Array.from({ length: topo.outputs }, (_, o) => o) as o (o)}
               {@const used = wired.wayOf.has(o)}
-              {@const way = wayOfOutput(draft, o)}
+              {@const way = outputWay(o)}
               {@const side = wired.sideOf.get(o) ?? "LR"}
-              {@const missing = driven.has(o) && !way}
+              {@const missing = wired.unassigned.get(o)}
               <div class="outrow">
                 <button
                   class="row out"
-                  class:dim={!used && !missing}
-                  class:missing
+                  class:dim={!used && missing === undefined}
+                  class:missing={missing !== undefined}
                   class:selected={selection?.type === "dsp" && selection.output === o}
                   style:--c={way ? wayColor(way) : "transparent"}
                   onclick={() => (selection = { type: "dsp", output: o })}
                 >
                   <b>{o + 1}</b>
-                  <span class="label">{missing ? "pick a way" : (names.get(o) ?? way?.name ?? `Out${o + 1}`)}</span>
+                  <span class="label">{missing ?? names.get(o) ?? way?.name ?? `Out${o + 1}`}</span>
                   {#if used}<small>{sourceName(routeOf(draft, o))} {SIDE_LABEL[side]}</small>{/if}
                 </button>
                 {@render port({ node: "dsp", port: o }, "right")}
@@ -430,16 +436,18 @@
               onkeydown={(e) => e.key === "Enter" && (selection = { type: "speaker", id: spk.id })}
             >
               {#if spk.side !== "LR"}<span class="side">{spk.side}</span>{/if}
-              {spk.model}
+              <span class="model">{spk.model}</span>
+              {#if countOf(spk) > 1}<span class="count">×{countOf(spk)}</span>{/if}
             </div>
             {#each spk.sections as section, i (i)}
-              {@const sectionWay = wayById(wired.sectionWay.get(`${spk.id}:${i}`))}
+              {@const way = wayById(section.way)}
               <div
                 class="row ch"
+                class:missing={!way}
                 style:top={`${HEAD + i * SPK_ROW}px`}
-                style:--c={sectionWay ? wayColor(sectionWay) : "transparent"}
+                style:--c={way ? wayColor(way) : "transparent"}
               >
-                {section.name || sectionWay?.name || (spk.sections.length > 1 ? `Section ${i + 1}` : "—")}
+                {way?.name ?? "pick a way"}
               </div>
               <div class="anchor tall" style:top={`${HEAD + i * SPK_ROW}px`}>
                 {@render port({ node: "spk", id: spk.id, port: i }, "spk-in")}
@@ -461,8 +469,8 @@
     {:else}
       <h2>Properties</h2>
       <p class="muted hint">
-        Tap a block, a DSP output, a way or a wire to see and change its properties. Each DSP
-        output plays a way; the ways above the plan go from low to high, and the crossovers sit
+        Tap a block, a DSP output, a way or a wire to see and change its properties. Each
+        speaker section plays a way, and its DSP output with it; the ways above the plan go from low to high, and the crossovers sit
         between consecutive main ways. Several outputs, and different cabinets, can play the
         same way: the outputs with the same load are linked, the others keep their own limiter
         and get a trim. Each speaker is left, right or mono (L+R): its outputs play that side.
@@ -623,6 +631,28 @@
     color: var(--warn);
     font-style: italic;
   }
+  .row.ch.missing {
+    color: var(--muted);
+    font-style: italic;
+  }
+  .spk .head {
+    display: flex;
+    align-items: center;
+  }
+  .spk .head .model {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .count {
+    flex: none;
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+    font-size: 0.75rem;
+    line-height: 18px;
+  }
   .waybar {
     display: flex;
     flex-wrap: wrap;
@@ -740,6 +770,7 @@
     opacity: 0.45;
   }
   .side {
+    flex: none;
     display: inline-block;
     min-width: 18px;
     margin-right: 6px;
