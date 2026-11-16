@@ -93,6 +93,27 @@
       outputs you pick (see <em>Limiter</em> below). The threshold is rounded down to the DSP's
       0.5 dB step, or up if you choose (up to 0.5 dB above the computed value).
     </dd>
+    <dt>🪄 Setup</dt>
+    <dd>
+      A wizard that sets up the whole DSP from your system, in five steps: the sources (stereo
+      or mono); the ways (the frequency ranges: names, main from low to high or auxiliary); a plan where you add amplifiers and speakers (library or generic) and wire them
+      to the DSP's outputs (drag from one dot to another, or tap one then the other; tap a block,
+      an output or a wire to edit it); the crossovers it proposes from the speakers' ranges (usual values when a generic speaker gives none); then
+      a summary. Each speaker has its own specs, a count (that many identical cabinets on the
+      same channel, shown ×N) and a side (left, right or mono L+R). The ways (frequency ranges)
+      sit above the plan, from low to high, and can be made in advance (tap one to rename,
+      reorder or set it); each speaker section plays a way, picked on the speaker or on the DSP
+      output that drives it (a library speaker picks its own). Different
+      cabinets can play the same way: outputs with the same load are linked, the others keep
+      their own limiter and get a trim to the level of the quietest kind of cabinet. A
+      speaker's square dot, under its input, is its link output: wire it to another speaker to bridge it (in
+      parallel). It
+      works out the routing, channel names, links, filters, limiters (as the limiter
+      calculator) and output gains, so that every main way plays at the same level. Writing replaces every setting (delays at 0, EQ flat),
+      mutes the outputs meanwhile and stores the result in the preset slot you pick.
+      <strong>Every input stays muted</strong> at the end: check the system, then unmute them in
+      Live, quietly first.
+    </dd>
     <dt>☰ Presets</dt>
     <dd>Recall and store the DSP's presets (see <em>Presets</em>).</dd>
     <dt>⚙ Settings</dt>

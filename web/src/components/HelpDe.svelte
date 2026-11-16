@@ -109,6 +109,28 @@
       auf den 0,5-dB-Schritt des DSP abgerundet oder, wenn gewählt, aufgerundet (bis zu 0,5 dB
       über dem berechneten Wert).
     </dd>
+    <dt>🪄 Setup</dt>
+    <dd>
+      Ein Assistent, der den ganzen DSP aus Ihrer Anlage einrichtet, in fünf Schritten: die
+      Quellen (Stereo oder Mono); die Wege (die Frequenzbereiche: Namen, Hauptwege von tief nach
+      hoch oder Hilfswege); ein Plan, auf dem Sie Endstufen und Lautsprecher (Bibliothek
+      oder generisch) hinzufügen und mit den DSP-Ausgängen verbinden (von einem Punkt zum anderen
+      ziehen oder beide nacheinander antippen; einen Block, Ausgang oder Draht antippen, um ihn zu
+      bearbeiten); die aus den Frequenzbereichen vorgeschlagenen Trennfrequenzen (übliche Werte, wenn ein generischer Lautsprecher keinen angibt); dann eine
+      Zusammenfassung. Jeder Lautsprecher hat eigene Daten, eine Anzahl (so viele gleiche Gehäuse
+      am selben Kanal, als ×N angezeigt) und eine Seite (links, rechts oder mono L+R). Die Wege
+      (Frequenzbereiche) stehen über dem Plan, von tief nach hoch, und können vorab angelegt werden
+      (antippen zum Umbenennen, Verschieben oder Einstellen); jede Lautsprechersektion spielt einen
+      Weg, gewählt am Lautsprecher oder am DSP-Ausgang, der sie speist (ein Lautsprecher aus der
+      Bibliothek wählt seinen eigenen). Verschiedene Gehäuse können denselben Weg spielen: Ausgänge mit
+      gleicher Last werden verlinkt, die anderen behalten ihren eigenen Limiter und erhalten einen
+      Trim auf den Pegel des leisesten Gehäusetyps. Der eckige Punkt eines Lautsprechers unter seinem Eingang ist sein Link-Ausgang: mit einem anderen
+      Lautsprecher verbinden, um ihn durchzuschleifen (parallel). Er berechnet Routing, Kanalnamen, Links, Filter, Limiter (wie der
+      Limiter-Rechner) und Ausgangspegel, sodass alle Hauptwege gleich laut spielen. Das Schreiben
+      ersetzt alle Einstellungen (Delays 0, EQ flach), schaltet die Ausgänge währenddessen stumm
+      und speichert das Ergebnis im gewählten Preset-Platz. <strong>Alle Eingänge bleiben
+      stumm</strong>: prüfen Sie die Anlage und schalten Sie sie dann in Live frei, zuerst leise.
+    </dd>
     <dt>☰ Presets</dt>
     <dd>Presets des DSP laden und speichern (siehe <em>Presets</em>).</dd>
     <dt>⚙ Settings</dt>

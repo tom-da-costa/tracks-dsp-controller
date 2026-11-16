@@ -108,6 +108,30 @@
       arrondi au pas de 0,5 dB du DSP vers le bas, ou vers le haut si vous le choisissez (jusqu'à
       0,5 dB au-dessus de la valeur calculée).
     </dd>
+    <dt>🪄 Setup</dt>
+    <dd>
+      Un assistant qui règle tout le DSP à partir de votre système, en cinq étapes : les
+      sources (stéréo ou mono) ; les voies (les plages de fréquences : noms, principales du grave à
+      l'aigu ou auxiliaires) ; un plan où vous ajoutez amplis et enceintes (bibliothèque ou
+      génériques) et les reliez aux sorties du DSP (glisser d'un point à l'autre, ou toucher l'un
+      puis l'autre ; toucher un bloc, une sortie ou un fil pour le modifier) ; les coupures qu'il
+      propose d'après les plages des enceintes (des valeurs usuelles si une enceinte générique n'en donne pas) ; puis un récapitulatif. Chaque enceinte a
+      ses propres caractéristiques, un nombre (autant d'enceintes identiques sur le même canal,
+      affiché ×N) et un côté (gauche, droite ou mono L+R). Les voies (plages de fréquences) sont
+      au-dessus du plan, du grave à l'aigu, et peuvent être créées à l'avance (touchez-en une pour
+      la renommer, la déplacer ou la régler) ; chaque section d'enceinte joue une voie, choisie sur
+      l'enceinte ou sur la sortie DSP qui l'attaque (une enceinte de la bibliothèque choisit la
+      sienne). Des enceintes différentes peuvent jouer la même voie : les sorties de même charge
+      sont liées, les autres gardent leur propre limiteur et reçoivent un trim au niveau du type
+      d'enceinte le plus faible. Le point
+      carré d'une enceinte, sous son entrée, est sa sortie link : reliez-le à une autre enceinte pour la ponter
+      (en parallèle). Il calcule le routing, les noms des canaux, les liens, les filtres, les
+      limiteurs (comme le calculateur de limiteur) et les gains de sortie, pour que toutes les
+      voies principales jouent au même niveau. L'écriture remplace tous les réglages (delays à 0,
+      EQ à plat), coupe les sorties pendant ce temps et stocke le résultat dans l'emplacement de
+      preset choisi. <strong>Toutes les entrées restent coupées</strong> à la fin : vérifiez le
+      système, puis ouvrez-les dans Live, doucement d'abord.
+    </dd>
     <dt>☰ Presets</dt>
     <dd>Rappeler et enregistrer les presets du DSP (voir <em>Presets</em>).</dd>
     <dt>⚙ Settings</dt>
