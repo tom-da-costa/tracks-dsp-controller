@@ -34,15 +34,6 @@
     const at = isAux ? draft.ways.length : endOfMain();
     addWay(draft, name, at).aux = isAux;
   }
-
-  /** Main ↔ auxiliary: a way that becomes main goes last among the main ones. */
-  function setAux(way: Way, isAux: boolean) {
-    if (way.aux === isAux) return;
-    draft.ways = draft.ways.filter((w) => w.id !== way.id);
-    way.aux = isAux;
-    const at = isAux ? draft.ways.length : endOfMain();
-    draft.ways.splice(at, 0, way);
-  }
 </script>
 
 {#snippet row(way: Way, rank: number, count: number)}
@@ -66,10 +57,6 @@
         disabled={rank === count - 1}
         onclick={() => moveWay(draft, way.id, 1)}>▼</button
       >
-    </div>
-    <div class="seg" role="group" aria-label={`Role of ${way.name}`}>
-      <button class:on={!way.aux} onclick={() => setAux(way, false)}>Main</button>
-      <button class:on={way.aux} onclick={() => setAux(way, true)}>Aux</button>
     </div>
     <span class="used">{sections.get(way.id) ?? 0} on the plan</span>
     <button class="remove" aria-label={`Remove ${way.name}`} onclick={() => removeWay(draft, way.id)}
