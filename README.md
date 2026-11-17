@@ -62,6 +62,9 @@ On a phone, in landscape:
   adjustable from 1 to 10 Hz
 - Multi-client: last writer wins by default. A client can **take control**: the others become
   read-only while it is active (released after 120 s of inactivity)
+- **Several DSPs** from one server (`--dsp`, e.g. a main system and a delay line, models mixed):
+  a picker at the top of the tab bar shows every DSP's status, preset and who has control, and
+  switches the browser tab to another one. Control is taken per DSP
 - **Master**: one client can become master (Settings) and then disconnect another client (back to
   the login screen) and block new connections; browsers already connected stay connected. The
   block ends with the role (released, logged out, or the app closed for 5 minutes)
@@ -152,6 +155,15 @@ uv run tracks-dsp-controller --dsp-host 192.168.1.50 --pin 1234
 uv run tracks-dsp-controller --demo   # demo without a DSP
 ```
 
+Several DSPs: one `--dsp NAME=[MODEL@]HOST[:PORT][/ID]` each instead of `--dsp-host`. The name
+is the DSP's label in the app; the model, port and front-panel ID are optional (default: `auto`,
+`--dsp-port`, searched for).
+
+```bash
+uv run tracks-dsp-controller --dsp main=192.168.1.50 --dsp delay=192.168.1.51 --pin 1234
+uv run tracks-dsp-controller --demo --dsp main --dsp delay=206@   # demo: a 408 and a 206
+```
+
 ### Docker
 
 ```bash
@@ -189,12 +201,13 @@ longer read: rename them to `TDSP_*`.
 |---|---|---|---|
 | `--dsp-host IP` | `TDSP_HOST` | | The DSP's IP address (required, unless `--demo`) |
 | `--dsp-port N` | `TDSP_PORT` | `9761` | The DSP's TCP port |
-| `--model auto\|408\|206\|204` | `TDSP_MODEL` | `auto` | `auto` detects the model; a number enforces it (refused if the device differs) |
-| `--device-id N` | `TDSP_DEVICE_ID` | searched for | The ID number set on the DSP's front panel (1-250); setting it skips the search |
+| `--dsp NAME=[MODEL@]HOST[:PORT][/ID]` | `TDSP_DSP` | | One DSP among several, instead of `--dsp-host` (repeat the option; in the variable, separate them with spaces). With `--demo`, `NAME` or `NAME=MODEL@` adds a simulated one |
+| `--model auto\|408\|206\|204` | `TDSP_MODEL` | `auto` | `auto` detects the model; a number enforces it (refused if the device differs). With `--dsp`, the default of each one |
+| `--device-id N` | `TDSP_DEVICE_ID` | searched for | The ID number set on the DSP's front panel (1-250); setting it skips the search. With `--dsp`, the default of each one |
 | `--pin CODE` | `TDSP_PIN` | `0000` | Access code asked by the web UI |
 | `--host IP` | `TDSP_LISTEN_HOST` | `0.0.0.0` | Address the web server listens on |
 | `--port N` | `TDSP_LISTEN_PORT` | `8080` | Port of the web UI |
-| `--meter-rate HZ` | `TDSP_METER_RATE` | `5` | Meter refresh rate, 1-10 Hz (also in the app's Settings) |
+| `--meter-rate HZ` | `TDSP_METER_RATE` | `5` | Meter refresh rate, 1-10 Hz (also in the app's Settings, per DSP) |
 | `--lock-idle-timeout S` | `TDSP_LOCK_IDLE_TIMEOUT` | `120` | Seconds of inactivity before the control lock is released |
 | `--resync-interval S` | `TDSP_RESYNC_INTERVAL` | `0` (off) | Re-read the whole DSP config every S seconds |
 | `--command-timeout S` | `TDSP_COMMAND_TIMEOUT` | `0.5` | Floor of the adaptive command timeout; it grows on a slow link |

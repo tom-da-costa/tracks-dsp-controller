@@ -33,6 +33,7 @@ from websockets.asyncio.client import ClientConnection, connect
 from tracks_dsp_controller.device.transport import DspConnection
 from tracks_dsp_controller.protocol import config_map as cm
 from tracks_dsp_controller.protocol.profile import DEFAULT_PROFILE as P
+from tracks_dsp_controller.protocol.profile import load_profile
 from tracks_dsp_controller.simulator.storage import preset_file
 from tracks_dsp_controller.tools import probe
 
@@ -293,3 +294,70 @@ async def test_dsp_restart_reconnects_and_keeps_presets(stack: Stack) -> None:
         assert (await alice.request({"type": "set", "path": "inputs.0.gain_db", "value": -1.0}))[
             "ok"
         ]
+
+
+async def test_two_dsps_from_one_server(tmp_path: Path) -> None:
+    """A DSP 408 and a DSP 206 (two simulator processes) from one app with ``--dsp``."""
+    log_dir = Path(os.environ.get("TDSP_E2E_LOG_DIR") or tmp_path) / "two-dsps"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    ports = {"main": free_port(), "delay": free_port()}
+    app_port = free_port()
+    base_url = f"http://127.0.0.1:{app_port}"
+    procs: list[subprocess.Popen[bytes]] = []
+
+    def spawn(name: str, argv: list[str]) -> None:
+        with (log_dir / f"{name}.log").open("wb") as log:
+            procs.append(subprocess.Popen(argv, stdout=log, stderr=subprocess.STDOUT,
+                                          stdin=subprocess.DEVNULL))  # fmt: skip
+
+    for name, model in (("main", "408"), ("delay", "206")):
+        spawn(name, [
+            *command("TDSP_E2E_SIM_CMD", "sim"), "--model", model,
+            "--host", "127.0.0.1", "--port", str(ports[name]),
+            "--state-dir", str(tmp_path / name), "--fast", "--console", "off",
+            "--second-client", "accept",
+        ])  # fmt: skip
+    spawn("app", [
+        *command("TDSP_E2E_APP_CMD"),
+        "--dsp", f"main=127.0.0.1:{ports['main']}",
+        "--dsp", f"delay=127.0.0.1:{ports['delay']}",
+        "--host", "127.0.0.1", "--port", str(app_port), "--pin", PIN,
+    ])  # fmt: skip
+    try:
+        deadline = time.monotonic() + STARTUP_S
+        statuses: list[str] = []
+        while time.monotonic() < deadline:
+            assert all(p.poll() is None for p in procs), [p.returncode for p in procs]
+            try:
+                health = httpx.get(f"{base_url}/api/health", timeout=2).json()
+                statuses = [d["status"] for d in health["devices"]]
+            except httpx.HTTPError:
+                pass
+            if statuses == ["online", "online"]:
+                break
+            time.sleep(0.2)
+        assert statuses == ["online", "online"]
+        cookie = httpx.post(f"{base_url}/api/login", json={"pin": PIN}).cookies["dsp408_session"]
+        headers = {"Cookie": f"dsp408_session={cookie}", "Origin": base_url}
+        url = f"ws://127.0.0.1:{app_port}/ws?device=delay"
+        async with connect(url, additional_headers=headers) as ws:
+            client = Client(ws)
+            hello = await client.recv_until(is_type("hello"))
+            assert hello["device_id"] == "delay"
+            assert hello["profile"]["output_count"] == 6
+            overview = (await client.recv_until(is_type("devices")))["devices"]
+            assert [(d["id"], d["model"]) for d in overview] == [
+                ("main", "DSP408"),
+                ("delay", "DSP206"),
+            ]
+            await client.recv_until(is_type("snapshot"))
+            result = await client.request({"type": "set", "path": "outputs.5.mute", "value": True})
+            assert result["ok"], result
+        profile_206 = load_profile(model="206")
+        async with DspConnection("127.0.0.1", ports["delay"], profile_206) as conn:
+            await probe.read_info(conn)
+            blob = await probe.read_config_blob(conn)
+        assert cm.decode_config(blob, cm.layout_for(profile_206)).outputs[5].mute
+    finally:
+        for proc in procs:
+            _stop(proc)

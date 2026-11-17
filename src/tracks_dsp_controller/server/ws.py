@@ -1,5 +1,9 @@
 """WebSocket hub: fan-out of state, meters, device status and lock; request handling.
 
+Each WebSocket controls one DSP (``/ws?device=NAME``): it gets that DSP's state, meters, status
+and control, and the status of every DSP (``devices``). Clients, the master role and the screen
+lock belong to the server.
+
 Each client has a bounded outgoing queue drained by its own task, so a slow client never
 blocks the others. Meter frames are dropped for a client whose queue is full; any other
 overflow closes that client, which reconnects and gets a fresh snapshot.
@@ -22,7 +26,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from tracks_dsp_controller import __version__
 from tracks_dsp_controller.aio import cancel_and_wait
 from tracks_dsp_controller.device.pipeline import CommandTimeoutError, PipelineClosedError
-from tracks_dsp_controller.device.session import DeviceSession, DeviceStatus, DeviceUnavailableError
+from tracks_dsp_controller.device.session import DeviceUnavailableError
 from tracks_dsp_controller.protocol import codecs as c
 from tracks_dsp_controller.protocol.meters import MeterReading
 from tracks_dsp_controller.server.auth import (
@@ -31,11 +35,12 @@ from tracks_dsp_controller.server.auth import (
     LoginError,
     RateLimitedError,
 )
-from tracks_dsp_controller.server.lock import LockManager, LockState
+from tracks_dsp_controller.server.devices import Device, DeviceManager
+from tracks_dsp_controller.server.lock import LockState
 from tracks_dsp_controller.server.master import MasterManager, MasterState
 from tracks_dsp_controller.server.settings import ServerConfig
 from tracks_dsp_controller.state.registry import HARDWARE_VERIFIED, ParamError, is_verified
-from tracks_dsp_controller.state.store import Patch, Snapshot, StateStore, StoreEvent
+from tracks_dsp_controller.state.store import Patch, Snapshot, StoreEvent
 
 log = logging.getLogger(__name__)
 
@@ -64,6 +69,8 @@ BACKGROUND_TYPES = {
     "resync",
 }
 PRESET_FILE_MAX_BYTES = 16 * 1024  # a DSP 408 preset file is 1452 bytes
+# State paths shown in the overview of every DSP (the `devices` message).
+OVERVIEW_PATHS = {"active_slot", "preset_name", "modified"}
 
 
 class RequestError(Exception):
@@ -94,6 +101,7 @@ LIMITS: dict[str, Any] = {
 class Client:
     session: ClientSession
     websocket: WebSocket
+    device: Device  # the DSP this socket controls
     queue: asyncio.Queue[dict[str, Any]] = field(
         default_factory=lambda: asyncio.Queue(maxsize=QUEUE_SIZE)
     )
@@ -110,28 +118,28 @@ class Hub:
     def __init__(
         self,
         config: ServerConfig,
-        session: DeviceSession,
-        store: StateStore,
+        devices: DeviceManager,
         auth: AuthManager,
-        lock: LockManager,
         master: MasterManager,
     ) -> None:
         self.config = config
-        self.session = session
-        self.store = store
+        self.devices = devices
         self.auth = auth
-        self.lock = lock
         self.master = master
         self.clients: set[Client] = set()
         # Stops the server process (set by the CLI: uvicorn's should_exit).
         self.request_exit: Callable[[], None] | None = None
-        self._meter_seq = 0
-        store.subscribe(self._on_store)
-        session.on_meters(self._on_meters)
-        session.on_status(self._on_status)
-        session.on_profile(self._on_profile)
-        lock.on_change(self._on_lock)
+        self._meter_seq: dict[str, int] = {}
+        for device in devices:
+            self._watch(device)
         master.on_change(self._on_master)
+
+    def _watch(self, device: Device) -> None:
+        device.store.subscribe(lambda event: self._on_store(device, event))
+        device.session.on_meters(lambda reading: self._on_meters(device, reading))
+        device.session.on_status(lambda status, error: self._on_status(device))
+        device.session.on_profile(lambda profile: self._on_profile(device))
+        device.lock.on_change(lambda state: self._on_lock(device, state))
 
     # --- outgoing ---------------------------------------------------------------------------------
     def _send(self, client: Client, message: dict[str, Any], *, droppable: bool = False) -> None:
@@ -144,22 +152,31 @@ class Hub:
             if client.sender is not None:
                 client.sender.cancel()
 
-    def broadcast(self, message: dict[str, Any], *, droppable: bool = False) -> None:
+    def broadcast(
+        self, message: dict[str, Any], *, droppable: bool = False, device: Device | None = None
+    ) -> None:
+        """Send to every client, or to those of ``device`` only."""
         for client in list(self.clients):
-            self._send(client, message, droppable=droppable)
+            if device is None or client.device is device:
+                self._send(client, message, droppable=droppable)
 
-    def _on_store(self, event: StoreEvent) -> None:
+    def _on_store(self, device: Device, event: StoreEvent) -> None:
         if isinstance(event, Snapshot):
-            self.broadcast({"type": "snapshot", "rev": event.rev, "state": event.state})
+            self.broadcast({"type": "snapshot", "rev": event.rev, "state": event.state},
+                           device=device)  # fmt: skip
+            self.broadcast(self.devices_message())
         elif isinstance(event, Patch):
             changes = [{"path": path, "value": value} for path, value in event.changes]
             self.broadcast(
-                {"type": "patch", "rev": event.rev, "changes": changes, "origin": event.origin}
+                {"type": "patch", "rev": event.rev, "changes": changes, "origin": event.origin},
+                device=device,
             )
+            if any(path in OVERVIEW_PATHS for path, _ in event.changes):
+                self.broadcast(self.devices_message())
 
-    def _on_meters(self, reading: MeterReading | None) -> None:
-        self._meter_seq += 1
-        message: dict[str, Any] = {"type": "meters", "seq": self._meter_seq}
+    def _on_meters(self, device: Device, reading: MeterReading | None) -> None:
+        seq = self._meter_seq[device.id] = self._meter_seq.get(device.id, 0) + 1
+        message: dict[str, Any] = {"type": "meters", "seq": seq}
         if reading is None:
             message["levels"] = None
         else:
@@ -170,45 +187,72 @@ class Hub:
                 comp=None if reading.comp is None else list(reading.comp),
                 input_clip=reading.input_clip_flag,
             )
-        self.broadcast(message, droppable=True)
+        self.broadcast(message, droppable=True, device=device)
 
-    def device_message(self) -> dict[str, Any]:
-        info = self.session.info
+    def device_message(self, device: Device) -> dict[str, Any]:
+        session = device.session
+        info = session.info
         return {
             "type": "device",
-            "status": self.session.status.value,
-            "error": self.session.last_error,
+            "status": session.status.value,
+            "error": session.last_error,
             "model": info.model,
             "firmware": info.firmware,
             "identity": info.identity,
-            "model_tested": self.session.model_tested,
+            "model_tested": session.model_tested,
         }
 
-    def _on_status(self, status: DeviceStatus, error: str | None) -> None:
-        self.broadcast(self.device_message())
+    def devices_message(self) -> dict[str, Any]:
+        """Every DSP at a glance (the device picker)."""
+        entries = []
+        for device in self.devices:
+            session, state = device.session, device.store.state
+            owner = device.lock.state()
+            entries.append(
+                {
+                    "id": device.id,
+                    "target": device.spec.target,
+                    "status": session.status.value,
+                    "error": session.last_error,
+                    "model": session.info.model,
+                    "active_slot": state.active_slot,
+                    "preset_name": state.preset_name,
+                    "modified": state.modified,
+                    "control": owner.owner_name,
+                    "control_id": owner.owner_id,
+                }
+            )
+        return {"type": "devices", "devices": entries}
 
-    def _on_profile(self, profile: object) -> None:
-        """Another model was detected: every client gets the new channel counts and ranges."""
+    def _on_status(self, device: Device) -> None:
+        self.broadcast(self.device_message(device), device=device)
+        self.broadcast(self.devices_message())
+
+    def _on_profile(self, device: Device) -> None:
+        """Another model was detected: its clients get the new channel counts and ranges."""
         for client in list(self.clients):
-            self._send(client, self.hello_message(client))
+            if client.device is device:
+                self._send(client, self.hello_message(client))
 
-    def lock_message(self, state: LockState | None = None) -> dict[str, Any]:
-        state = state or self.lock.state()
+    def lock_message(self, device: Device, state: LockState | None = None) -> dict[str, Any]:
+        lock = device.lock
+        state = state or lock.state()
         remaining = (
             None
             if state.idle_expires_at is None
-            else max(0.0, round(state.idle_expires_at - self.lock.clock(), 1))
+            else max(0.0, round(state.idle_expires_at - lock.clock(), 1))
         )
         return {
             "type": "lock",
             "owner_id": state.owner_id,
             "owner_name": state.owner_name,
             "idle_remaining_s": remaining,
-            "idle_timeout_s": self.lock.idle_timeout,
+            "idle_timeout_s": lock.idle_timeout,
         }
 
-    def _on_lock(self, state: LockState) -> None:
-        self.broadcast(self.lock_message(state))
+    def _on_lock(self, device: Device, state: LockState) -> None:
+        self.broadcast(self.lock_message(device, state), device=device)
+        self.broadcast(self.devices_message())
 
     def master_message(self, state: MasterState | None = None) -> dict[str, Any]:
         state = state or self.master.state()
@@ -223,25 +267,34 @@ class Hub:
         self.broadcast(self.master_message(state))
 
     def clients_message(self) -> dict[str, Any]:
-        unique = {cl.id: cl.session.name for cl in self.clients}
+        names: dict[str, str] = {}
+        devices: dict[str, set[str]] = {}
+        for cl in self.clients:
+            names[cl.id] = cl.session.name
+            devices.setdefault(cl.id, set()).add(cl.device.id)
+        order = [device.id for device in self.devices]
         return {
             "type": "clients",
-            "clients": [{"id": cid, "name": name} for cid, name in sorted(unique.items())],
+            "clients": [
+                {"id": cid, "name": name, "devices": [d for d in order if d in devices[cid]]}
+                for cid, name in sorted(names.items())
+            ],
         }
 
-    def settings_message(self) -> dict[str, Any]:
+    def settings_message(self, device: Device) -> dict[str, Any]:
         return {
             "type": "settings",
-            "meter_rate_hz": self.session.meter_rate_hz,
-            "lock_idle_timeout_s": self.lock.idle_timeout,
+            "meter_rate_hz": device.session.meter_rate_hz,
+            "lock_idle_timeout_s": device.lock.idle_timeout,
         }
 
     def hello_message(self, client: Client) -> dict[str, Any]:
-        p = self.session.profile
+        p = client.device.session.profile
         return {
             "type": "hello",
             "client_id": client.id,
             "name": client.session.name,
+            "device_id": client.device.id,
             "screen_locked": client.session.screen_locked,
             "server_version": __version__,
             "demo": self.config.demo,
@@ -266,19 +319,23 @@ class Hub:
                 "meter_clip_db": p.meter_clip_db,
             },
             "limits": LIMITS,
-            "settings": self.settings_message(),
+            "settings": self.settings_message(client.device),
         }
 
     # --- connection -------------------------------------------------------------------------------
-    async def serve(self, websocket: WebSocket, session: ClientSession) -> None:
-        client = Client(session, websocket)
+    async def serve(
+        self, websocket: WebSocket, session: ClientSession, device: Device | None = None
+    ) -> None:
+        device = device or self.devices.default
+        client = Client(session, websocket, device)
         self.clients.add(client)
         client.sender = asyncio.create_task(self._sender(client))
         self._send(client, self.hello_message(client))
-        snap = self.store.snapshot()
+        self._send(client, self.devices_message())
+        snap = device.store.snapshot()
         self._send(client, {"type": "snapshot", "rev": snap.rev, "state": snap.state})
-        self._send(client, self.device_message())
-        self._send(client, self.lock_message())
+        self._send(client, self.device_message(device))
+        self._send(client, self.lock_message(device))
         self._send(client, self.master_message())
         self.master.presence(client.id, True)
         self.broadcast(self.clients_message())
@@ -342,7 +399,9 @@ class Hub:
                 self._send(client, _result(req, "screen_locked", "the screen is locked"))
             return
         if kind in ACTIVITY_TYPES:
-            self.lock.touch(client.id)
+            # Control of any DSP lasts while its holder is active in the app.
+            for device in self.devices:
+                device.lock.touch(client.id)
         if kind == "activity":
             return
         try:
@@ -365,9 +424,11 @@ class Hub:
         self._send(client, {**_result(req), **(extra or {})})
 
     def _require_lock(self, client: Client) -> None:
-        """Control (the `lock.*` messages): only its holder may write while someone has it."""
-        if not self.lock.can_write(client.id):
-            owner = self.lock.state().owner_name or "another client"
+        """Control of a DSP (the `lock.*` messages): only its holder may write while someone
+        has it."""
+        lock = client.device.lock
+        if not lock.can_write(client.id):
+            owner = lock.state().owner_name or "another client"
             raise RequestError("locked", f"{owner} has control")
 
     def set_screen_lock(self, session: ClientSession, locked: bool) -> None:
@@ -380,28 +441,30 @@ class Hub:
         self, client: Client, kind: str, message: dict[str, Any]
     ) -> dict[str, Any] | None:
         """Handle a request; the fields returned are added to its (successful) result."""
+        device = client.device
+        session = device.session
         match kind:
             case "set":
                 self._require_lock(client)
                 path, value = message.get("path"), message.get("value")
                 if not isinstance(path, str):
                     raise RequestError("invalid", "path must be a string")
-                write = self.session.resolve(path, value)
+                write = session.resolve(path, value)
                 if not write.hardware_verified and not self.config.allow_unverified:
                     raise RequestError(
                         "experimental",
                         f"{write.kind} is not verified on a DSP 408 yet (use --experimental)",
                     )
-                await self.session.write(path, value, client.id)
+                await session.write(path, value, client.id)
             case "preset.recall":
                 self._require_lock(client)
-                await self.session.recall(_int(message, "slot"), client.id)
+                await session.recall(_int(message, "slot"), client.id)
             case "preset.store":
                 self._require_lock(client)
                 name = message.get("name")
                 if not isinstance(name, str):
                     raise RequestError("invalid", "name must be a string")
-                await self.session.store_preset(_int(message, "slot"), name, client.id)
+                await session.store_preset(_int(message, "slot"), name, client.id)
             case "preset.import":
                 self._require_lock(client)
                 data = _preset_file(message.get("data"))
@@ -411,10 +474,10 @@ class Hub:
                 name = message.get("name")
                 if name is not None and not isinstance(name, str):
                     raise RequestError("invalid", "name must be a string")
-                loaded = await self.session.import_preset(data, client.id, slot=slot, name=name)
+                loaded = await session.import_preset(data, client.id, slot=slot, name=name)
                 return {"name": loaded.name, "notes": list(loaded.notes)}
             case "preset.export":
-                exported = await self.session.export_preset()
+                exported = await session.export_preset()
                 return {
                     "filename": exported.filename,
                     "data": base64.b64encode(exported.data).decode("ascii"),
@@ -427,12 +490,12 @@ class Hub:
                 side, groups = message.get("side"), message.get("groups")
                 if not isinstance(side, str) or not _int_groups(groups):
                     raise RequestError("invalid", "side must be a string, groups lists of ints")
-                await self.session.set_links(side, groups, client.id)
+                await session.set_links(side, groups, client.id)
             case "lock.acquire":
-                if not self.lock.acquire(client.id, client.session.name):
+                if not device.lock.acquire(client.id, client.session.name):
                     raise RequestError("locked", "another client has control")
             case "lock.release":
-                if not self.lock.release(client.id):
+                if not device.lock.release(client.id):
                     raise RequestError("invalid", "you do not have control")
             case "master.acquire":
                 if not self.master.acquire(client.id, client.session.name):
@@ -470,10 +533,10 @@ class Hub:
                 rate = message.get("meter_rate_hz")
                 if isinstance(rate, bool) or not isinstance(rate, int | float):
                     raise RequestError("invalid", "meter_rate_hz must be a number")
-                self.session.meter_rate_hz = rate
-                self.broadcast(self.settings_message())
+                session.meter_rate_hz = rate
+                self.broadcast(self.settings_message(device), device=device)
             case "resync":
-                await self.session.resync()
+                await session.resync()
             case _:
                 raise RequestError("invalid", f"unknown message type {kind!r}")
         return None
@@ -482,13 +545,17 @@ class Hub:
         """Disconnect from the DSP cleanly, then stop the server (every client is told)."""
         if self.request_exit is None:
             raise RequestError("unsupported", "this server cannot be shut down from the app")
-        self._require_lock(client)
+        for device in self.devices:  # nobody else may have control of any DSP
+            owner = device.lock.state()
+            if owner.owner_id not in (None, client.id) and not device.lock.expire():
+                raise RequestError("locked", f"{owner.owner_name} has control of {device.id}")
         master = self.master.state()
         if master.owner_id is not None and master.owner_id != client.id:
             raise RequestError("not_master", f"{master.owner_name} is the master")
         log.warning("shutdown requested by %s", client.session.name)
         self.broadcast({"type": "shutdown", "by": client.session.name})
-        await self.session.stop()  # closes the TCP connection: the DSP is free for another client
+        # Closes the TCP connections: the DSPs are free for another client.
+        await self.devices.stop()
         await asyncio.sleep(SHUTDOWN_FLUSH_S)
         self.request_exit()
 
@@ -502,7 +569,8 @@ class Hub:
             raise RequestError("invalid", "you cannot disconnect yourself")
         if self.auth.logout_client(target) is None:
             raise RequestError("invalid", "no such client")
-        self.lock.release(target)
+        for device in self.devices:
+            device.lock.release(target)
         log.info("client %s disconnected by the master %s", target, master.session.name)
         await self.close_client_sessions(target, reason=f"Disconnected by {master.session.name}")
 

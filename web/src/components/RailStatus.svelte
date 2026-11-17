@@ -3,6 +3,7 @@
   // Folded, it shows the status dot and the preset slot; expanded, the full text.
   import { app } from "../lib/app.svelte";
   import { nav } from "../lib/nav.svelte";
+  import DevicePicker from "./DevicePicker.svelte";
 
   interface Props {
     expanded: boolean;
@@ -26,6 +27,7 @@
   );
   const presetTitle = $derived(
     [
+      app.multiDevice ? `DSP ${app.deviceId}` : "",
       device ? `${slot} ${device.preset_name}` : "DSP",
       device?.modified ? "unsaved changes" : "",
       status === "disconnected"
@@ -44,6 +46,7 @@
 </script>
 
 <div class="status" class:expanded>
+  {#if app.multiDevice}<DevicePicker {expanded} {onpick} />{/if}
   <button class="preset" onclick={openPresets} title={presetTitle} aria-label={presetTitle}>
     <span class="icon">
       <span class="dot {status}"></span>

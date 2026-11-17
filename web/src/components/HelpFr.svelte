@@ -30,6 +30,14 @@
   <dl>
     <dt>»</dt>
     <dd>Déplie la barre pour afficher le nom des onglets ; touchez à nouveau pour la replier.</dd>
+    <dt>Choix du DSP (plusieurs DSP seulement)</dt>
+    <dd>
+      Quand le serveur pilote plusieurs DSP (un système principal et une ligne de délai, par
+      exemple), le premier élément indique celui que cet onglet pilote. Touchez-le pour la liste
+      de tous les DSP : leur état, leur preset, les modifications non enregistrées et qui en a
+      le contrôle ; touchez-en un pour y passer. Chaque onglet du navigateur peut afficher un
+      DSP différent. Le contrôle se prend DSP par DSP.
+    </dd>
     <dt>État (point et preset)</dt>
     <dd>
       Le point est vert quand le DSP est en ligne, rouge quand le DSP ou le serveur est injoignable : un bandeau en haut indique lequel (<em>SERVER</em> ou <em>DSP</em>). Les valeurs affichées sont les dernières connues et les commandes sont désactivées jusqu'au retour de la liaison, qui se rétablit toute seule (<em>Retry now</em> réessaie tout de suite). Dessous, le preset actuellement dans le DSP

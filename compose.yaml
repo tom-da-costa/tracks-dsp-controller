@@ -10,6 +10,7 @@ services:
       - "${TDSP_LISTEN_PORT:-8080}:8080"
     environment:
       TDSP_HOST: ${TDSP_HOST:-}
+      TDSP_DSP: ${TDSP_DSP:-}             # several DSPs instead of TDSP_HOST (see .env.example)
       TDSP_PORT: ${TDSP_PORT:-9761}
       TDSP_PIN: ${TDSP_PIN:-0000}
       TDSP_METER_RATE: ${TDSP_METER_RATE:-5}

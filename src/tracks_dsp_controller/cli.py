@@ -87,7 +87,21 @@ def build_parser() -> argparse.ArgumentParser:
     # serve (default)
     serve = sub.add_parser("serve", parents=[common], help="run the web application (default)")
     serve.add_argument("--dsp-host", default=_env("HOST"), help="DSP IP address")
-    serve.add_argument("--dsp-port", type=int, default=int(_env("PORT") or DSP_PORT))
+    serve.add_argument(
+        "--dsp-port",
+        type=int,
+        default=int(_env("PORT") or DSP_PORT),
+        help="DSP TCP port (default 9761; also the default of every --dsp)",
+    )
+    serve.add_argument(
+        "--dsp",
+        action="append",
+        metavar="NAME=[MODEL@]HOST[:PORT][/ID]",
+        default=None,  # TDSP_DSP (read in _serve: --dsp replaces it, not adds to it)
+        help="a DSP to control, repeatable for several (instead of --dsp-host), "
+        "e.g. --dsp main=192.168.1.50 --dsp delay=206@192.168.1.51/2; "
+        "with --demo, NAME or NAME=MODEL@ adds a simulated one",
+    )
     serve.add_argument("--host", default=_env("LISTEN_HOST", "0.0.0.0"), help="listen address")
     serve.add_argument("--port", type=int, default=int(_env("LISTEN_PORT") or 8080))
     serve.add_argument("--pin", default=_env("PIN", "0000"), help="access code (default 0000)")
@@ -210,7 +224,7 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
     from tracks_dsp_controller.server import tls
     from tracks_dsp_controller.server.app import create_app
     from tracks_dsp_controller.server.listener import HttpsServer
-    from tracks_dsp_controller.server.settings import ServerConfig
+    from tracks_dsp_controller.server.settings import ServerConfig, parse_dsps
 
     context = None
     if args.tls_cert or args.tls_key or args.tls_self_signed:
@@ -241,9 +255,22 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
         model=args.model,
         device_id=getattr(args, "device_id", None),
         tls=context is not None,
+        dsps=parse_dsps(
+            args.dsp or [_env("DSP") or ""],
+            port=args.dsp_port,
+            device_id=getattr(args, "device_id", None),
+            model=args.model,
+        ),
     )
     app = create_app(config, profile, profile_for=lambda key: load_profile(args.profile, key))
-    target = "demo mode (no DSP)" if config.demo else f"{config.dsp_host}:{config.dsp_port}"
+    if config.demo:
+        target = "demo mode (no DSP)"
+        if config.dsps:
+            target += ": " + ", ".join(spec.name for spec in config.dsps)
+    elif config.dsps:
+        target = ", ".join(f"{spec.name}={spec.target}" for spec in config.dsps)
+    else:
+        target = f"{config.dsp_host}:{config.dsp_port}"
     scheme = "https" if context else "http"
     print(
         f"tracks-dsp-controller {__version__}: {scheme}://{config.host}:{config.port} -> {target}",

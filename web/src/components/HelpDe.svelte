@@ -30,6 +30,13 @@
   <dl>
     <dt>»</dt>
     <dd>Klappt die Leiste auf, um die Namen der Tabs zu zeigen; nochmals tippen zum Einklappen.</dd>
+    <dt>DSP-Auswahl (nur bei mehreren DSPs)</dt>
+    <dd>
+      Steuert der Server mehrere DSPs (etwa ein Hauptsystem und eine Delay-Line), zeigt der
+      erste Eintrag, welchen dieser Tab steuert. Antippen öffnet die Liste aller DSPs: Status,
+      Preset, ungespeicherte Änderungen und wer die Kontrolle hat; einen antippen wechselt zu
+      ihm. Jeder Browser-Tab kann einen anderen DSP zeigen. Die Kontrolle gilt je DSP.
+    </dd>
     <dt>Status (Punkt und Preset)</dt>
     <dd>
       Der Punkt ist grün, wenn der DSP online ist, und rot, wenn der DSP oder der Server nicht erreichbar ist: Ein Banner oben zeigt dann, welcher (<em>SERVER</em> oder <em>DSP</em>). Die angezeigten Werte sind die zuletzt bekannten, und die Bedienelemente sind gesperrt, bis die Verbindung von selbst zurückkommt (<em>Retry now</em> versucht es sofort). Darunter das aktuell im DSP geladene Preset

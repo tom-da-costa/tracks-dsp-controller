@@ -28,6 +28,13 @@
   <dl>
     <dt>»</dt>
     <dd>Unfolds the bar to show the names of the tabs; tap again to fold it.</dd>
+    <dt>DSP picker (several DSPs only)</dt>
+    <dd>
+      When the server controls several DSPs (a main system and a delay line, say), the first
+      item shows which one this tab controls. Tap it for the list of every DSP: its status, its
+      preset, unsaved changes and who has control of it; tap one to switch to it. Each browser
+      tab can show a different DSP. Control is taken per DSP.
+    </dd>
     <dt>Status (dot and preset)</dt>
     <dd>
       The dot is green when the DSP is online, red when the DSP or the server cannot be reached: a banner at the top then says which one (<em>SERVER</em> or <em>DSP</em>). The values shown are the last known and the controls are disabled until the link comes back, by itself (<em>Retry now</em> tries at once). Below it, the preset currently in the DSP

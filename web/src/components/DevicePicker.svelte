@@ -1,0 +1,264 @@
+<script lang="ts">
+  // Top of the tab rail when the server controls several DSPs: the DSP this tab shows, and a
+  // panel with every DSP at a glance (status, preset, who has control) to switch to another.
+  import { app } from "../lib/app.svelte";
+  import type { DeviceEntry } from "../lib/types";
+
+  interface Props {
+    expanded: boolean;
+    onpick?: () => void; // called after a DSP is picked (folds the rail on a phone)
+  }
+
+  let { expanded, onpick }: Props = $props();
+  let open = $state(false);
+
+  const STATUS_TEXT: Record<string, string> = {
+    online: "online",
+    offline: "offline",
+    connecting: "connecting",
+    initialising: "reading",
+    stopped: "stopped",
+  };
+
+  const current = $derived(app.currentDevice);
+  // The folded rail has room for a few letters of the name.
+  const short = $derived((app.deviceId ?? "?").slice(0, 3));
+
+  function slot(entry: DeviceEntry): string {
+    return entry.active_slot === 0 ? "F00" : `U${String(entry.active_slot).padStart(2, "0")}`;
+  }
+
+  function dotClass(entry: DeviceEntry | undefined): string {
+    if (!app.connected) return "disconnected";
+    return entry?.status ?? "connecting";
+  }
+
+  function pick(id: string) {
+    open = false;
+    app.selectDevice(id);
+    onpick?.();
+  }
+
+  function onkeydown(event: KeyboardEvent) {
+    if (open && event.key === "Escape") open = false;
+  }
+
+  const title = $derived(
+    `DSP ${app.deviceId ?? ""} (${app.devices.length} DSPs on this server): pick another`,
+  );
+</script>
+
+<svelte:window {onkeydown} />
+
+<button
+  class="current"
+  class:expanded
+  onclick={() => (open = !open)}
+  aria-expanded={open}
+  aria-haspopup="dialog"
+  disabled={app.screenLocked}
+  {title}
+  aria-label={title}
+>
+  <span class="icon">
+    <span class="dot {dotClass(current)}"></span>
+    <span class="short">{short}</span>
+  </span>
+  <span class="text">
+    <strong>{app.deviceId ?? "DSP"}</strong>
+    <small class="muted">{app.devices.length} DSPs ▾</small>
+  </span>
+</button>
+
+{#if open}
+  <button class="backdrop" aria-label="Close the DSP list" onclick={() => (open = false)}></button>
+  <div class="panel" role="dialog" aria-label="DSPs on this server">
+    <h2>DSPs</h2>
+    <ul>
+      {#each app.devices as entry (entry.id)}
+        <li>
+          <button
+            class="row"
+            class:selected={entry.id === app.deviceId}
+            aria-current={entry.id === app.deviceId}
+            onclick={() => pick(entry.id)}
+          >
+            <span class="dot {dotClass(entry)}"></span>
+            <span class="main">
+              <span class="line">
+                <strong>{entry.id}</strong>
+                <span class="muted">{entry.model || entry.target}</span>
+              </span>
+              <span class="line small">
+                {#if entry.status === "online"}
+                  <span>{slot(entry)} {entry.preset_name}</span>
+                  {#if entry.modified}<span class="unsaved">● unsaved</span>{/if}
+                {:else}
+                  <span class="muted"
+                    >{STATUS_TEXT[entry.status] ?? entry.status}{entry.error
+                      ? `: ${entry.error}`
+                      : ""}</span
+                  >
+                {/if}
+                {#if entry.control}<span class="badge">{entry.control} has control</span>{/if}
+              </span>
+            </span>
+          </button>
+        </li>
+      {/each}
+    </ul>
+  </div>
+{/if}
+
+<style>
+  .current {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    margin: 0 6px;
+    padding: 0 6px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    text-align: left;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .icon {
+    flex: 0 0 32px;
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    line-height: 1;
+  }
+  .short {
+    max-width: 32px;
+    overflow: hidden;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .text {
+    min-width: 0;
+    display: grid;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  .expanded .text {
+    opacity: 1;
+  }
+  .text strong,
+  .text small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .text small {
+    font-size: 0.75rem;
+  }
+  .dot {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .dot.online {
+    background: var(--accent);
+  }
+  .dot.offline,
+  .dot.disconnected {
+    background: var(--danger);
+  }
+  .dot.connecting,
+  .dot.initialising {
+    background: var(--warn);
+  }
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    min-height: 0;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: #0006;
+  }
+  .panel {
+    position: fixed;
+    z-index: 21;
+    top: calc(8px + env(safe-area-inset-top));
+    left: calc(64px + env(safe-area-inset-left));
+    width: min(360px, calc(100vw - 80px));
+    max-height: calc(100vh - 16px);
+    overflow: auto;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--panel);
+    box-shadow: 0 8px 24px #0009;
+  }
+  h2 {
+    margin: 4px 8px 8px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  ul {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 52px;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: none;
+    text-align: left;
+  }
+  .row.selected {
+    border-color: var(--accent);
+    background: var(--panel-2);
+  }
+  .main {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    align-items: baseline;
+  }
+  .small {
+    font-size: 0.8rem;
+  }
+  .unsaved {
+    color: var(--warn);
+    font-weight: 600;
+  }
+  .badge {
+    padding: 0 5px;
+    border-radius: 4px;
+    background: var(--panel-2);
+    color: var(--warn);
+    font-size: 0.75rem;
+  }
+  /* Phone: the panel spans the screen width. */
+  @media (max-width: 699px) {
+    .panel {
+      left: calc(8px + env(safe-area-inset-left));
+      right: calc(8px + env(safe-area-inset-right));
+      width: auto;
+    }
+  }
+</style>
