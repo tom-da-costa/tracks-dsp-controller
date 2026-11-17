@@ -2,6 +2,7 @@
 
 import base64
 import time
+import weakref
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -154,12 +155,16 @@ def login(client: TestClient, name: str = "tester") -> None:
     assert response.status_code == 200, response.text
 
 
-_BACKLOG: dict[int, list[dict[str, Any]]] = {}
+# Messages skipped by ``request``, per WebSocket (weak keys: an id() is reused once a socket is
+# gone, and a new socket would get the old one's leftovers).
+_BACKLOG: weakref.WeakKeyDictionary[WebSocketTestSession, list[dict[str, Any]]] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def receive_until(ws: WebSocketTestSession, kind: str, limit: int = 200) -> dict[str, Any]:
     """Next message of ``kind``; messages skipped by ``request`` are looked at first."""
-    backlog = _BACKLOG.setdefault(id(ws), [])
+    backlog = _BACKLOG.setdefault(ws, [])
     for i, message in enumerate(backlog):
         if message["type"] == kind:
             return backlog.pop(i)
@@ -173,7 +178,7 @@ def receive_until(ws: WebSocketTestSession, kind: str, limit: int = 200) -> dict
 def request(ws: WebSocketTestSession, message: dict[str, Any]) -> dict[str, Any]:
     """Send a request and return its result, keeping other messages for ``receive_until``."""
     ws.send_json(message)
-    backlog = _BACKLOG.setdefault(id(ws), [])
+    backlog = _BACKLOG.setdefault(ws, [])
     while True:
         received: dict[str, Any] = ws.receive_json()
         if received["type"] == "result" and received["req"] == message.get("req"):
