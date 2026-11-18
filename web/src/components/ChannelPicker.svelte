@@ -186,12 +186,22 @@
   /* Phone, folded: a mini button over the strips' top right corner; the row opens under it
      as a panel. Keep the media query in step with the parents' (LiveView, Mixer, ParamStrips). */
   @media (max-width: 699px), (max-height: 499px) {
+    /* The whole width of the strips (the parent), so that the panel never goes past their
+       left edge (under the rail); the band itself lets taps through to the strips. */
     .fold {
-      display: block;
+      display: flex;
+      justify-content: flex-end;
       position: absolute;
       z-index: 3;
       top: 4px;
+      left: 4px;
       right: 4px;
+      pointer-events: none;
+    }
+    .fold .tab,
+    .fold .picker,
+    .fold .scrim {
+      pointer-events: auto;
     }
     .fold .tab {
       display: block;
@@ -221,7 +231,7 @@
       top: calc(100% + 6px);
       right: 0;
       width: max-content;
-      max-width: calc(100vw - var(--rail, 56px) - 40px);
+      max-width: 100%;
       flex-wrap: wrap;
       align-content: flex-start;
       padding: 8px;
