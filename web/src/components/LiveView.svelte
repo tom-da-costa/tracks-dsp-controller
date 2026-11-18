@@ -2,18 +2,21 @@
   // "Live" tab: one strip per channel for running a show (meters, gain, mute, indicators).
   // The channels shown are picked in the top row and remembered in this browser.
   import { ChannelSelection } from "../lib/selection.svelte";
+  import { StripWidth } from "../lib/stripwidth.svelte";
   import ChannelPicker from "./ChannelPicker.svelte";
   import LiveStrip from "./LiveStrip.svelte";
   import SideDivider from "./SideDivider.svelte";
 
   const selection = new ChannelSelection("dsp408.live.hidden");
   const shown = $derived(selection.shown);
+  // Set in the folded picker's panel on a phone (LiveStrip's default: 132 px).
+  const width = new StripWidth("dsp408.live.width", { min: 84, max: 180, step: 4, default: 132 });
 </script>
 
 <div class="live">
-  <ChannelPicker {selection} fold />
+  <ChannelPicker {selection} fold {width} />
 
-  <div class="strips">
+  <div class="strips" style:--strip-w={width.css}>
     {#each shown as path, i (path)}
       {#if i > 0 && path.startsWith("outputs.") && shown[i - 1]?.startsWith("inputs.")}
         <SideDivider />

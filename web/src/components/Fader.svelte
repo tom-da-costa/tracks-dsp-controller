@@ -167,6 +167,8 @@
 
 <style>
   .fader {
+    /* Narrows with its strip down to the knob's width: the boxes above and below follow. */
+    min-width: 40px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -176,12 +178,17 @@
   .value {
     min-height: 32px;
     width: 54px;
+    max-width: 100%;
     padding: 0;
     font-variant-numeric: tabular-nums;
     font-size: 0.85rem;
   }
+  form {
+    max-width: 100%;
+  }
   form input {
     width: 54px;
+    max-width: 100%;
     min-height: 32px;
     text-align: center;
     padding: 0 4px;
@@ -189,6 +196,7 @@
   .step {
     min-height: 32px;
     width: 40px;
+    max-width: 100%;
     padding: 0;
   }
   .track {

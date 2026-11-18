@@ -194,4 +194,13 @@
   .nodata .bar {
     opacity: 0.4;
   }
+  /* In a narrow Live strip (LiveStrip is the container): no scale, the bar and the marks only. */
+  @container (max-width: 118px) {
+    .meter {
+      grid-template-columns: 16px 14px;
+    }
+    .scale {
+      display: none;
+    }
+  }
 </style>

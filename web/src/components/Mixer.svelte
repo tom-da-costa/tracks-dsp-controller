@@ -2,6 +2,7 @@
   // Params › Gain: one strip per channel picked in the row above (meter, fader, mute, phase).
   import { app } from "../lib/app.svelte";
   import type { ChannelSelection } from "../lib/selection.svelte";
+  import { StripWidth } from "../lib/stripwidth.svelte";
   import ChannelPicker from "./ChannelPicker.svelte";
   import Strip from "./Strip.svelte";
   import SideDivider from "./SideDivider.svelte";
@@ -16,12 +17,19 @@
   let { selection, paths }: Props = $props();
 
   const device = $derived(app.device);
+  // Set in the folded picker's panel on a phone; unset, a strip takes 80 to 120 px (Strip).
+  const width = new StripWidth("dsp408.params.gain.width", {
+    min: 72,
+    max: 160,
+    step: 4,
+    default: 100,
+  });
 </script>
 
 {#if device}
 <div class="view">
-  <ChannelPicker {selection} fold />
-  <div class="strips">
+  <ChannelPicker {selection} fold {width} />
+  <div class="strips" style:--strip-w={width.css}>
     {#each paths as path, i (path)}
       {@const [side, n] = path.split(".")}
       {@const index = Number(n)}

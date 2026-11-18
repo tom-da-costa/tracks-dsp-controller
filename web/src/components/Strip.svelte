@@ -66,8 +66,9 @@
 
 <style>
   .strip {
-    flex: 1 0 80px;
-    max-width: 120px;
+    /* --strip-w: the width set on a phone (Mixer); unset, 80 to 120 px. */
+    flex: 1 0 var(--strip-w, 80px);
+    max-width: var(--strip-w, 120px);
     min-width: 0;
     display: flex;
     flex-direction: column;

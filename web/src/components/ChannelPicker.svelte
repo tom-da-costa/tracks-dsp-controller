@@ -5,19 +5,23 @@
   // With `fold` (Live, Params strips), on a phone (narrow, or short in landscape) the row folds
   // into a mini button floating over the top right corner of the strips, so that they start at
   // the top of the page and keep the whole width; a tap on it opens the row as a panel under
-  // it. The parent is the positioning box (position: relative).
+  // it. The parent is the positioning box (position: relative). With `width`, the panel also
+  // sets the width of the strips (Live, Params › Gain).
   import { app } from "../lib/app.svelte";
   import { links } from "../lib/links.svelte";
   import type { ChannelSelection } from "../lib/selection.svelte";
+  import type { StripWidth } from "../lib/stripwidth.svelte";
 
   interface Props {
     selection: ChannelSelection;
     side?: "inputs" | "outputs";
     /** Fold into a vertical tab on a phone. */
     fold?: boolean;
+    /** Strip width set in the folded panel. */
+    width?: StripWidth;
   }
 
-  let { selection, side, fold = false }: Props = $props();
+  let { selection, side, fold = false, width }: Props = $props();
   let open = $state(false);
 
   const prefix = $derived(side ? (`${side}.` as const) : "");
@@ -81,6 +85,29 @@
       <small>{links.name(c.path)}</small>
     </button>
   {/each}
+  {#if fold && width}
+    <div class="width" role="group" aria-label="Strip width">
+      <span class="label">Width</span>
+      <button class="step" aria-label="Narrower" onclick={() => width.nudge(-1)}>−</button>
+      <input
+        type="range"
+        min={width.range.min}
+        max={width.range.max}
+        step={width.range.step}
+        value={width.px}
+        aria-label="Strip width"
+        oninput={(e) => width.set(Number(e.currentTarget.value))}
+      />
+      <button class="step" aria-label="Wider" onclick={() => width.nudge(1)}>+</button>
+      <button
+        class="step"
+        aria-label="Default width"
+        title="Default width"
+        disabled={width.value === null}
+        onclick={() => width.reset()}>↺</button
+      >
+    </div>
+  {/if}
 </div>
 </div>
 
@@ -89,7 +116,8 @@
     display: contents;
   }
   .tab,
-  .scrim {
+  .scrim,
+  .width {
     display: none;
   }
   .picker {
@@ -204,6 +232,35 @@
     }
     .fold.open .picker .sep {
       display: none;
+    }
+    .fold.open .width {
+      flex: 1 0 100%;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+    .fold.open .width {
+      flex-wrap: wrap;
+    }
+    .width .label {
+      flex: 1 0 100%; /* on its own line: the slider gets the width */
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .width input {
+      flex: 1;
+      width: 0; /* no intrinsic width: the row fits the panel */
+      min-width: 60px;
+      accent-color: var(--accent);
+    }
+    .picker .width .step {
+      min-width: 38px;
+      padding: 0;
+      font-size: 1.05rem;
     }
     .fold.open .scrim {
       display: block;

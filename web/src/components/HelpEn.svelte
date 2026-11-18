@@ -119,6 +119,11 @@
       at the top right of the channels, showing how many are shown (e.g. 12/12), so that they
       start at the top of the screen: tap it to open the buttons, tap beside them to close.
     </li>
+    <li>
+      In that panel, <strong>Width</strong> sets the width of the channels (Live, and Params ›
+      Gain), to see more of them at once; ↺ goes back to the default. Remembered on this
+      device.
+    </li>
     <li>Each view remembers its own choice on this device (Params: one choice for all its settings).</li>
     <li>
       Each channel has its own colour, the same everywhere. Linked channels share the colour

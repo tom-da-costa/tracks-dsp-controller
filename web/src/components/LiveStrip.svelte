@@ -97,7 +97,9 @@
 
 <style>
   .strip {
-    flex: 0 0 132px;
+    /* --strip-w: the width set on a phone (LiveView); the content narrows down to ~84 px. */
+    flex: 0 0 var(--strip-w, 132px);
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -170,6 +172,19 @@
     min-height: 52px;
     font-weight: 800;
     font-size: 0.95rem;
+  }
+  /* Narrow strip: smaller indicators, tighter meter and fader (BigMeter drops its scale). */
+  @container (max-width: 118px) {
+    .leds {
+      gap: 2px;
+    }
+    .led {
+      font-size: 0.6rem;
+      letter-spacing: 0;
+    }
+    .body {
+      gap: 2px;
+    }
   }
   .mute.on {
     background: var(--danger);

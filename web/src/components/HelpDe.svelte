@@ -141,6 +141,11 @@
       öffnet die Tasten, daneben tippen schließt sie.
     </li>
     <li>
+      In diesem Feld stellt <strong>Width</strong> die Breite der Kanäle ein (Live und Params
+      › Gain), um mehr davon gleichzeitig zu sehen; ↺ stellt die Standardbreite wieder her.
+      Wird auf diesem Gerät gespeichert.
+    </li>
+    <li>
       Jede Ansicht merkt sich ihre Auswahl auf diesem Gerät (Params: eine Auswahl für alle
       Einstellungen).
     </li>

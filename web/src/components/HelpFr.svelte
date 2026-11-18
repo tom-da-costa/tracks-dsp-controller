@@ -141,6 +141,11 @@
       ouvrir les boutons, touchez à côté pour refermer.
     </li>
     <li>
+      Dans ce panneau, <strong>Width</strong> règle la largeur des voies (Live, et Params ›
+      Gain), pour en voir plus à la fois ; ↺ revient à la largeur par défaut. Mémorisé sur cet
+      appareil.
+    </li>
+    <li>
       Chaque vue mémorise son propre choix sur cet appareil (Params : un seul choix pour tous
       ses réglages).
     </li>
