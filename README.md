@@ -172,22 +172,6 @@ cp .env.example .env   # set TDSP_DSP, TDSP_PIN …
 docker compose up -d
 ```
 
-### HTTPS
-
-Optional, on the same port; typing the address in `http://` redirects to `https://`.
-
-```bash
-# Your own certificate (PEM files)
-uv run tracks-dsp-controller --dsp 192.168.1.50 --tls-cert cert.pem --tls-key key.pem
-# Or a self-signed one, generated offline and kept for the next runs: each browser asks once
-# to accept it. --tls-names adds the address the browsers use (needed in Docker)
-uv run tracks-dsp-controller --dsp 192.168.1.50 --tls-self-signed --tls-names 192.168.1.10
-```
-
-With Docker Compose: `TDSP_TLS_SELF_SIGNED=true` and `TDSP_TLS_NAMES=<this host's IP>` in
-`.env` (the certificate is kept in the `tracks-dsp-tls` volume), or mount your certificate and
-set `TDSP_TLS_CERT` / `TDSP_TLS_KEY`.
-
 ### Command-line options
 
 `tracks-dsp-controller [options]` runs the web app (the `serve` command, the default). Most
