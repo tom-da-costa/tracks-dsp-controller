@@ -34,7 +34,7 @@ On a phone, in landscape:
 
 | Live | Params (gain strips) |
 | :---: | :---: |
-| <img src="docs/screenshots/phone-live.png" width="400" alt="Live view on a phone: meters and faders"> | <img src="docs/screenshots/phone-params.png" width="400" alt="Params view: the gain of every channel as vertical strips"> |
+| <img src="docs/screenshots/phone-live.png" width="400" alt="Live view on a phone: the 12 channels fitted to the screen, the channel picker folded into the 12/12 button"> | <img src="docs/screenshots/phone-params.png" width="400" alt="Params view: the gain of every channel as narrow vertical strips"> |
 | **Channel page** | **All-in-one** |
 | <img src="docs/screenshots/phone-channel.png" width="400" alt="Channel page of Out 1: frequency response graph and channel settings"> | <img src="docs/screenshots/phone-all-in-one.png" width="400" alt="All-in-one view: one column per channel with gain, delay and filters"> |
 | **Presets** | **Limiter calculator** |
