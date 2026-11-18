@@ -1,5 +1,7 @@
 <script lang="ts">
   import { app } from "../lib/app.svelte";
+  import { describe, type UnsavedChange } from "../lib/changes";
+  import { links } from "../lib/links.svelte";
   import {
     asciiName,
     download,
@@ -8,8 +10,12 @@
     toBase64,
     type PresetFileInfo,
   } from "../lib/presetfile";
+  import UnsavedChanges from "./UnsavedChanges.svelte";
 
   const device = $derived(app.device);
+  // The unsaved changes (UnsavedChanges keeps them up to date); null = not known.
+  let changes = $state<UnsavedChange[] | null>(null);
+  const SHOWN_CHANGES = 8; // in a confirmation, then "… and n more"
   let storing = $state<number | null>(null);
   let name = $state("");
   let busy = $state(false);
@@ -44,13 +50,30 @@
     return slot === 0 ? "F00" : `U${String(slot).padStart(2, "0")}`;
   }
 
+  /** The unsaved changes as lines of text, for a confirmation. */
+  function changeLines(list: UnsavedChange[]): string {
+    const lines = list.slice(0, SHOWN_CHANGES).map((change) => {
+      const channel = change.path.split(".").slice(0, 2).join(".");
+      const text = describe(change, app.hello?.profile);
+      return `• ${links.slot(channel)} ${text.setting}: ${text.before} → ${text.after}`;
+    });
+    const more = list.length - SHOWN_CHANGES;
+    return [...lines, ...(more > 0 ? [`… and ${more} more`] : [])].join("\n");
+  }
+
+  /** What a recall loses, for its confirmation. */
+  function lostText(): string {
+    if (device?.modified === null)
+      return "\n\nChanges made before this app connected, if any, will be lost.";
+    if (device?.modified !== true) return "";
+    if (!changes || changes.length === 0)
+      return "\n\nThe current setup has UNSAVED CHANGES: they will be lost.";
+    const n = changes.length;
+    return `\n\nThe current setup has ${n} UNSAVED CHANGE${n === 1 ? "" : "S"}: they will be lost.\n${changeLines(changes)}`;
+  }
+
   async function recall(slot: number, presetName: string) {
-    const lost =
-      device?.modified === true
-        ? "\n\nThe current setup has UNSAVED CHANGES: they will be lost."
-        : device?.modified === null
-          ? "\n\nChanges made before this app connected, if any, will be lost."
-          : "";
+    const lost = lostText();
     if (!confirm(`Recall ${label(slot)} "${presetName}"? Every current setting is replaced.${lost}`))
       return;
     busy = true;
@@ -145,6 +168,7 @@
         {/if}
       {/if}
     </p>
+    <UnsavedChanges bind:changes />
     <ul>
       <li class:active={device.active_slot === 0}>
         <span class="slot">F00</span><span class="name">Factory default</span>
@@ -183,6 +207,12 @@
     <form class="card dialog" onsubmit={store}>
       <h2>Store to {label(storing)}</h2>
       <p class="muted">This overwrites the preset stored in the DSP.</p>
+      {#if storing === device.active_slot && changes && changes.length > 0}
+        <p class="muted">
+          It keeps the {changes.length} unsaved change{changes.length === 1 ? "" : "s"} listed on
+          this page.
+        </p>
+      {/if}
       <label>
         Name
         <input type="text" maxlength="14" bind:value={name} />

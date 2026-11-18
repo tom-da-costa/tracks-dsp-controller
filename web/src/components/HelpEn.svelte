@@ -227,7 +227,11 @@
     <dt>Unsaved changes</dt>
     <dd>
       Shown by an orange dot in the side bar and "● unsaved changes" on this page, with a
-      <em>Save to Uxx</em> button to store them into the current preset.
+      <em>Save to Uxx</em> button to store them into the current preset. The list below it
+      shows what changed, one line per setting (stored value → live value), with <em>Undo</em>
+      to bring a setting back, or <em>Undo all</em>; recalling a preset lists what will be
+      lost. The server knows the stored preset once it has seen it recalled or stored: before
+      that, the changes cannot be listed.
     </dd>
     <dt>Export / Import .prs</dt>
     <dd>

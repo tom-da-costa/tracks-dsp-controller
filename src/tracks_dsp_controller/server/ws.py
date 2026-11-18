@@ -473,6 +473,12 @@ class Hub:
                     raise RequestError("invalid", "name must be a string")
                 loaded = await session.import_preset(data, client.id, slot=slot, name=name)
                 return {"name": loaded.name, "notes": list(loaded.notes)}
+            case "changes":
+                found = session.unsaved_changes()
+                return {
+                    "known": found is not None,
+                    "changes": [c.as_dict() for c in found or []],
+                }
             case "preset.export":
                 exported = await session.export_preset()
                 return {

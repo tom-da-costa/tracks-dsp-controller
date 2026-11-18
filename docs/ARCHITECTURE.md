@@ -89,6 +89,14 @@ so meters only flow for the DSP a tab shows. Parameters are not linked across DS
   new `rev`. A client that detects a gap asks for a full snapshot.
 - Linked channels: the DSP applies a write to every member of a link group (except names and
   matrix), and the store mirrors that.
+- **Unsaved changes.** `modified` says that the live setup differs from the stored preset. To say
+  *what* differs, the session keeps a **reference**: a copy of the state right after a recall or
+  a store, when the live setup and the stored preset are the same (reading a stored preset
+  without recalling it is not verified on the 408: PROTOCOL.md §5.2). `state/changes.py` lists
+  the differences one parameter at a time, each with the `set` that writes the stored value
+  back. The reference is dropped when the active slot changes behind the session's back (front
+  panel, reconnection to another preset): until the next recall or store the changes are not
+  known. When every change is undone, `modified` turns false again.
 - Parameter kinds not yet verified on a DSP 408 are left out of `HARDWARE_VERIFIED` in the
   registry. On a real DSP they are refused unless `--experimental` is given. On a `demo` DSP,
   everything is enabled.
@@ -283,13 +291,14 @@ JSON messages `{type, ...}`:
 | S→C | `screen_lock` | `locked` (to every tab of the session) |
 | S→C | `settings` | `meter_rate_hz` (of this DSP), `lock_idle_timeout_s` (sent on change) |
 | S→C | `clients` | list of `{id, name, devices}` (the DSPs it has open) |
-| S→C | `result` | `req`, `ok`, extra fields of some requests (`preset.import`: `name`, `notes`; `preset.export`: `filename`, `data`, `notes`), `error?` (`locked`: another client has control, `screen_locked`, `master_taken`, `not_master`, `wrong_code`, `rate_limited`, `invalid`, `experimental`, `device_offline`, `device_timeout`), `message?` |
+| S→C | `result` | `req`, `ok`, extra fields of some requests (`preset.import`: `name`, `notes`; `preset.export`: `filename`, `data`, `notes`; `changes`: `known`, `changes`), `error?` (`locked`: another client has control, `screen_locked`, `master_taken`, `not_master`, `wrong_code`, `rate_limited`, `invalid`, `experimental`, `device_offline`, `device_timeout`), `message?` |
 | S→C | `pong` | `req` |
 | C→S | `set` | `req`, `path`, `value` |
 | C→S | `preset.recall` | `req`, `slot` |
 | C→S | `preset.store` | `req`, `slot` (1–20), `name` |
 | C→S | `preset.import` | `req`, `data` (a `.prs` file of the official editor, base64, 16 KB max), `slot?` and `name?` to store it too. The whole file is checked before anything is sent; then one exclusive sequence (PROTOCOL.md §7.1): outputs muted, links undone, the parameters that differ written, links set again, outputs unmuted, config re-read and compared. `notes` lists what did not load exactly |
 | C→S | `preset.export` | `req`; the config is re-read and returned as a `.prs` file (`filename`, `data` in base64). Allowed without control (read-only) |
+| C→S | `changes` | `req`; the unsaved changes (§3): `known` (false when the stored preset has not been seen since the server started), `changes`: `[{path, before, after, revert}]`, `revert` being the `{path, value}` of the `set` that undoes it, or `null`. Allowed without control (read-only) |
 | C→S | `lock.acquire` / `lock.release` | `req`; take or release control |
 | C→S | `master.acquire` / `master.release` | `req`; take or give up the master role (giving it up allows new logins again) |
 | C→S | `client.kick` | `req`, `client_id`; master only: end that client's session |

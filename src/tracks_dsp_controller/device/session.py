@@ -44,6 +44,7 @@ from tracks_dsp_controller.protocol.profile import (
     detect_model,
     load_profile,
 )
+from tracks_dsp_controller.state import changes as ch
 from tracks_dsp_controller.state.convert import build_state
 from tracks_dsp_controller.state.models import DeviceInfo, DeviceState
 from tracks_dsp_controller.state.registry import ParamError, Write, resolve
@@ -160,6 +161,9 @@ class DeviceSession:
         # quick edits of different fields of one band both survive.
         self._inflight: dict[str, dict[str, Any]] = {}
         self._resync_task: asyncio.Task[None] | None = None
+        # The stored preset of the active slot as the session last saw it (right after a recall
+        # or a store), for the list of unsaved changes; None = not known (state/changes.py).
+        self.reference: DeviceState | None = None
 
     def _default_connection(self) -> DspConnection:
         # Built at each attempt, so host/port can change (embedded simulator, reconfiguration).
@@ -357,8 +361,10 @@ class DeviceSession:
         """After a (re)connection: keep what we knew if the DSP is where we left it."""
         previous = self.store.state if self.store.rev else None
         if previous is None or previous.active_slot != state.active_slot:
+            self.reference = None
             return state  # first connection, or another preset: unknown
         if (len(previous.inputs), len(previous.outputs)) != (len(state.inputs), len(state.outputs)):
+            self.reference = None
             return state  # another model
         same = self._same_config(previous, state)
         return state.model_copy(update={"modified": previous.modified if same else True})
@@ -367,6 +373,23 @@ class DeviceSession:
         """A write's changes, plus ``modified`` when it becomes true."""
         extra = [] if self.store.state.modified is True else [("modified", True)]
         return [*changes, *extra]
+
+    def _apply_write(self, changes: tuple[tuple[str, Any], ...], origin: str) -> None:
+        """A write's changes; back to the stored preset (every change undone), not modified."""
+        self.store.apply(self._with_modified(changes), origin)
+        reference = self.reference
+        if reference is not None and ch.same_config(reference, self.store.state):
+            self.store.apply([("modified", False)], origin)
+
+    def unsaved_changes(self) -> list[ch.Change] | None:
+        """What differs from the stored preset; None when the session does not know it."""
+        reference, live = self.reference, self.store.state
+        if reference is None or reference.active_slot != live.active_slot:
+            return None
+        try:
+            return ch.changes(reference, live)
+        except ValueError:  # another model since: unknown
+            return None
 
     def _require_pipeline(self) -> CommandPipeline:
         if self.status is not DeviceStatus.ONLINE or self._pipeline is None:
@@ -420,7 +443,7 @@ class DeviceSession:
         try:
             await pipeline.submit(
                 write.request,
-                on_ack=lambda: self.store.apply(self._with_modified(write.changes), origin),
+                on_ack=lambda: self._apply_write(write.changes, origin),
             )
         except CommandTimeoutError:
             self._resync_soon()
@@ -439,6 +462,7 @@ class DeviceSession:
             state = await self._read_state(conn, previous=self.store.state)
         log.info("preset %d recalled by %s", slot, origin)
         self.store.replace(state.model_copy(update={"modified": False}))
+        self.reference = self.store.state.model_copy(deep=True)
 
     async def store_preset(self, slot: int, name: str, origin: str) -> None:
         if not 1 <= slot <= self.profile.preset_count:
@@ -461,6 +485,7 @@ class DeviceSession:
             ],
             origin,
         )
+        self.reference = self.store.state.model_copy(deep=True)
 
     async def set_links(self, side: str, groups: list[list[int]], origin: str) -> None:
         """Link channels of one side ("inputs" or "outputs") into ``groups`` of indices.
@@ -563,6 +588,9 @@ class DeviceSession:
         previous = self.store.state
         if previous.active_slot != state.active_slot:
             modified = None  # recalled from the front panel or another client
+            self.reference = None
+        elif self.reference is not None and ch.same_config(self.reference, state):
+            modified = False  # back to the stored preset
         elif self._same_config(previous, state):
             modified = previous.modified
         else:

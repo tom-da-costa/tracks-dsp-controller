@@ -251,9 +251,13 @@
     </dd>
     <dt>Ungespeicherte Änderungen</dt>
     <dd>
-      Angezeigt durch einen orangefarbenen Punkt in der Seitenleiste und „● unsaved changes“ auf
-      dieser Seite, mit einer Taste <em>Save to Uxx</em>, um sie ins aktuelle Preset zu
-      speichern.
+      Angezeigt durch einen orangefarbenen Punkt in der Seitenleiste und „● unsaved changes“
+      auf dieser Seite, mit einer Taste <em>Save to Uxx</em>, um sie ins aktuelle Preset zu
+      speichern. Die Liste darunter zeigt, was sich geändert hat, eine Zeile pro Einstellung
+      (gespeicherter Wert → aktueller Wert), mit <em>Undo</em>, um eine Einstellung
+      zurückzusetzen, oder <em>Undo all</em>; beim Abrufen eines Presets wird aufgelistet, was
+      verloren geht. Der Server kennt das gespeicherte Preset, sobald er es abgerufen oder
+      gespeichert gesehen hat: vorher lassen sich die Änderungen nicht auflisten.
     </dd>
     <dt>Export / Import .prs</dt>
     <dd>
