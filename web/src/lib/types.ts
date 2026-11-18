@@ -214,4 +214,7 @@ export interface ResultMessage {
   // preset.export: the preset file (.prs), base64
   filename?: string;
   data?: string;
+  // changes: whether the stored preset is known, and what differs from it
+  known?: boolean;
+  changes?: import("./changes").UnsavedChange[];
 }

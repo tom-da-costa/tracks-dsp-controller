@@ -252,8 +252,12 @@
     </dd>
     <dt>Modifications non enregistrées</dt>
     <dd>
-      Signalées par un point orange dans la barre latérale et « ● unsaved changes » sur cette
+      Signalées par un point orange dans la barre latérale et « ● unsaved changes » sur cette
       page, avec un bouton <em>Save to Uxx</em> pour les enregistrer dans le preset en cours.
+      La liste en dessous montre ce qui a changé, une ligne par réglage (valeur enregistrée →
+      valeur actuelle), avec <em>Undo</em> pour revenir sur un réglage, ou <em>Undo all</em> ;
+      rappeler un preset liste ce qui sera perdu. Le serveur connaît le preset enregistré dès
+      qu'il l'a vu rappelé ou enregistré : avant, les changements ne peuvent pas être listés.
     </dd>
     <dt>Export / Import .prs</dt>
     <dd>

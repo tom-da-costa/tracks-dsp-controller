@@ -490,11 +490,47 @@ def test_modified_tracks_unsaved_changes(client: TestClient) -> None:
         assert {"path": "modified", "value": True} in changes
         assert request(ws, {"type": "set", "req": 3, "path": "inputs.0.mute", "value": False})["ok"]
         assert receive_until(ws, "patch")["changes"] == [{"path": "inputs.0.mute", "value": False}]
-        assert request(ws, {"type": "resync", "req": 4})["ok"]
+        # Back to the stored preset: not modified any more.
+        assert receive_until(ws, "patch")["changes"] == [{"path": "modified", "value": False}]
+        assert request(ws, {"type": "set", "req": 4, "path": "inputs.0.gain_db", "value": -3})["ok"]
+        assert {"path": "modified", "value": True} in receive_until(ws, "patch")["changes"]
+        assert request(ws, {"type": "resync", "req": 5})["ok"]
         assert receive_until(ws, "snapshot")["state"]["modified"] is True  # still unsaved
-        assert request(ws, {"type": "preset.store", "req": 5, "slot": 1, "name": "Saved"})["ok"]
+        assert request(ws, {"type": "preset.store", "req": 6, "slot": 1, "name": "Saved"})["ok"]
         store = receive_until(ws, "patch")["changes"]
         assert {"path": "modified", "value": False} in store
+
+
+def test_unsaved_changes_listed_and_reverted(client: TestClient) -> None:
+    login(client)
+    with client.websocket_connect("/ws") as ws:
+        unknown = request(ws, {"type": "changes", "req": 1})
+        assert (unknown["known"], unknown["changes"]) == (False, [])  # nothing seen stored yet
+        assert request(ws, {"type": "preset.recall", "req": 2, "slot": 1})["ok"]
+        state = receive_until(ws, "snapshot")["state"]
+        gain = state["outputs"][2]["gain_db"]
+        band = state["inputs"][0]["peq"][1]
+        assert request(ws, {"type": "changes", "req": 3})["changes"] == []
+        set_gain = {"type": "set", "req": 4, "path": "outputs.2.gain_db", "value": gain - 6}
+        assert request(ws, set_gain)["ok"]
+        freq = {"freq_hz": 315 if band["freq_hz"] != 315 else 400}
+        assert request(ws, {"type": "set", "req": 5, "path": "inputs.0.peq.1", "value": freq})["ok"]
+        listed = request(ws, {"type": "changes", "req": 6})
+        assert listed["known"]
+        by_path = {c["path"]: c for c in listed["changes"]}
+        assert set(by_path) == {"outputs.2.gain_db", "inputs.0.peq.1.freq_hz"}
+        assert (by_path["outputs.2.gain_db"]["before"], by_path["outputs.2.gain_db"]["after"]) == (
+            gain,
+            gain - 6,
+        )
+        # Each change carries the write that undoes it.
+        for n, change in enumerate(listed["changes"], start=7):
+            revert = change["revert"]
+            message = {"type": "set", "req": n, "path": revert["path"], "value": revert["value"]}
+            assert request(ws, message)["ok"]
+        assert request(ws, {"type": "changes", "req": 10})["changes"] == []
+        assert request(ws, {"type": "resync", "req": 11})["ok"]
+        assert receive_until(ws, "snapshot")["state"]["modified"] is False
 
 
 def test_links(client: TestClient) -> None:

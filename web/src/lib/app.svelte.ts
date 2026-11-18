@@ -95,7 +95,7 @@ class App {
   retries = $state(0);
   toasts = $state<Toast[]>([]);
 
-  rev = 0;
+  rev = $state(0); // of the device state: changes with every snapshot and patch
   private ws: WebSocket | null = null;
   private nextReq = 1;
   private pending = new Map<number, Pending>();
