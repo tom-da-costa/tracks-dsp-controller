@@ -8,18 +8,20 @@ from dataclasses import dataclass, field
 DEFAULT_PIN = "0000"
 DEFAULT_DSP_PORT = 9761
 MODEL_CHOICES = ("auto", "408", "206", "204")
-# The id of the DSP when only --dsp-host is given.
-SINGLE_DSP_ID = "dsp"
+# In place of a DSP's address: a simulated DSP runs inside this process.
+DEMO_HOST = "demo"
+# The name of a DSP given without one: "dsp", then "dsp2", "dsp3"…
+DEFAULT_DSP_NAME = "dsp"
 # A DSP's name is its id in the API (/ws?device=NAME) and its label in the UI.
 DSP_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,23}")
 
 
 @dataclass(frozen=True)
 class DspSpec:
-    """One DSP to control: ``--dsp NAME=[MODEL@]HOST[:PORT][/ID]``."""
+    """One DSP to control: ``--dsp [NAME=][MODEL@]HOST[:PORT][/ID]``; ``HOST`` may be ``demo``."""
 
     name: str
-    host: str | None = None  # None in demo mode: a simulated DSP runs in this process
+    host: str
     port: int = DEFAULT_DSP_PORT
     device_id: int | None = None  # the ID number set on the DSP; None = search for it
     model: str = "auto"
@@ -30,6 +32,8 @@ class DspSpec:
                 f"DSP name {self.name!r}: 1-24 letters, digits, '.', '_' or '-' "
                 "(starting with a letter or a digit)"
             )
+        if not self.host:
+            raise ValueError(f"DSP {self.name}: the address is required (or demo)")
         if not 1 <= self.port <= 65535:
             raise ValueError(f"DSP {self.name}: the port must be 1-65535")
         if self.device_id is not None and not 1 <= self.device_id <= 250:
@@ -38,29 +42,32 @@ class DspSpec:
             raise ValueError(f"DSP {self.name}: the model must be auto, 408, 206 or 204")
 
     @property
+    def demo(self) -> bool:
+        """A simulated DSP, inside this process (``demo`` in place of the address)."""
+        return self.host.lower() == DEMO_HOST
+
+    @property
     def target(self) -> str:
-        return f"{self.host}:{self.port}" if self.host else "simulated"
+        return DEMO_HOST if self.demo else f"{self.host}:{self.port}"
 
 
 def parse_dsp(
     text: str,
     *,
-    port: int = DEFAULT_DSP_PORT,
+    name: str = DEFAULT_DSP_NAME,
     device_id: int | None = None,
     model: str = "auto",
 ) -> DspSpec:
-    """Parse ``NAME=[MODEL@]HOST[:PORT][/ID]``; the keyword arguments are the defaults.
-
-    ``NAME`` alone (or ``NAME=MODEL@``) leaves the host out, for the demo mode."""
-    name, sep, rest = text.strip().partition("=")
-    if not sep:
-        return DspSpec(name, None, port, device_id, model)
+    """Parse ``[NAME=][MODEL@]HOST[:PORT][/ID]``; the keyword arguments are the defaults."""
+    rest = text.strip()
+    if "=" in rest:
+        name, _, rest = rest.partition("=")
     if "@" in rest:
         model, _, rest = rest.partition("@")
     if "/" in rest:
         rest, _, id_text = rest.partition("/")
         device_id = _number(id_text, f"DSP {name}: the device ID")
-    host = rest
+    host, port = rest, DEFAULT_DSP_PORT
     if rest.startswith("["):  # [IPv6]:port
         host, _, port_text = rest[1:].partition("]")
         if port_text:
@@ -68,21 +75,25 @@ def parse_dsp(
     elif rest.count(":") == 1:  # not an IPv6 address without a port
         host, _, port_text = rest.partition(":")
         port = _number(port_text, f"DSP {name}: the port")
-    return DspSpec(name, host or None, port, device_id, model or "auto")
+    return DspSpec(name, host, port, device_id, model or "auto")
 
 
 def parse_dsps(
-    items: list[str], *, port: int = DEFAULT_DSP_PORT, device_id: int | None = None,
-    model: str = "auto",
-) -> list[DspSpec]:  # fmt: skip
-    """Parse several ``--dsp`` values; one value may hold several, separated by commas or
-    spaces (the ``TDSP_DSP`` environment variable)."""
-    specs = [
-        parse_dsp(part, port=port, device_id=device_id, model=model)
-        for item in items
-        for part in re.split(r"[,\s]+", item)
-        if part
-    ]
+    items: list[str], *, device_id: int | None = None, model: str = "auto"
+) -> list[DspSpec]:
+    """Parse the ``--dsp`` values; one value may hold several, separated by commas or spaces
+    (the ``TDSP_DSP`` environment variable). DSPs without a name get ``dsp``, ``dsp2``…"""
+    specs = []
+    unnamed = 0
+    for item in items:
+        for part in re.split(r"[,\s]+", item):
+            if not part:
+                continue
+            name = DEFAULT_DSP_NAME
+            if "=" not in part:
+                unnamed += 1
+                name = DEFAULT_DSP_NAME if unnamed == 1 else f"{DEFAULT_DSP_NAME}{unnamed}"
+            specs.append(parse_dsp(part, name=name, device_id=device_id, model=model))
     return specs
 
 
@@ -95,8 +106,8 @@ def _number(text: str, what: str) -> int:
 
 @dataclass
 class ServerConfig:
-    dsp_host: str | None = None
-    dsp_port: int = DEFAULT_DSP_PORT
+    # The DSPs to control, in the order given (--dsp, repeatable): at least one.
+    dsps: list[DspSpec] = field(default_factory=list)
     host: str = "0.0.0.0"
     port: int = 8080
     pin: str = DEFAULT_PIN
@@ -105,45 +116,22 @@ class ServerConfig:
     resync_interval_s: float = 0.0  # 0 = off
     command_timeout_s: float | None = None
     experimental: bool = False
-    demo: bool = False  # no DSP: a simulated one runs in this process
-    demo_scenario: str = "demo"
-    model: str = "auto"  # "auto" (detect from the identity), "408", "206" or "204"
-    device_id: int | None = None  # the ID number set on the DSP; None = search for it
+    demo_scenario: str = "demo"  # presets and signals of the simulated (demo) DSPs
     tls: bool = False  # served over HTTPS: the session cookie is Secure
-    # Several DSPs (--dsp NAME=HOST…); empty: the single one of dsp_host / dsp_port.
-    dsps: list[DspSpec] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        if self.dsps and self.dsp_host:
-            raise ValueError("use either --dsp-host or --dsp, not both")
-        if not self.dsps and not self.demo and not self.dsp_host:
-            raise ValueError("--dsp-host is required (or --dsp, or --demo)")
+        if not self.dsps:
+            raise ValueError("--dsp is required: the DSP's address, or demo (repeatable)")
         if not self.pin:
             raise ValueError("the access code must not be empty")
         if self.lock_idle_timeout_s <= 0:
             raise ValueError("--lock-idle-timeout must be > 0")
         if self.resync_interval_s < 0:
             raise ValueError("--resync-interval must be >= 0")
-        if self.device_id is not None and not 1 <= self.device_id <= 250:
-            raise ValueError("--device-id must be 1-250")
-        if self.model not in MODEL_CHOICES:
-            raise ValueError("--model must be auto, 408, 206 or 204")
         names = [spec.name.lower() for spec in self.dsps]
         if len(set(names)) != len(names):
-            raise ValueError("every --dsp needs its own name")
-        if not self.demo:
-            for spec in self.dsps:
-                if spec.host is None:
-                    raise ValueError(f"DSP {spec.name}: the host is required (NAME=HOST)")
+            raise ValueError("every --dsp needs its own name (NAME=…)")
 
-    @property
-    def devices(self) -> list[DspSpec]:
-        """The DSPs to control, in the order given."""
-        if self.dsps:
-            return list(self.dsps)
-        return [DspSpec(SINGLE_DSP_ID, self.dsp_host, self.dsp_port, self.device_id, self.model)]
-
-    @property
-    def allow_unverified(self) -> bool:
-        """Unverified parameters are allowed in demo mode or with --experimental."""
-        return self.demo or self.experimental
+    def allow_unverified(self, spec: DspSpec) -> bool:
+        """Unverified parameters are allowed on a simulated DSP, or with --experimental."""
+        return spec.demo or self.experimental

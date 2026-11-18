@@ -50,13 +50,14 @@ web-test:  ## Type-check and unit-test the UI
 web-dev:  ## Vite dev server only, hot reload on :5173 (start a backend on :8080 alongside)
 	$(NPM_DEV) run dev -- --host 0.0.0.0
 
-# Backend of `make dev`: demo mode by default. Against the separate simulator instead:
-#   uv run tracks-dsp-controller sim --host 127.0.0.1   then   make dev DEV_BACKEND="--dsp-host 127.0.0.1"
-DEV_BACKEND ?= --demo
-backend:  ## Backend only (--demo) on :8080, for `make web-dev` in another terminal
+# Backend of `make dev`: a simulated DSP inside the app by default. Against the separate
+# simulator instead:
+#   uv run tracks-dsp-controller sim --host 127.0.0.1   then   make dev DEV_BACKEND="--dsp 127.0.0.1"
+DEV_BACKEND ?= --dsp demo
+backend:  ## Backend only (--dsp demo) on :8080, for `make web-dev` in another terminal
 	uv run tracks-dsp-controller $(DEV_BACKEND) --host 127.0.0.1 --port 8080
 
-dev:  ## UI with hot reload on http://<this-machine>:5173, backend (--demo) on :8080
+dev:  ## UI with hot reload on http://<this-machine>:5173, backend (--dsp demo) on :8080
 	@trap 'kill 0' INT TERM EXIT; \
 	uv run tracks-dsp-controller $(DEV_BACKEND) --host 127.0.0.1 --port 8080 & \
 	$(NPM_DEV) run dev -- --host 0.0.0.0

@@ -30,20 +30,16 @@
   <dl>
     <dt>»</dt>
     <dd>Déplie la barre pour afficher le nom des onglets ; touchez à nouveau pour la replier.</dd>
-    <dt>Choix du DSP (plusieurs DSP seulement)</dt>
+    <dt>DSP (point, nom et modèle)</dt>
     <dd>
-      Quand le serveur pilote plusieurs DSP (un système principal et une ligne de délai, par
-      exemple), le premier élément indique celui que cet onglet pilote. Touchez-le pour la liste
-      de tous les DSP : leur état, leur preset et les modifications non enregistrées ;
-      touchez-en un pour y passer. Chaque onglet du navigateur peut afficher un DSP différent.
-      <em>Take control</em> vaut pour tous les DSP du serveur.
+      Le DSP que pilote cet onglet. Le point est vert quand il est en ligne, rouge quand le DSP ou le serveur est injoignable : un bandeau en haut indique lequel (<em>SERVER</em> ou <em>DSP</em>). Les valeurs affichées sont les dernières connues et les commandes sont désactivées jusqu'au retour de la liaison, qui se rétablit toute seule (<em>Retry now</em> réessaie tout de suite). Touchez-le pour la liste des DSP du serveur (un système principal et une ligne de délai, par exemple) : leur état, leur preset et les modifications non enregistrées ; touchez-en un pour y passer. Chaque onglet du navigateur peut afficher un DSP différent. <em>Take control</em> vaut pour tous les DSP du serveur.
     </dd>
-    <dt>État (point et preset)</dt>
+    <dt>Preset</dt>
     <dd>
-      Le point est vert quand le DSP est en ligne, rouge quand le DSP ou le serveur est injoignable : un bandeau en haut indique lequel (<em>SERVER</em> ou <em>DSP</em>). Les valeurs affichées sont les dernières connues et les commandes sont désactivées jusqu'au retour de la liaison, qui se rétablit toute seule (<em>Retry now</em> réessaie tout de suite). Dessous, le preset actuellement dans le DSP
-      (U01…U20, ou F00). Un petit point orange signale des <em>modifications non
-      enregistrées</em> : les réglages diffèrent du preset enregistré. <em>DEMO</em> signifie
-      qu'il n'y a pas de DSP (un DSP simulé). Touchez-le pour ouvrir <em>Presets</em>.
+      Le preset actuellement dans le DSP (U01…U20, ou F00). Un petit point orange signale des
+      <em>modifications non enregistrées</em> : les réglages diffèrent du preset enregistré.
+      <em>DEMO</em> signifie que le DSP est simulé par le serveur (pas d'appareil). Touchez-le
+      pour ouvrir <em>Presets</em>.
     </dd>
     <dt>Les onglets</dt>
     <dd>Une icône par vue (voir <em>Les onglets</em>).</dd>

@@ -9,15 +9,12 @@ services:
     ports:
       - "${TDSP_LISTEN_PORT:-8080}:8080"
     environment:
-      TDSP_HOST: ${TDSP_HOST:-}
-      TDSP_DSP: ${TDSP_DSP:-}             # several DSPs instead of TDSP_HOST (see .env.example)
-      TDSP_PORT: ${TDSP_PORT:-9761}
+      TDSP_DSP: ${TDSP_DSP:-}             # the DSP(s): address, or demo (see .env.example)
       TDSP_PIN: ${TDSP_PIN:-0000}
       TDSP_METER_RATE: ${TDSP_METER_RATE:-5}
       TDSP_LOCK_IDLE_TIMEOUT: ${TDSP_LOCK_IDLE_TIMEOUT:-120}
       TDSP_RESYNC_INTERVAL: ${TDSP_RESYNC_INTERVAL:-0}
       TDSP_EXPERIMENTAL: ${TDSP_EXPERIMENTAL:-false}
-      TDSP_DEMO: ${TDSP_DEMO:-false}
       TDSP_MODEL: ${TDSP_MODEL:-auto}
       TDSP_DEVICE_ID: ${TDSP_DEVICE_ID:-}
       TDSP_LOG_LEVEL: ${TDSP_LOG_LEVEL:-info}

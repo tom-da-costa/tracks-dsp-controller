@@ -1,5 +1,6 @@
-"""Several DSPs from one server (issue #32): configuration, one WebSocket per DSP, per-DSP
-state, meters and control, the overview of every DSP."""
+"""DSPs of a server (issue #32): ``--dsp`` configuration (one DSP is just the case n = 1, and
+``demo`` in place of the address simulates one), one WebSocket per DSP, per-DSP state and
+meters, server-wide control, the overview of every DSP."""
 
 import time
 from collections.abc import Iterator
@@ -12,32 +13,33 @@ from fastapi.testclient import TestClient
 from tracks_dsp_controller import cli
 from tracks_dsp_controller.protocol.profile import DEFAULT_PROFILE
 from tracks_dsp_controller.server.app import AppContext, create_app
-from tracks_dsp_controller.server.settings import (
-    SINGLE_DSP_ID,
-    DspSpec,
-    ServerConfig,
-    parse_dsp,
-    parse_dsps,
-)
+from tracks_dsp_controller.server.settings import DspSpec, ServerConfig, parse_dsp, parse_dsps
 
 from .test_server import login, receive_until, request
 
 
 # --- configuration -------------------------------------------------------------------------------
 def test_parse_dsp() -> None:
+    assert parse_dsp("192.168.1.50") == DspSpec("dsp", "192.168.1.50")  # no name: "dsp"
     assert parse_dsp("main=192.168.1.50") == DspSpec("main", "192.168.1.50")
     assert parse_dsp("delay=206@10.0.0.7:9000/3") == DspSpec("delay", "10.0.0.7", 9000, 3, "206")
     assert parse_dsp("mon=dsp.local/12") == DspSpec("mon", "dsp.local", 9761, 12)
     assert parse_dsp("v6=[fe80::1]:9762") == DspSpec("v6", "fe80::1", 9762)
     assert parse_dsp("v6=fe80::1") == DspSpec("v6", "fe80::1")
-    # the defaults come from --dsp-port, --device-id and --model
-    spec = parse_dsp("a=h", port=1000, device_id=4, model="204")
-    assert spec == DspSpec("a", "h", 1000, 4, "204")
+    # the defaults come from --device-id and --model
+    spec = parse_dsp("a=h", device_id=4, model="204")
+    assert spec == DspSpec("a", "h", 9761, 4, "204")
     assert parse_dsp("a=408@h/9", device_id=4, model="204") == DspSpec("a", "h", 9761, 9, "408")
-    # demo mode: no host
-    assert parse_dsp("main") == DspSpec("main")
-    assert parse_dsp("delay=206@") == DspSpec("delay", None, model="206")
+    # demo in place of the address: a simulated DSP
+    assert parse_dsp("demo").demo
+    assert parse_dsp("delay=206@demo") == DspSpec("delay", "demo", model="206")
+    assert parse_dsp("x=DEMO").target == "demo"
+    assert not parse_dsp("10.0.0.1").demo
+    assert parse_dsp("10.0.0.1:9000").target == "10.0.0.1:9000"
     for bad, match in [
+        ("", "address"),
+        ("a=", "address"),
+        ("a=206@", "address"),
         ("=10.0.0.1", "name"),
         ("bad name=10.0.0.1", "name"),
         ("a=h:port", "port"),
@@ -48,26 +50,21 @@ def test_parse_dsp() -> None:
     ]:
         with pytest.raises(ValueError, match=match):
             parse_dsp(bad)
-    # TDSP_DSP holds several, separated by spaces or commas
-    names = [s.name for s in parse_dsps(["main=10.0.0.1, delay=10.0.0.2  mon=10.0.0.3", "x=h"])]
-    assert names == ["main", "delay", "mon", "x"]
+    # TDSP_DSP holds several, separated by spaces or commas; unnamed ones get dsp, dsp2…
+    specs = parse_dsps(["main=10.0.0.1, delay=10.0.0.2  10.0.0.3", "10.0.0.4"])
+    assert [s.name for s in specs] == ["main", "delay", "dsp", "dsp2"]
     assert parse_dsps([""]) == []
 
 
-def test_config_devices() -> None:
-    single = ServerConfig(dsp_host="10.0.0.9", dsp_port=9000, device_id=5, model="206")
-    assert single.devices == [DspSpec(SINGLE_DSP_ID, "10.0.0.9", 9000, 5, "206")]
-    two = [DspSpec("main", "10.0.0.1"), DspSpec("delay", "10.0.0.2")]
-    assert ServerConfig(dsps=two).devices == two
-    with pytest.raises(ValueError, match="either"):
-        ServerConfig(dsp_host="10.0.0.9", dsps=two)
+def test_config_dsps() -> None:
+    with pytest.raises(ValueError, match="--dsp is required"):
+        ServerConfig()
+    two = [DspSpec("main", "10.0.0.1"), DspSpec("delay", "demo")]
+    assert ServerConfig(two).dsps == two  # a real DSP and a simulated one, mixed
     with pytest.raises(ValueError, match="own name"):
-        ServerConfig(dsps=[DspSpec("main", "a"), DspSpec("MAIN", "b")])
-    with pytest.raises(ValueError, match="host is required"):
-        ServerConfig(dsps=[DspSpec("main")])
-    assert ServerConfig(demo=True, dsps=[DspSpec("main"), DspSpec("delay")]).devices[1].name == (
-        "delay"
-    )
+        ServerConfig([DspSpec("main", "a"), DspSpec("MAIN", "b")])
+    with pytest.raises(ValueError, match="own name"):
+        ServerConfig(parse_dsps(["dsp=10.0.0.1", "10.0.0.2"]))
 
 
 def test_cli_reads_dsp_options(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -78,18 +75,22 @@ def test_cli_reads_dsp_options(monkeypatch: pytest.MonkeyPatch) -> None:
         raise RuntimeError("stop here")
 
     monkeypatch.setattr("tracks_dsp_controller.server.app.create_app", fake_create_app)
-    argv = ["--dsp", "main=10.0.0.1", "--dsp", "delay=206@10.0.0.2/3", "--dsp-port", "9000"]
+    assert cli.main(["--dsp", "10.0.0.1"]) == 1
+    assert configs[-1].dsps == [DspSpec("dsp", "10.0.0.1")]
+    argv = ["--dsp", "main=10.0.0.1", "--dsp", "delay=10.0.0.2:9000/3", "--model", "206"]
     assert cli.main(argv) == 1
-    assert configs[-1].devices == [
-        DspSpec("main", "10.0.0.1", 9000),
+    assert configs[-1].dsps == [
+        DspSpec("main", "10.0.0.1", model="206"),
         DspSpec("delay", "10.0.0.2", 9000, 3, "206"),
     ]
+    assert cli.main(["--dsp", "demo"]) == 1
+    assert configs[-1].dsps[0].demo
     # TDSP_DSP, replaced (not extended) by --dsp
-    monkeypatch.setenv("TDSP_DSP", "a=10.0.0.5 b=10.0.0.6")
+    monkeypatch.setenv("TDSP_DSP", "a=10.0.0.5 b=demo")
     assert cli.main(["serve"]) == 1
-    assert [s.name for s in configs[-1].devices] == ["a", "b"]
+    assert [s.name for s in configs[-1].dsps] == ["a", "b"]
     assert cli.main(["--dsp", "c=10.0.0.7"]) == 1
-    assert [s.name for s in configs[-1].devices] == ["c"]
+    assert [s.name for s in configs[-1].dsps] == ["c"]
 
 
 # --- two simulated DSPs -------------------------------------------------------------------------
@@ -106,10 +107,9 @@ def wait_all_online(ctx: AppContext) -> None:
 def two(tmp_path: Path) -> Iterator[TestClient]:
     (tmp_path / "index.html").write_text("<!doctype html><title>UI</title>")
     config = ServerConfig(
-        demo=True,
+        [DspSpec("main", "demo"), DspSpec("delay", "demo", model="206")],
         pin="4321",
         meter_rate_hz=10,
-        dsps=[DspSpec("main"), DspSpec("delay", model="206")],
     )
     app = create_app(config, DEFAULT_PROFILE, web_dir=tmp_path)
     with TestClient(app) as client:
@@ -128,9 +128,10 @@ def test_each_socket_controls_one_dsp(two: TestClient) -> None:
     assert (main.session.model_key, delay.session.model_key) == ("408", "206")
     health = two.get("/api/health").json()
     assert health["devices"] == [
-        {"id": "main", "status": "online"},
-        {"id": "delay", "status": "online"},
+        {"id": "main", "status": "online", "demo": True},
+        {"id": "delay", "status": "online", "demo": True},
     ]
+    assert health["demo"] is True  # every DSP is simulated
     login(two)
     with two.websocket_connect("/ws?device=delay") as ws:
         hello = receive_until(ws, "hello")

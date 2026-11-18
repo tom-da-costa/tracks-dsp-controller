@@ -126,6 +126,7 @@ export interface Hello {
   /** This browser session's screen is locked (see App.lockScreen). */
   screen_locked: boolean;
   server_version: string;
+  /** This socket's DSP is simulated in the server (`--dsp demo`). */
   demo: boolean;
   experimental: boolean;
   verified_kinds: string[];
@@ -164,8 +165,9 @@ export interface DeviceMessage {
  * (the `lock` message) belongs to the server and covers every DSP. */
 export interface DeviceEntry {
   id: string;
-  /** "host:port", or "simulated" in demo mode. */
+  /** "host:port", or "demo" for a DSP simulated in the server. */
   target: string;
+  demo: boolean;
   status: DeviceStatus;
   error: string | null;
   model: string;

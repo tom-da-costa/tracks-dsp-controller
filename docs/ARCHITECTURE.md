@@ -11,8 +11,8 @@ the client/server API and the security model. The device protocol itself is in
                               └─────────────────────────────────────┘
 ```
 
-With `--dsp` (repeatable) the same process controls several DSPs, one TCP connection each (§2,
-"Several DSPs").
+Each `--dsp` is a DSP to control; repeated, the same process controls several, one TCP
+connection each (§2, "DSPs"). One DSP is just the case n = 1.
 
 ## 1. Constraints
 
@@ -55,13 +55,14 @@ Rules:
 - The built UI is committed, so `git clone && uv run` works without Node. CI fails when it is out
   of date with the sources in `web/`.
 
-### Several DSPs
+### DSPs
 
 `DeviceManager` (`server/devices.py`) holds one `Device` per DSP, in the order of the `--dsp`
-options: its `DspSpec` (name, host, port, front-panel ID, model), `DeviceSession` and
-`StateStore`, and in demo mode its own in-process simulator. Without
-`--dsp`, `--dsp-host` makes a single one named `dsp`. Each DSP has its own model detection,
-pipeline, reconnection and meter rate; a DSP that is offline does not affect the others.
+options (at least one; one DSP is not a special case): its `DspSpec` (name, host, port,
+front-panel ID, model), `DeviceSession` and `StateStore`, and for a `demo` DSP (`demo` in place of
+the address) its own in-process simulator. Real and `demo` DSPs can be mixed. Each DSP has its
+own model detection, pipeline, reconnection and meter rate; a DSP that is offline does not
+affect the others.
 
 Each WebSocket controls one DSP, named in its URL (`/ws?device=NAME`; the first one when the name
 is missing or unknown, and `hello.device_id` says which). Everything about a DSP (`hello`'s
@@ -89,8 +90,8 @@ so meters only flow for the DSP a tab shows. Parameters are not linked across DS
 - Linked channels: the DSP applies a write to every member of a link group (except names and
   matrix), and the store mirrors that.
 - Parameter kinds not yet verified on a DSP 408 are left out of `HARDWARE_VERIFIED` in the
-  registry. On a real DSP they are refused unless `--experimental` is given. Against the
-  simulator, everything is enabled.
+  registry. On a real DSP they are refused unless `--experimental` is given. On a `demo` DSP,
+  everything is enabled.
 
 ## 4. Command pipeline
 
@@ -239,8 +240,8 @@ captures of a real device, the 204 the notes of an app tested on one ([PROTOCOL.
 - It loads the same protocol profile as the backend (§6) and logs every frame it receives, so the
   official editor can be pointed at it to capture its requests ([captures.md](captures.md)).
 - It runs as a **separate process**, `tracks-dsp-controller sim` (also installed as
-  `tracks-dsp-sim`), reached over TCP like a real DSP, so tests cover the real network path. The
-  **demo mode** (`serve --demo`) runs the same simulated device inside the backend process.
+  `tracks-dsp-sim`), reached over TCP like a real DSP, so tests cover the real network path. A
+  **`demo` DSP** (`--dsp demo`) runs the same simulated device inside the backend process.
 
 ## 6. Protocol profile
 
@@ -262,7 +263,7 @@ HTTP (JSON):
 | `POST` | `/api/login` | `{pin, name?}` → sets the `session` cookie (HttpOnly, SameSite=Strict); 401 on a wrong code |
 | `POST` | `/api/logout` | Clears the session and releases the control it held |
 | `GET` | `/api/session` | `{authenticated, client_id, name}`; 401 when not logged in |
-| `GET` | `/api/health` | `{status, device_status, devices, version}`, no auth (Docker healthcheck); `device_status` is the first DSP's, `devices` lists `{id, status}` of each |
+| `GET` | `/api/health` | `{status, device_status, devices, version, demo}`, no auth (Docker healthcheck); `device_status` is the first DSP's, `devices` lists `{id, status, demo}` of each, `demo` is true when every DSP is simulated |
 | `GET` | `/` and assets | The single-page app; static files need no auth, all data goes through the authenticated WebSocket |
 
 WebSocket `/ws?device=NAME` (cookie auth plus an `Origin` check; `device` picks the DSP, §2).
@@ -270,12 +271,12 @@ JSON messages `{type, ...}`:
 
 | Direction | Type | Payload |
 |---|---|---|
-| S→C | `hello` | `client_id`, `name`, `device_id` (the DSP of this socket), `screen_locked`, `server_version`, `demo`, `experimental`, `verified_kinds`, `profile` (channel counts, PEQ types, slopes, ratios, frequency/Q/delay ranges), `limits`, `settings` |
+| S→C | `hello` | `client_id`, `name`, `device_id` (the DSP of this socket), `screen_locked`, `server_version`, `demo` (this DSP is simulated), `experimental`, `verified_kinds`, `profile` (channel counts, PEQ types, slopes, ratios, frequency/Q/delay ranges), `limits`, `settings` |
 | S→C | `snapshot` | `rev`, full `state` (device info, presets, channels, `modified`: the live setup changed since the last recall or store, `null` when unknown) |
 | S→C | `patch` | `rev`, `changes: [{path, value}]`, `origin` (client_id or `device`) |
 | S→C | `meters` | `seq`, `levels` (12 values in dB or `null`; the whole field is `null` when the poll failed), `clip` (12 bools), `limit` (8 bools or `null`), `comp` (8 bools or `null`), `input_clip` |
 | S→C | `device` | `status`, `error?`, `model`, `firmware`, `identity`, `model_tested` |
-| S→C | `devices` | every DSP: `{id, target, status, error, model, active_slot, preset_name, modified}` (sent on connect and when one of these changes) |
+| S→C | `devices` | every DSP: `{id, target, demo, status, error, model, active_slot, preset_name, modified}` (sent on connect and when one of these changes) |
 | S→C | `lock` | control: `owner_id?`, `owner_name?`, `idle_remaining_s?`, `idle_timeout_s` |
 | S→C | `shutdown` | `by`: the server was shut down from Settings; the UI stops reconnecting and shows it |
 | S→C | `master` | master role: `owner_id?`, `owner_name?`, `logins_blocked` |
@@ -331,15 +332,15 @@ Every option also reads `TDSP_<NAME>` from the environment (the simulator: `TDSP
 `envvars.py`).
 
 ```
-tracks-dsp-controller [serve] --dsp-host 192.168.1.50 [options]   # "serve" is the default sub-command
-  --dsp-port 9761          --host 0.0.0.0        --port 8080
-  --dsp NAME=[MODEL@]HOST[:PORT][/ID]   (repeatable: several DSPs, instead of --dsp-host)
+tracks-dsp-controller [serve] --dsp 192.168.1.50 [options]   # "serve" is the default sub-command
+  --dsp [NAME=][MODEL@]HOST[:PORT][/ID]   (required, repeatable; HOST demo: simulated in-process)
+  --host 0.0.0.0           --port 8080
   --pin 0000               --meter-rate 5        (1–10 Hz)
   --lock-idle-timeout 120  --resync-interval 0   (seconds, 0 = off)
   --command-timeout 0.5    --experimental        --profile file.toml
-  --model auto              (auto: detected from the identity; or 408, 206, 204)
-  --device-id N             (the DSP's front-panel ID, 1–250; default: searched for)
-  --demo [--demo-scenario demo|silent|clipping|stress]   (simulates --model; 408 with auto)
+  --model auto              (default of every --dsp; auto: detected; or 408, 206, 204)
+  --device-id N             (default of every --dsp: front-panel ID, 1–250; default: searched for)
+  --demo-scenario demo      (of the demo DSPs: demo|silent|clipping|stress)
   --tls-cert cert.pem --tls-key key.pem  |  --tls-self-signed [--tls-names IP,name] [--tls-dir DIR]
   --log-level info
 tracks-dsp-controller probe --dsp-host IP {info|meters|dump-config|export-preset|diff-config|raw HEX}

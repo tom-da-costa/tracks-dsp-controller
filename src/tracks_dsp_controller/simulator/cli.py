@@ -1,7 +1,7 @@
 """``tracks-dsp-controller sim`` (or ``tracks-dsp-sim``): a simulated t.racks DSP on the network.
 
 It plays a DSP 408 (default), 206 or 204 (``--model``) and listens on TCP port 9761 like the real
-device. Point ``tracks-dsp-controller --dsp-host``, the probe tools or the official editor at it.
+device. Point ``tracks-dsp-controller --dsp``, the probe tools or the official editor at it.
 Every option can also come from a ``TDSP_SIM_<NAME>`` environment variable.
 """
 
@@ -46,7 +46,7 @@ def build_parser(prog: str = "tracks-dsp-sim") -> argparse.ArgumentParser:
         description="Simulated t.racks DSP (408, 206 or 204) on TCP, for testing "
         "tracks-dsp-controller without a device.",
         epilog=f"Example: {prog} --state-dir sim-state   then   "
-        "tracks-dsp-controller --dsp-host 127.0.0.1",
+        "tracks-dsp-controller --dsp 127.0.0.1",
     )
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     p.add_argument(

@@ -1,7 +1,7 @@
 <script lang="ts">
-  // Top of the tab rail when the server controls several DSPs: a framed selector with the DSP
-  // this tab shows (its status dot, name and model: the preset row below then shows only the
-  // preset), and a panel with every DSP at a glance (status, preset) to switch to another.
+  // Top of the tab rail: a framed selector with the DSP this tab controls (its status dot, name
+  // and model; the preset row below shows only the preset), and a panel with every DSP of the
+  // server at a glance (status, preset) to switch to another. One DSP is just the case n = 1.
   import { app } from "../lib/app.svelte";
   import type { DeviceEntry } from "../lib/types";
 
@@ -99,6 +99,7 @@
               <span class="line">
                 <strong>{entry.id}</strong>
                 <span class="muted">{entry.model || entry.target}</span>
+                {#if entry.demo}<span class="demo">DEMO</span>{/if}
               </span>
               <span class="line small">
                 {#if entry.status === "online"}
@@ -268,6 +269,14 @@
   }
   .small {
     font-size: 0.8rem;
+  }
+  .demo {
+    padding: 0 4px;
+    border-radius: 4px;
+    background: var(--info);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: 700;
   }
   .unsaved {
     color: var(--warn);

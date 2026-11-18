@@ -4,6 +4,7 @@ import base64
 import time
 import weakref
 from collections.abc import Iterator
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -17,11 +18,12 @@ from tracks_dsp_controller.server.app import AppContext, create_app
 from tracks_dsp_controller.server.auth import AuthManager, LoginError, RateLimitedError, clean_name
 from tracks_dsp_controller.server.lock import LockManager
 from tracks_dsp_controller.server.master import MasterManager, MasterState
-from tracks_dsp_controller.server.settings import ServerConfig
+from tracks_dsp_controller.server.settings import DspSpec, ServerConfig
 from tracks_dsp_controller.simulator import Faults, SimulatedDevice, apply_scenario
 from tracks_dsp_controller.state import registry
 
 P = DEFAULT_PROFILE.with_overrides({"timing": {"command_timeout_s": 0.3}})
+DEMO = [DspSpec("dsp", "demo")]  # one simulated DSP, inside the app
 
 
 # --- unit: auth ----------------------------------------------------------------------------------
@@ -108,16 +110,18 @@ def test_master_role_block_and_absence() -> None:
 
 
 def test_server_config_validation() -> None:
-    with pytest.raises(ValueError, match="dsp-host"):
+    with pytest.raises(ValueError, match="--dsp"):
         ServerConfig()
     with pytest.raises(ValueError, match="code"):
-        ServerConfig(demo=True, pin="")
+        ServerConfig(DEMO, pin="")
     with pytest.raises(ValueError, match="lock"):
-        ServerConfig(demo=True, lock_idle_timeout_s=0)
+        ServerConfig(DEMO, lock_idle_timeout_s=0)
     with pytest.raises(ValueError, match="resync"):
-        ServerConfig(demo=True, resync_interval_s=-1)
-    assert ServerConfig(demo=True).allow_unverified
-    assert not ServerConfig(dsp_host="10.0.0.9").allow_unverified
+        ServerConfig(DEMO, resync_interval_s=-1)
+    real = DspSpec("dsp", "10.0.0.9")
+    assert ServerConfig(DEMO).allow_unverified(DEMO[0])
+    assert not ServerConfig([real]).allow_unverified(real)
+    assert ServerConfig([real], experimental=True).allow_unverified(real)
 
 
 # --- integration -------------------------------------------------------------------------------
@@ -127,7 +131,7 @@ def make_app(tmp_path: Path, **overrides: Any) -> tuple[Any, SimulatedDevice]:
     device.timing.recall_s = 0.01
     device.timing.store_s = 0.01
     apply_scenario("demo", device, Faults())
-    config = ServerConfig(demo=True, pin="4321", meter_rate_hz=10, **overrides)
+    config = ServerConfig(DEMO, pin="4321", meter_rate_hz=10, **overrides)
     app = create_app(config, P, web_dir=tmp_path, simulated_device=device)
     return app, device
 
@@ -461,7 +465,8 @@ def test_unverified_parameters_need_experimental_on_real_hardware(
     monkeypatch.setattr(registry, "HARDWARE_VERIFIED", registry.HARDWARE_VERIFIED - {"delay_ms"})
     app, _ = make_app(web_dir)
     ctx: AppContext = app.state.ctx
-    ctx.config.demo = False  # pretend this is a real DSP without --experimental
+    # pretend this is a real DSP without --experimental
+    ctx.device.spec = replace(ctx.device.spec, host="10.0.0.9")
     with TestClient(app) as test_client:
         deadline = time.monotonic() + 5
         while ctx.session.status.value != "online" and time.monotonic() < deadline:
@@ -535,7 +540,7 @@ def test_links_need_experimental_when_unverified(
     monkeypatch.setattr(registry, "HARDWARE_VERIFIED", registry.HARDWARE_VERIFIED - {"link"})
     app, _ = make_app(web_dir)
     ctx: AppContext = app.state.ctx
-    ctx.config.demo = False
+    ctx.device.spec = replace(ctx.device.spec, host="10.0.0.9")
     with TestClient(app) as test_client:
         deadline = time.monotonic() + 5
         while ctx.session.status.value != "online" and time.monotonic() < deadline:

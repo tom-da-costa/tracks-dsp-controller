@@ -1,8 +1,7 @@
 <script lang="ts">
-  // Top of the tab rail: DSP status and active preset (unsaved changes, demo mode).
-  // Folded, it shows the status dot and the preset slot; expanded, the full text.
-  // With several DSPs, the DSP picker above carries the status and the model, and this row
-  // only the preset.
+  // Top of the tab rail: the DSP picker (the DSP this tab controls: status dot, name, model;
+  // the server's other DSPs, if any) and the active preset (unsaved changes, demo).
+  // Folded, it shows the preset slot; expanded, the full text.
   import { app } from "../lib/app.svelte";
   import { nav } from "../lib/nav.svelte";
   import DevicePicker from "./DevicePicker.svelte";
@@ -14,28 +13,16 @@
 
   let { expanded, onpick }: Props = $props();
 
-  const STATUS_TEXT: Record<string, string> = {
-    disconnected: "no server",
-    offline: "DSP offline",
-    connecting: "DSP connecting",
-    initialising: "DSP reading",
-    stopped: "DSP stopped",
-  };
-
-  const status = $derived(app.connected ? (app.status?.status ?? "connecting") : "disconnected");
   const device = $derived(app.device);
   const slot = $derived(
     device ? (device.active_slot === 0 ? "F00" : `U${String(device.active_slot).padStart(2, "0")}`) : "—",
   );
   const presetTitle = $derived(
     [
-      app.multiDevice ? `DSP ${app.deviceId}` : "",
-      device ? `${slot} ${device.preset_name}` : "DSP",
+      `DSP ${app.deviceId ?? ""}`,
+      device ? `preset ${slot} ${device.preset_name}` : "",
       device?.modified ? "unsaved changes" : "",
-      status === "disconnected"
-        ? "no connection to the server"
-        : `DSP ${status}${app.status?.error ? `: ${app.status.error}` : ""}`,
-      app.hello?.demo ? "demo mode (no DSP)" : "",
+      app.hello?.demo ? "demo (simulated DSP)" : "",
     ]
       .filter(Boolean)
       .join(" · "),
@@ -48,35 +35,21 @@
 </script>
 
 <div class="status" class:expanded>
-  {#if app.multiDevice}<DevicePicker {expanded} {onpick} />{/if}
-  <button
-    class="preset"
-    class:multi={app.multiDevice}
-    onclick={openPresets}
-    title={presetTitle}
-    aria-label={presetTitle}
-  >
+  <DevicePicker {expanded} {onpick} />
+  <button class="preset" onclick={openPresets} title={presetTitle} aria-label={presetTitle}>
     <span class="icon">
-      {#if !app.multiDevice}<span class="dot {status}"></span>{/if}
       {#if device?.modified}<span class="unsaved-dot"></span>{/if}
       <span class="slot">{slot}</span>
     </span>
     <span class="text">
-      <strong>{device?.preset_name || (app.multiDevice ? "—" : "DSP")}</strong>
+      <strong>{device?.preset_name || "—"}</strong>
       <small>
         {#if device?.modified}<span class="unsaved">● unsaved</span>{/if}
         {#if app.hello?.demo}<span class="demo">DEMO</span>{/if}
-        {#if app.multiDevice}
-          <span class="muted">Preset {slot}</span>
-        {:else}
-          <span class="muted"
-            >{status === "online" ? (app.status?.model ?? "") : (STATUS_TEXT[status] ?? status)}</span
-          >
-        {/if}
+        <span class="muted">Preset {slot}</span>
       </small>
     </span>
   </button>
-
 </div>
 
 <style>
@@ -132,48 +105,15 @@
     font-size: 0.75rem;
   }
   .slot {
-    font-size: 0.65rem;
-    font-weight: 700;
-    color: var(--muted);
-  }
-  /* Several DSPs: no status dot here (it is on the picker), the slot alone is bigger. */
-  .multi .slot {
     font-size: 0.8rem;
-    color: var(--text);
+    font-weight: 700;
   }
-  /* No status dot to sit on: the unsaved dot goes above the slot instead of over it. */
-  .multi .unsaved-dot {
-    position: static;
+  /* above the slot (the DSP's status dot is on the picker) */
+  .unsaved-dot {
     width: 10px;
     height: 10px;
-    border: none;
-  }
-  .dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--muted);
-  }
-  .dot.online {
-    background: var(--accent);
-  }
-  .dot.offline,
-  .dot.disconnected {
-    background: var(--danger);
-  }
-  .dot.connecting,
-  .dot.initialising {
-    background: var(--warn);
-  }
-  .unsaved-dot {
-    position: absolute;
-    top: -3px;
-    right: 2px;
-    width: 9px;
-    height: 9px;
     border-radius: 50%;
     background: var(--warn);
-    border: 2px solid var(--panel);
   }
   .unsaved {
     color: var(--warn);

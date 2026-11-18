@@ -95,30 +95,32 @@ def build_devices(
     *,
     simulated_device: SimulatedDevice | None = None,
 ) -> DeviceManager:
-    """A ``Device`` per DSP of the configuration; in demo mode each one gets its own simulator
-    (``simulated_device``, for the tests, replaces the first one's)."""
+    """A ``Device`` per DSP of the configuration; each ``demo`` one gets its own simulator, in
+    this process (``simulated_device``, for the tests, replaces the first one's)."""
     devices = []
-    for index, spec in enumerate(config.devices):
+    given = simulated_device
+    for spec in config.dsps:
         # The profile until the device is identified: its --model, or the base one.
         start = profile
         if spec.model in MODELS and detect_model(profile.model) != spec.model:
             start = model_profile(spec.model)
         simulator = None
-        if config.demo:
-            # The simulated model: --model, or the profile's (408 by default) with auto.
+        if spec.demo:
+            # The simulated model: the DSP's, or the profile's (408 by default) with auto.
             key = spec.model if spec.model in MODELS else detect_model(start.model) or "408"
             sim_profile = start if key == detect_model(start.model) else model_profile(key)
-            given = simulated_device if index == 0 else None
             device = given or SimulatedDevice(sim_profile, model=SIM_MODELS[key])
             faults = Faults()
             if given is None:
                 apply_scenario(config.demo_scenario, device, faults)
+            given = None
             simulator = SimulatorServer(
                 device, host="127.0.0.1", port=0, faults=faults, device_id=spec.device_id
             )
         store = StateStore()
+        # A simulator's port is only known once it runs (Device.start).
         session = DeviceSession(
-            spec.host or "127.0.0.1",
+            "127.0.0.1" if spec.demo else spec.host,
             spec.port,
             start,
             store,

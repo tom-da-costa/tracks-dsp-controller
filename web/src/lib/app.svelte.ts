@@ -118,11 +118,6 @@ class App {
     return !!this.master?.owner_id && this.master.owner_id === this.hello?.client_id;
   }
 
-  /** More than one DSP: the device picker is shown. */
-  get multiDevice(): boolean {
-    return this.devices.length > 1;
-  }
-
   /** The current DSP's entry in the overview. */
   get currentDevice(): DeviceEntry | undefined {
     return this.devices.find((d) => d.id === this.deviceId);
@@ -429,12 +424,10 @@ class App {
     }
   }
 
-  /** The tab / home-screen title: the detected model ("DSP206" -> "DSP 206"), and the DSP's
-   * name when the server has several. */
+  /** The tab / home-screen title: the DSP's name and its detected model ("DSP206" -> "DSP 206"). */
   private updateTitle(): void {
     const model = this.status?.model ? this.status.model.replace(/^DSP\s*/, "DSP ") : "";
-    const name = this.multiDevice ? (this.deviceId ?? "") : "";
-    const title = [name, model].filter(Boolean).join(" · ");
+    const title = [this.deviceId ?? "", model].filter(Boolean).join(" · ");
     if (title) document.title = title;
   }
 

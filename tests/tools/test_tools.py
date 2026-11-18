@@ -181,36 +181,53 @@ async def test_cli_probe_against_simulator(
 
 
 def test_serve_is_the_default_command() -> None:
-    assert cli._with_default_command(["--demo"]) == ["serve", "--demo"]
+    assert cli._with_default_command(["--dsp", "demo"]) == ["serve", "--dsp", "demo"]
     assert cli._with_default_command(["probe", "info"]) == ["probe", "info"]
     assert cli._with_default_command(["--version"]) == ["--version"]
     assert cli._with_default_command([]) == []
-    args = cli.build_parser().parse_args(["serve", "--demo", "--log-level", "debug"])
-    assert args.demo
+    args = cli.build_parser().parse_args(["serve", "--dsp", "demo", "--log-level", "debug"])
+    assert args.dsp == ["demo"]
     assert args.log_level == "debug"
     assert args.pin == "0000"
 
 
-def test_serve_requires_a_dsp_host(capsys: pytest.CaptureFixture[str]) -> None:
+def test_options_replaced_by_dsp_say_what_to_use(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for argv, instead in [
+        (["--demo"], "--dsp demo"),
+        (["serve", "--dsp-host", "10.0.0.9"], "--dsp HOST"),
+        (["--dsp-port=9000"], "--dsp HOST:PORT"),
+    ]:
+        with pytest.raises(SystemExit):
+            cli.main(argv)
+        assert instead in capsys.readouterr().err
+    # probe and proxy still take --dsp-host (they talk to one DSP)
+    assert cli.build_parser().parse_args(["probe", "--dsp-host", "h", "info"]).dsp_host == "h"
+    # the old variables are named, unless TDSP_DSP is set
+    monkeypatch.setenv("TDSP_HOST", "10.0.0.9")
     assert cli.main(["--port", "0"]) == 1
-    assert "dsp-host" in capsys.readouterr().err
+    assert "TDSP_HOST is no longer read: use TDSP_DSP=HOST" in capsys.readouterr().err
+
+
+def test_serve_requires_a_dsp(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["--port", "0"]) == 1
+    assert "--dsp is required" in capsys.readouterr().err
 
 
 def test_options_read_tracks_dsp_environment_variables(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("TDSP_HOST", "10.0.0.9")
     monkeypatch.setenv("TDSP_PIN", "4321")
     monkeypatch.setenv("TDSP_COMMAND_TIMEOUT", "0.8")
     args = cli.build_parser().parse_args(["serve"])
-    assert (args.dsp_host, args.pin, args.command_timeout) == ("10.0.0.9", "4321", 0.8)
+    assert (args.pin, args.command_timeout) == ("4321", 0.8)
     # an option on the command line wins over its variable
     assert cli.build_parser().parse_args(["serve", "--pin", "1111"]).pin == "1111"
 
 
 def test_old_variable_names_are_no_longer_read(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("TDSP_HOST", raising=False)
-    monkeypatch.setenv("DSP408_HOST", "10.0.0.8")
+    monkeypatch.setenv("DSP408_PIN", "1234")
     monkeypatch.setenv("TRACKS_DSP_SIM_SCENARIO", "silent")
-    assert cli.build_parser().parse_args(["serve"]).dsp_host is None
+    assert cli.build_parser().parse_args(["serve"]).pin == "0000"
     assert sim_cli.build_parser().parse_args([]).scenario == "demo"
 
 

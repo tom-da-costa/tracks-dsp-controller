@@ -1,6 +1,6 @@
 """End to end: ``tracks-dsp-controller sim`` and ``tracks-dsp-controller`` run as two processes.
 
-The simulator listens on TCP like a DSP 408; the app connects to it with ``--dsp-host``. The
+The simulator listens on TCP like a DSP 408; the app connects to it with ``--dsp``. The
 tests then drive the app as the browser does (HTTP login, WebSocket) and check the effect on the
 simulated DSP over TCP, as a second client of it.
 
@@ -100,7 +100,7 @@ class Stack:
             "tracks-dsp-controller",
             [
                 *command("TDSP_E2E_APP_CMD"),
-                "--dsp-host", "127.0.0.1", "--dsp-port", str(self.sim_port),
+                "--dsp", f"127.0.0.1:{self.sim_port}",
                 "--host", "127.0.0.1", "--port", str(self.app_port), "--pin", PIN,
                 "--meter-rate", "10",
             ],

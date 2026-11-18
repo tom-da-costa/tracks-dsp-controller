@@ -213,6 +213,7 @@ class Hub:
                 {
                     "id": device.id,
                     "target": device.spec.target,
+                    "demo": device.spec.demo,
                     "status": session.status.value,
                     "error": session.last_error,
                     "model": session.info.model,
@@ -295,8 +296,9 @@ class Hub:
             "device_id": client.device.id,
             "screen_locked": client.session.screen_locked,
             "server_version": __version__,
-            "demo": self.config.demo,
-            "experimental": self.config.allow_unverified,
+            # this socket's DSP is simulated (demo); unverified parameters are allowed on it
+            "demo": client.device.spec.demo,
+            "experimental": self.config.allow_unverified(client.device.spec),
             "verified_kinds": sorted(HARDWARE_VERIFIED),
             "profile": {
                 "input_count": p.input_count,
@@ -445,7 +447,7 @@ class Hub:
                 if not isinstance(path, str):
                     raise RequestError("invalid", "path must be a string")
                 write = session.resolve(path, value)
-                if not write.hardware_verified and not self.config.allow_unverified:
+                if not write.hardware_verified and not self.config.allow_unverified(device.spec):
                     raise RequestError(
                         "experimental",
                         f"{write.kind} is not verified on a DSP 408 yet (use --experimental)",
@@ -480,7 +482,7 @@ class Hub:
                 }
             case "link.set":
                 self._require_lock(client)
-                if not is_verified("link") and not self.config.allow_unverified:
+                if not is_verified("link") and not self.config.allow_unverified(device.spec):
                     raise RequestError("experimental", "links are not verified on a DSP 408")
                 side, groups = message.get("side"), message.get("groups")
                 if not isinstance(side, str) or not _int_groups(groups):

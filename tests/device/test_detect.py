@@ -22,7 +22,7 @@ from tracks_dsp_controller.protocol.profile import (
     load_profile,
 )
 from tracks_dsp_controller.server.app import AppContext, create_app
-from tracks_dsp_controller.server.settings import ServerConfig
+from tracks_dsp_controller.server.settings import ServerConfig, parse_dsp
 from tracks_dsp_controller.simulator import SimulatedDevice, SimulatorServer
 from tracks_dsp_controller.simulator.models import SIM_MODELS
 from tracks_dsp_controller.state.store import StateStore
@@ -183,9 +183,9 @@ async def test_the_simulator_only_answers_its_device_id() -> None:
 
 
 def test_device_id_options() -> None:
-    with pytest.raises(ValueError, match="device-id"):
-        ServerConfig(demo=True, device_id=251)
-    args = cli.build_parser().parse_args(["serve", "--demo", "--device-id", "6"])
+    with pytest.raises(ValueError, match="device ID"):
+        parse_dsp("demo/251")
+    args = cli.build_parser().parse_args(["serve", "--dsp", "demo", "--device-id", "6"])
     assert args.device_id == 6
     with pytest.raises(SystemExit):
         cli.build_parser().parse_args(["serve", "--device-id", "0"])
@@ -242,7 +242,7 @@ def wait_online(app: Any) -> AppContext:
 
 def test_demo_of_a_206_serves_its_profile(tmp_path: Path) -> None:
     (tmp_path / "index.html").write_text("<!doctype html><title>UI</title>")
-    config = ServerConfig(demo=True, pin="4321", model="206")
+    config = ServerConfig(dsps=[parse_dsp("206@demo")], pin="4321")
     app = create_app(config, DEFAULT_PROFILE, web_dir=tmp_path)
     with TestClient(app) as client:
         ctx = wait_online(app)
@@ -261,9 +261,9 @@ def test_demo_of_a_206_serves_its_profile(tmp_path: Path) -> None:
 
 
 def test_server_config_model() -> None:
-    assert ServerConfig(demo=True).model == "auto"
-    with pytest.raises(ValueError, match="--model"):
-        ServerConfig(demo=True, model="306")
+    assert parse_dsp("demo").model == "auto"
+    with pytest.raises(ValueError, match="model"):
+        parse_dsp("306@demo")
 
 
 async def test_probe_detects_the_model(

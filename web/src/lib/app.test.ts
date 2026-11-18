@@ -178,7 +178,6 @@ describe("several DSPs on one server", () => {
     ws.receive({ type: "devices", devices });
     ws.receive({ type: "device", status: "online", model: "DSP408" });
     ws.receive({ type: "meters", seq: 1, levels: [-10] });
-    expect(app.multiDevice).toBe(true);
     expect(app.currentDevice?.model).toBe("DSP408");
     expect(fakeDocument.title).toBe("main · DSP 408");
 

@@ -208,9 +208,11 @@ def create_app(
         return {
             "status": "ok",
             "device_status": devices.default.session.status.value,  # the first DSP
-            "devices": [{"id": d.id, "status": d.session.status.value} for d in devices],
+            "devices": [
+                {"id": d.id, "status": d.session.status.value, "demo": d.spec.demo} for d in devices
+            ],
             "version": __version__,
-            "demo": config.demo,
+            "demo": all(d.spec.demo for d in devices),  # no real DSP at all
         }
 
     @app.websocket("/ws")

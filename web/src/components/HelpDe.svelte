@@ -30,20 +30,16 @@
   <dl>
     <dt>»</dt>
     <dd>Klappt die Leiste auf, um die Namen der Tabs zu zeigen; nochmals tippen zum Einklappen.</dd>
-    <dt>DSP-Auswahl (nur bei mehreren DSPs)</dt>
+    <dt>DSP (Punkt, Name und Modell)</dt>
     <dd>
-      Steuert der Server mehrere DSPs (etwa ein Hauptsystem und eine Delay-Line), zeigt der
-      erste Eintrag, welchen dieser Tab steuert. Antippen öffnet die Liste aller DSPs: Status,
-      Preset und ungespeicherte Änderungen; einen antippen wechselt zu ihm. Jeder Browser-Tab
-      kann einen anderen DSP zeigen. <em>Take control</em> gilt für alle DSPs des Servers.
+      Der DSP, den dieser Tab steuert. Der Punkt ist grün, wenn er online ist, und rot, wenn der DSP oder der Server nicht erreichbar ist: Ein Banner oben zeigt dann, welcher (<em>SERVER</em> oder <em>DSP</em>). Die angezeigten Werte sind die zuletzt bekannten, und die Bedienelemente sind gesperrt, bis die Verbindung von selbst zurückkommt (<em>Retry now</em> versucht es sofort). Antippen öffnet die Liste der DSPs des Servers (etwa ein Hauptsystem und eine Delay-Line): Status, Preset und ungespeicherte Änderungen; einen antippen wechselt zu ihm. Jeder Browser-Tab kann einen anderen DSP zeigen. <em>Take control</em> gilt für alle DSPs des Servers.
     </dd>
-    <dt>Status (Punkt und Preset)</dt>
+    <dt>Preset</dt>
     <dd>
-      Der Punkt ist grün, wenn der DSP online ist, und rot, wenn der DSP oder der Server nicht erreichbar ist: Ein Banner oben zeigt dann, welcher (<em>SERVER</em> oder <em>DSP</em>). Die angezeigten Werte sind die zuletzt bekannten, und die Bedienelemente sind gesperrt, bis die Verbindung von selbst zurückkommt (<em>Retry now</em> versucht es sofort). Darunter das aktuell im DSP geladene Preset
-      (U01…U20 oder F00). Ein kleiner orangefarbener Punkt bedeutet <em>ungespeicherte
-      Änderungen</em>: Die Einstellungen weichen vom gespeicherten Preset ab. <em>DEMO</em>
-      bedeutet, dass kein DSP angeschlossen ist (ein simulierter). Antippen öffnet
-      <em>Presets</em>.
+      Das aktuell im DSP geladene Preset (U01…U20 oder F00). Ein kleiner orangefarbener Punkt
+      bedeutet <em>ungespeicherte Änderungen</em>: Die Einstellungen weichen vom gespeicherten
+      Preset ab. <em>DEMO</em> bedeutet, dass der DSP vom Server simuliert wird (kein Gerät).
+      Antippen öffnet <em>Presets</em>.
     </dd>
     <dt>Die Tabs</dt>
     <dd>Ein Symbol pro Ansicht (siehe <em>Die Tabs</em>).</dd>
