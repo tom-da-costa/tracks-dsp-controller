@@ -2,6 +2,7 @@
   // Params › Gain: one strip per channel picked in the row above (meter, fader, mute, phase).
   import { app } from "../lib/app.svelte";
   import type { ChannelSelection } from "../lib/selection.svelte";
+  import { stripSpace } from "../lib/stripfit";
   import { StripWidth } from "../lib/stripwidth.svelte";
   import ChannelPicker from "./ChannelPicker.svelte";
   import Strip from "./Strip.svelte";
@@ -19,17 +20,19 @@
   const device = $derived(app.device);
   // Set in the folded picker's panel on a phone; unset, a strip takes 80 to 120 px (Strip).
   const width = new StripWidth("dsp408.params.gain.width", {
-    min: 72,
+    min: 60,
     max: 160,
     step: 4,
     default: 100,
   });
+  let rowWidth = $state(0);
+  $effect(() => width.measure(stripSpace(rowWidth, paths), paths.length));
 </script>
 
 {#if device}
 <div class="view">
   <ChannelPicker {selection} fold {width} />
-  <div class="strips" style:--strip-w={width.css}>
+  <div class="strips" style:--strip-w={width.css} bind:clientWidth={rowWidth}>
     {#each paths as path, i (path)}
       {@const [side, n] = path.split(".")}
       {@const index = Number(n)}
@@ -60,7 +63,7 @@
     flex: 1;
     min-height: 0;
     display: flex;
-    gap: 6px;
+    gap: 6px; /* STRIP_GAP in lib/stripfit.ts */
     overflow-x: auto;
     overscroll-behavior-x: contain;
     padding-bottom: 6px;
@@ -71,6 +74,12 @@
     .view {
       position: relative;
       min-height: 438px;
+    }
+  }
+  /* Short screen (a phone in landscape): the strips are tighter (LiveStrip, Strip, Fader). */
+  @media (max-height: 499px) {
+    .view {
+      min-height: 260px;
     }
   }
 </style>

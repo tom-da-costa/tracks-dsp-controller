@@ -204,4 +204,20 @@
       display: none;
     }
   }
+  /* Short screen (a phone in landscape): the meter follows the fader's height. */
+  @media (max-height: 499px) {
+    .meter {
+      min-height: 0;
+    }
+  }
+  /* Very narrow Live strip: thinner bar and marks. */
+  @container (width < 70px) {
+    .meter {
+      grid-template-columns: 12px 10px;
+    }
+    .mark {
+      padding: 1px;
+      font-size: 0.5rem;
+    }
+  }
 </style>

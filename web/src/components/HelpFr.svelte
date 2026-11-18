@@ -142,8 +142,9 @@
     </li>
     <li>
       Dans ce panneau, <strong>Width</strong> règle la largeur des voies (Live, et Params ›
-      Gain), pour en voir plus à la fois ; ↺ revient à la largeur par défaut. Mémorisé sur cet
-      appareil.
+      Gain), pour en voir plus à la fois ; <strong>Fit screen</strong> partage la largeur de
+      l'écran entre les voies affichées (et suit une rotation ou un autre choix de voies), ↺
+      revient à la largeur par défaut. Mémorisé sur cet appareil.
     </li>
     <li>
       Chaque vue mémorise son propre choix sur cet appareil (Params : un seul choix pour tous

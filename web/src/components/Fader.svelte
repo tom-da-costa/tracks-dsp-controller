@@ -245,4 +245,36 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+  /* Short screen (a phone in landscape): smaller boxes, a shorter minimum track. */
+  @media (max-height: 499px) {
+    .fader {
+      gap: 3px;
+    }
+    .value,
+    form input,
+    .step {
+      min-height: 28px;
+    }
+    .track {
+      min-height: 32px;
+    }
+  }
+  /* Very narrow strip (LiveStrip, Strip are containers, content box under 70 px): a thinner
+     knob, still dragged only from itself. */
+  @container (width < 70px) {
+    .fader {
+      min-width: 26px;
+    }
+    .knob {
+      width: 26px;
+      margin-left: -13px;
+    }
+    .knob::after {
+      left: 4px;
+      right: 4px;
+    }
+    .value {
+      font-size: 0.7rem;
+    }
+  }
 </style>

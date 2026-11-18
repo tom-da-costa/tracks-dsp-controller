@@ -47,4 +47,40 @@ describe("strip width", () => {
     store.set("k", "wide");
     expect(new StripWidth("k", RANGE).value).toBeNull();
   });
+
+  it("fits the screen: shares the measured width, remembered, left by a set width", () => {
+    const w = new StripWidth("k", RANGE);
+    w.fitScreen();
+    expect(w.css).toBeUndefined(); // not measured yet
+    w.measure(1000, 10);
+    expect(w.px).toBe(100);
+    expect(w.css).toBe("100px");
+    w.measure(1000, 30); // too many: the minimum, the strips scroll
+    expect(w.px).toBe(80);
+    w.measure(1000, 2); // few: at most the maximum
+    expect(w.px).toBe(180);
+    expect(new StripWidth("k", RANGE).fit).toBe(true);
+    w.nudge(1);
+    expect(w.fit).toBe(false);
+    expect(w.value).toBe(180);
+    expect(store.get("k")).toBe("180");
+  });
+
+  it("resets out of fit", () => {
+    const w = new StripWidth("k", RANGE);
+    w.fitScreen();
+    w.reset();
+    expect(w.fit).toBe(false);
+    expect(store.has("k")).toBe(false);
+  });
+});
+
+describe("strip space", async () => {
+  const { stripSpace } = await import("./stripfit");
+
+  it("takes off the gaps, and the divider when both sides are shown", () => {
+    expect(stripSpace(600, ["inputs.0", "inputs.1"])).toBe(594);
+    expect(stripSpace(600, ["inputs.0", "outputs.0"])).toBe(600 - 2 * 6 - 32);
+    expect(stripSpace(600, [])).toBe(600);
+  });
 });

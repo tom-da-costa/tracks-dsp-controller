@@ -121,8 +121,9 @@
     </li>
     <li>
       In that panel, <strong>Width</strong> sets the width of the channels (Live, and Params ›
-      Gain), to see more of them at once; ↺ goes back to the default. Remembered on this
-      device.
+      Gain), to see more of them at once; <strong>Fit screen</strong> shares the screen's
+      width between the channels shown (and follows a rotation or another pick), ↺ goes back
+      to the default. Remembered on this device.
     </li>
     <li>Each view remembers its own choice on this device (Params: one choice for all its settings).</li>
     <li>

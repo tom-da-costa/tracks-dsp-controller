@@ -88,6 +88,14 @@
   {#if fold && width}
     <div class="width" role="group" aria-label="Strip width">
       <span class="label">Width</span>
+      <button
+        class="fit"
+        class:on={width.fit}
+        aria-pressed={width.fit}
+        title="Share the screen's width between the channels shown"
+        onclick={() => width.fitScreen()}>Fit screen</button
+      >
+      <span class="break"></span>
       <button class="step" aria-label="Narrower" onclick={() => width.nudge(-1)}>−</button>
       <input
         type="range"
@@ -103,7 +111,7 @@
         class="step"
         aria-label="Default width"
         title="Default width"
-        disabled={width.value === null}
+        disabled={width.value === null && !width.fit}
         onclick={() => width.reset()}>↺</button
       >
     </div>
@@ -256,10 +264,18 @@
       flex-wrap: wrap;
     }
     .width .label {
-      flex: 1 0 100%; /* on its own line: the slider gets the width */
+      flex: 1;
       font-size: 0.8rem;
       font-weight: 600;
       color: var(--muted);
+    }
+    .width .break {
+      flex: 0 0 100%; /* − slider + ↺ on their own line: the slider gets the width */
+    }
+    .picker .width .fit {
+      min-height: 32px;
+      font-size: 0.8rem;
+      font-weight: 600;
     }
     .width input {
       flex: 1;
