@@ -58,10 +58,16 @@
     </button>
 
     <div class="leds">
-      <span class="led" class:on={clip} style:--c="var(--danger)">CLIP</span>
+      <span class="led" class:on={clip} style:--c="var(--danger)" title="Clip"
+        ><span class="full">CLIP</span><span class="short">CL</span></span
+      >
       {#if output}
-        <span class="led" class:on={comp} style:--c={COMP_COLOR}>CMP</span>
-        <span class="led" class:on={limit} style:--c={LIMIT_COLOR}>LIM</span>
+        <span class="led" class:on={comp} style:--c={COMP_COLOR} title="Compressor"
+          ><span class="full">CMP</span><span class="short">CP</span></span
+        >
+        <span class="led" class:on={limit} style:--c={LIMIT_COLOR} title="Limiter"
+          ><span class="full">LIM</span><span class="short">LM</span></span
+        >
       {/if}
     </div>
 
@@ -97,11 +103,14 @@
 
 <style>
   .strip {
-    flex: 0 0 132px;
+    /* --strip-w: the width set on a phone (LiveView); the content narrows down to 60 px. */
+    flex: 0 0 var(--strip-w, 132px);
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 8px 6px;
+    /* 6 px at the usual width, down to 3 px for a narrow strip */
+    padding: 8px clamp(3px, calc((var(--strip-w, 132px) - 84px) / 8), 6px);
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -171,9 +180,65 @@
     font-weight: 800;
     font-size: 0.95rem;
   }
+  /* Narrow strip (content box under 114 px = meter 54 + gap 6 + fader 54; the usual 132 px
+     strip has 118): smaller indicators, tighter meter and fader (BigMeter drops its scale). */
+  @container (width < 114px) {
+    .leds {
+      gap: 2px;
+    }
+    .led {
+      font-size: 0.6rem;
+      letter-spacing: 0;
+    }
+    .body {
+      gap: 2px;
+    }
+  }
   .mute.on {
     background: var(--danger);
     border-color: var(--danger);
     color: #fff;
+  }
+  /* Short screen (a phone in landscape): tighter, so that MUTE stays on screen. */
+  @media (max-height: 499px) {
+    .strip {
+      gap: 4px;
+      padding-block: 4px;
+    }
+    .name {
+      flex: none; /* the fader shrinks first: the name stays readable */
+      min-height: 0;
+      padding: 1px 4px;
+    }
+    .led {
+      height: 22px;
+    }
+    .mute {
+      min-height: 36px;
+    }
+  }
+  /* Very narrow strip (content box under 70 px, ~60 to 84 px wide: "Fit screen"). */
+  .short {
+    display: none;
+  }
+  @container (width < 70px) {
+    .led {
+      overflow: hidden;
+      font-size: 0.5rem;
+      letter-spacing: 0;
+    }
+    .full {
+      display: none;
+    }
+    .short {
+      display: inline;
+    }
+    .mute {
+      padding: 0;
+      font-size: 0.85rem;
+    }
+    .leds {
+      gap: 1px;
+    }
   }
 </style>

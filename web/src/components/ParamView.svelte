@@ -1,7 +1,7 @@
 <script lang="ts">
   // "Params" tab: one sub-tab per setting, each showing that setting on the channels picked in
-  // the row below (as in Live and All-in-one; one choice for every setting, remembered in
-  // this browser). Link and Matrix have tabs of their own.
+  // the row below (one choice for every setting, the same as Live's, remembered in this
+  // browser). Link and Matrix have tabs of their own.
   import { app } from "../lib/app.svelte";
   import { links } from "../lib/links.svelte";
   import { nav, PARAM_SCOPE, PARAM_TABS } from "../lib/nav.svelte";
@@ -17,7 +17,8 @@
   // channel (bands dragged on it) with its band list (type, on / off, values); GEQ as cards.
   const STRIPS = new Set(["delay", "filters", "comp", "limit", "gate"]);
 
-  const selection = new ChannelSelection("dsp408.params.hidden");
+  // The same choice as Live's.
+  const selection = new ChannelSelection("dsp408.live.hidden");
   const scope = $derived(PARAM_SCOPE[nav.param]);
   /** The setting exists on one side only (compressor on outputs, gate on inputs…). */
   const side = $derived(scope === "all" ? undefined : scope);

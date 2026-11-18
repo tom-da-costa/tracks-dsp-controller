@@ -66,13 +66,16 @@
 
 <style>
   .strip {
-    flex: 1 0 80px;
-    max-width: 120px;
+    /* --strip-w: the width set on a phone (Mixer); unset, 80 to 120 px. */
+    flex: 1 0 var(--strip-w, 80px);
+    max-width: var(--strip-w, 120px);
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 8px 4px;
+    /* 4 px at the usual width, down to 2 px for a narrow strip */
+    padding: 8px clamp(2px, calc((var(--strip-w, 80px) - 60px) / 4), 4px);
+    container-type: inline-size; /* Fader narrows its knob in a very narrow strip */
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -138,5 +141,23 @@
       rgb(255 77 94 / 0.3) 0 4px, /* --danger at 30 % */
       transparent 4px 16px
     );
+  }
+  /* Short screen (a phone in landscape): tighter, so that MUTE and Ø stay on screen. */
+  @media (max-height: 499px) {
+    .strip {
+      gap: 4px;
+      padding-block: 4px;
+    }
+    .name {
+      flex: none; /* the fader shrinks first: the name stays readable */
+      min-height: 0;
+      padding: 1px 4px;
+    }
+    .buttons {
+      gap: 4px;
+    }
+    .buttons button {
+      min-height: 32px;
+    }
   }
 </style>

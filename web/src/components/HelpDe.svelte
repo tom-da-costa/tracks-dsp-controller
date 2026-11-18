@@ -135,8 +135,21 @@
   </p>
   <ul>
     <li>
-      Jede Ansicht merkt sich ihre Auswahl auf diesem Gerät (Params: eine Auswahl für alle
-      Einstellungen).
+      Auf einem Smartphone klappt die Reihe in Live und in den Streifen-Ansichten von Params
+      zu einer kleinen Taste oben rechts über den Kanälen zusammen, die zeigt, wie viele
+      angezeigt werden (z. B. 12/12), damit die Kanäle oben am Bildschirm beginnen: antippen
+      öffnet die Tasten, daneben tippen schließt sie.
+    </li>
+    <li>
+      In diesem Feld stellt <strong>Width</strong> die Breite der Kanäle ein (Live und die
+      Streifen-Ansichten von Params, in Prozent ihrer üblichen Breite), um mehr davon
+      gleichzeitig zu sehen; <strong>Fit screen</strong> teilt die Bildschirmbreite auf die
+      angezeigten Kanäle auf (und folgt einer Drehung oder einer anderen Auswahl), ↺ stellt
+      die Standardbreite wieder her. Wird auf diesem Gerät gespeichert.
+    </li>
+    <li>
+      Live und Params teilen eine Auswahl (und eine Breite), All-in-one hat seine eigene; auf
+      diesem Gerät gespeichert.
     </li>
     <li>
       Jeder Kanal hat seine eigene Farbe, überall dieselbe. Verlinkte Kanäle teilen die Farbe

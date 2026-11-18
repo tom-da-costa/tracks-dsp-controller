@@ -160,4 +160,10 @@
   .nodata .bar {
     opacity: 0.4;
   }
+  /* Short screen (a phone in landscape): the meter follows the fader's height. */
+  @media (max-height: 499px) {
+    .bar {
+      min-height: 40px;
+    }
+  }
 </style>

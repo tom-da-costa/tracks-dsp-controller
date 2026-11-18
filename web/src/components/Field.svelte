@@ -295,4 +295,18 @@
       grid-template-areas: "label slide minus value plus" ". after after after after";
     }
   }
+  /* Short screen (a phone in landscape): smaller boxes, a shorter minimum slider. */
+  @media (max-height: 499px) {
+    .vfield {
+      gap: 3px;
+    }
+    .vfield .step,
+    .vfield .value,
+    .vfield form input {
+      min-height: 30px;
+    }
+    .vfield .slide {
+      min-height: 40px;
+    }
+  }
 </style>

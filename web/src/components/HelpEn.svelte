@@ -114,7 +114,22 @@
     channel is shown; tap a channel to show or hide it.
   </p>
   <ul>
-    <li>Each view remembers its own choice on this device (Params: one choice for all its settings).</li>
+    <li>
+      On a phone, in Live and in the strip views of Params, the row folds into a small button
+      at the top right of the channels, showing how many are shown (e.g. 12/12), so that they
+      start at the top of the screen: tap it to open the buttons, tap beside them to close.
+    </li>
+    <li>
+      In that panel, <strong>Width</strong> sets the width of the channels (Live and the strip
+      views of Params, as a percentage of their usual width), to see more of them at once;
+      <strong>Fit screen</strong> shares the screen's width between the channels shown (and
+      follows a rotation or another pick), ↺ goes back to the default. Remembered on this
+      device.
+    </li>
+    <li>
+      Live and Params share one choice (and one width), All-in-one has its own; remembered on
+      this device.
+    </li>
     <li>
       Each channel has its own colour, the same everywhere. Linked channels share the colour
       of their group.

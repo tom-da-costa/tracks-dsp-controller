@@ -135,8 +135,21 @@
   </p>
   <ul>
     <li>
-      Chaque vue mémorise son propre choix sur cet appareil (Params : un seul choix pour tous
-      ses réglages).
+      Sur un téléphone, dans Live et dans les vues en tranches de Params, la rangée se replie
+      en un petit bouton en haut à droite des voies, qui indique combien sont affichées (par
+      exemple 12/12), pour que les voies commencent en haut de l'écran : touchez-le pour
+      ouvrir les boutons, touchez à côté pour refermer.
+    </li>
+    <li>
+      Dans ce panneau, <strong>Width</strong> règle la largeur des voies (Live et les vues en
+      tranches de Params, en pourcentage de leur largeur habituelle), pour en voir plus à la
+      fois ; <strong>Fit screen</strong> partage la largeur de l'écran entre les voies
+      affichées (et suit une rotation ou un autre choix de voies), ↺ revient à la largeur par
+      défaut. Mémorisé sur cet appareil.
+    </li>
+    <li>
+      Live et Params partagent le même choix (et la même largeur), All-in-one a le sien ;
+      mémorisé sur cet appareil.
     </li>
     <li>
       Chaque voie a sa couleur, la même partout. Les voies liées partagent la couleur de leur

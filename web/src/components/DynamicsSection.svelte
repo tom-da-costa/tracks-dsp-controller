@@ -67,9 +67,11 @@
   {/snippet}
   {#if limits}
     {#if kind === "compressor"}
+      <div class="bare-ratio">
       <label class="choice">
         <span>Ratio</span>
         <select
+          aria-label="Ratio"
           value={values.ratio}
           disabled={!editable}
           onchange={(e) => set("ratio", Number((e.currentTarget as HTMLSelectElement).value))}
@@ -77,6 +79,7 @@
           {#each ratios as name, i (i)}<option value={i}>{name}</option>{/each}
         </select>
       </label>
+      </div>
     {/if}
     <div class:vfields-grid={vertical} class:two-rows={FIELDS[kind].length >= 4}>
     {#each FIELDS[kind] as key (key)}
@@ -139,6 +142,25 @@
   .choice select {
     min-height: 36px;
     color: var(--text);
+  }
+  /* Strips of a width set on a phone (ParamStrips): the select takes what is left. */
+  :global(.sized) .choice {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  :global(.sized) .choice select {
+    grid-column: 2;
+    width: 100%;
+    min-width: 0;
+    padding: 0 2px 0 4px;
+  }
+  /* A narrow strip: the select alone (its options read "4:1"…), the whole width. */
+  :global(.sized) .bare-ratio {
+    container-type: inline-size;
+  }
+  @container (width < 130px) {
+    .choice > span {
+      display: none;
+    }
   }
   .led {
     font-size: 0.7rem;
