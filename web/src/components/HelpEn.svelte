@@ -114,6 +114,12 @@
     channel is shown; tap a channel to show or hide it.
   </p>
   <ul>
+    <li>
+      On a phone, in Live and in the strip views of Params, the row folds into a narrow
+      <em>Channels</em> tab left of the channels (with the count shown), so that they start at
+      the top of the screen: tap it to open the buttons over the channels, tap beside them to
+      close.
+    </li>
     <li>Each view remembers its own choice on this device (Params: one choice for all its settings).</li>
     <li>
       Each channel has its own colour, the same everywhere. Linked channels share the colour

@@ -20,7 +20,7 @@
 
 {#if device}
 <div class="view">
-  <ChannelPicker {selection} />
+  <ChannelPicker {selection} fold />
   <div class="strips">
     {#each paths as path, i (path)}
       {@const [side, n] = path.split(".")}
@@ -56,5 +56,16 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     padding-bottom: 6px;
+  }
+  /* Phone: the picker folds into a tab beside the strips (ChannelPicker). */
+  @media (max-width: 699px), (max-height: 499px) {
+    .view {
+      flex-direction: row;
+      gap: 6px;
+      min-height: 438px;
+    }
+    .strips {
+      min-width: 0;
+    }
   }
 </style>

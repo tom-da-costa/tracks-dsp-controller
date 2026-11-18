@@ -11,7 +11,7 @@
 </script>
 
 <div class="live">
-  <ChannelPicker {selection} />
+  <ChannelPicker {selection} fold />
 
   <div class="strips">
     {#each shown as path, i (path)}
@@ -41,5 +41,17 @@
     overscroll-behavior-x: contain;
     padding-bottom: 6px;
     min-height: 0;
+  }
+  /* Phone: the picker folds into a tab beside the strips (ChannelPicker), which then start at
+     the top and gain its height. */
+  @media (max-width: 699px), (max-height: 499px) {
+    .live {
+      flex-direction: row;
+      gap: 6px;
+      min-height: 434px;
+    }
+    .strips {
+      min-width: 0;
+    }
   }
 </style>

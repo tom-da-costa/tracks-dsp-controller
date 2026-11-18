@@ -31,7 +31,7 @@
 </script>
 
 <div class="view">
-<ChannelPicker {selection} {side} />
+<ChannelPicker {selection} {side} fold />
 
 <div class="strips">
   {#each paths as path, i (path)}
@@ -113,5 +113,16 @@
   p {
     font-size: 0.85rem;
     text-align: center;
+  }
+  /* Phone: the picker folds into a tab beside the strips (ChannelPicker). */
+  @media (max-width: 699px), (max-height: 499px) {
+    .view {
+      flex-direction: row;
+      gap: 6px;
+      min-height: 414px;
+    }
+    .strips {
+      min-width: 0;
+    }
   }
 </style>
