@@ -1,6 +1,7 @@
 <script lang="ts">
-  // Top of the tab rail when the server controls several DSPs: the DSP this tab shows, and a
-  // panel with every DSP at a glance (status, preset) to switch to another.
+  // Top of the tab rail when the server controls several DSPs: a framed selector with the DSP
+  // this tab shows (its status dot, name and model: the preset row below then shows only the
+  // preset), and a panel with every DSP at a glance (status, preset) to switch to another.
   import { app } from "../lib/app.svelte";
   import type { DeviceEntry } from "../lib/types";
 
@@ -21,6 +22,15 @@
   };
 
   const current = $derived(app.currentDevice);
+  const index = $derived(app.devices.findIndex((d) => d.id === app.deviceId) + 1);
+  // Under the name: the model when online, else what is wrong.
+  const detail = $derived(
+    !app.connected
+      ? "no server"
+      : current?.status === "online"
+        ? (app.status?.model ?? current.model)
+        : `DSP ${STATUS_TEXT[current?.status ?? "connecting"] ?? current?.status}`,
+  );
   // The folded rail has room for a few letters of the name.
   const short = $derived((app.deviceId ?? "?").slice(0, 3));
 
@@ -62,12 +72,13 @@
 >
   <span class="icon">
     <span class="dot {dotClass(current)}"></span>
-    <span class="short">{short}</span>
+    <span class="short">{short}<span class="caret">▾</span></span>
   </span>
   <span class="text">
     <strong>{app.deviceId ?? "DSP"}</strong>
-    <small class="muted">{app.devices.length} DSPs ▾</small>
+    <small class="muted">{detail} · DSP {index}/{app.devices.length}</small>
   </span>
+  <span class="caret big" aria-hidden="true">▾</span>
 </button>
 
 {#if open}
@@ -110,16 +121,17 @@
 {/if}
 
 <style>
+  /* Framed like a select, so that it does not read as one more status line. */
   .current {
     display: flex;
     align-items: center;
     gap: 12px;
     min-height: 48px;
     margin: 0 6px;
-    padding: 0 6px;
-    border: none;
+    padding: 0 5px;
+    border: 1px solid var(--line);
     border-radius: 8px;
-    background: none;
+    background: var(--panel-2);
     text-align: left;
     white-space: nowrap;
     min-width: 0;
@@ -139,7 +151,23 @@
     text-transform: uppercase;
     color: var(--text);
   }
+  .caret {
+    margin-left: 1px;
+    color: var(--muted);
+  }
+  .caret.big {
+    display: none;
+    margin-left: auto;
+    font-size: 0.9rem;
+  }
+  .expanded .caret.big {
+    display: block;
+  }
+  .expanded .short .caret {
+    display: none;
+  }
   .text {
+    flex: 1 1 auto;
     min-width: 0;
     display: grid;
     overflow: hidden;

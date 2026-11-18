@@ -1,6 +1,8 @@
 <script lang="ts">
   // Top of the tab rail: DSP status and active preset (unsaved changes, demo mode).
   // Folded, it shows the status dot and the preset slot; expanded, the full text.
+  // With several DSPs, the DSP picker above carries the status and the model, and this row
+  // only the preset.
   import { app } from "../lib/app.svelte";
   import { nav } from "../lib/nav.svelte";
   import DevicePicker from "./DevicePicker.svelte";
@@ -47,20 +49,30 @@
 
 <div class="status" class:expanded>
   {#if app.multiDevice}<DevicePicker {expanded} {onpick} />{/if}
-  <button class="preset" onclick={openPresets} title={presetTitle} aria-label={presetTitle}>
+  <button
+    class="preset"
+    class:multi={app.multiDevice}
+    onclick={openPresets}
+    title={presetTitle}
+    aria-label={presetTitle}
+  >
     <span class="icon">
-      <span class="dot {status}"></span>
+      {#if !app.multiDevice}<span class="dot {status}"></span>{/if}
       {#if device?.modified}<span class="unsaved-dot"></span>{/if}
       <span class="slot">{slot}</span>
     </span>
     <span class="text">
-      <strong>{device?.preset_name || "DSP"}</strong>
+      <strong>{device?.preset_name || (app.multiDevice ? "—" : "DSP")}</strong>
       <small>
         {#if device?.modified}<span class="unsaved">● unsaved</span>{/if}
         {#if app.hello?.demo}<span class="demo">DEMO</span>{/if}
-        <span class="muted"
-          >{status === "online" ? (app.status?.model ?? "") : (STATUS_TEXT[status] ?? status)}</span
-        >
+        {#if app.multiDevice}
+          <span class="muted">Preset {slot}</span>
+        {:else}
+          <span class="muted"
+            >{status === "online" ? (app.status?.model ?? "") : (STATUS_TEXT[status] ?? status)}</span
+          >
+        {/if}
       </small>
     </span>
   </button>
@@ -123,6 +135,11 @@
     font-size: 0.65rem;
     font-weight: 700;
     color: var(--muted);
+  }
+  /* Several DSPs: no status dot here (it is on the picker), the slot alone is bigger. */
+  .multi .slot {
+    font-size: 0.8rem;
+    color: var(--text);
   }
   .dot {
     width: 12px;
