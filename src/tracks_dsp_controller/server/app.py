@@ -127,7 +127,7 @@ def create_app(
 
     profile = with_timeout(profile)
     devices = build_devices(config, profile, model_profile, simulated_device=simulated_device)
-    auth = AuthManager(config.pin)
+    auth = AuthManager(config.pin, config.view_pin)
     lock = LockManager(config.lock_idle_timeout_s)
     master = MasterManager(MASTER_ABSENT_S)
     hub = Hub(config, devices, auth, lock, master)
@@ -156,7 +156,7 @@ def create_app(
     async def login(body: LoginBody, request: Request, response: Response) -> dict[str, Any]:
         address = request.client.host if request.client else "unknown"
         try:
-            auth.check_pin(body.pin, address)
+            read_only = auth.check_pin(body.pin, address)
         except RateLimitedError as exc:
             return JSONResponse(  # type: ignore[return-value]
                 {"error": "rate_limited", "message": str(exc)},
@@ -173,7 +173,7 @@ def create_app(
                 {"error": "logins_blocked", "message": f"New connections are blocked by {owner}"},
                 status_code=403,
             )
-        client = auth.open_session(body.name)
+        client = auth.open_session(body.name, read_only=read_only)
         response.set_cookie(
             SESSION_COOKIE,
             client.token,
@@ -182,7 +182,7 @@ def create_app(
             path="/",
             secure=config.tls,
         )
-        return {"client_id": client.client_id, "name": client.name}
+        return {"client_id": client.client_id, "name": client.name, "read_only": client.read_only}
 
     @app.post("/api/logout")
     async def logout(request: Request, response: Response) -> dict[str, bool]:
@@ -200,7 +200,12 @@ def create_app(
         if client is None:
             return JSONResponse({"authenticated": False}, status_code=401)
         return JSONResponse(
-            {"authenticated": True, "client_id": client.client_id, "name": client.name}
+            {
+                "authenticated": True,
+                "client_id": client.client_id,
+                "name": client.name,
+                "read_only": client.read_only,
+            }
         )
 
     @app.get("/api/health")

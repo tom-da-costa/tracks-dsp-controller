@@ -153,6 +153,10 @@
     <dd>
       一个人可以在 <em>Settings › Connected clients</em> 中点击 <em>Become master</em> 成为 master（主控）。master 可以用 <em>Disconnect</em> 断开其他客户端（对方回到登录页面，需要重新输入访问码），也可以用 <em>Block new connections</em> 禁止新的连接：之后任何人都无法登录，但已连接的浏览器保持连接。当 master 点击 <em>Stop being master</em>、退出登录，或关闭应用超过 5 分钟时，禁止会自动解除。要把某人排除在外：先断开他，再禁止新连接。
     </dd>
+    <dt>👁 只读访问</dt>
+    <dd>
+      如果服务器启动时设置了查看码（<code>--view-pin</code>），用它登录会打开只读访问：一切都可见（电平、设置、预设），但无法更改，无论屏幕显示什么，服务器都会拒绝更改。适合访客，或留在调音台的手机。侧边栏显示 <em>Read-only access</em> 而不是 <em>Take control</em>，客户端列表会标出这些客户端。如需更改，请注销并用访问码登录。
+    </dd>
   </dl>
 </section>
 

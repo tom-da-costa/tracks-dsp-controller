@@ -134,10 +134,20 @@ class App {
     return channelColor(path, channels?.[Number(n)]?.linked);
   }
 
-  /** True when this client cannot change anything: no server, no DSP, Control or screen lock. */
+  /** Logged in with the view code (`--view-pin`): the server refuses every change. */
+  get viewOnly(): boolean {
+    return this.hello?.read_only ?? false;
+  }
+
+  /** True when this client cannot change anything: no server, no DSP, Control, screen lock or
+   * a read-only access. */
   get readOnly(): boolean {
     return (
-      !this.connected || this.lockedByOther || this.screenLocked || this.status?.status !== "online"
+      !this.connected ||
+      this.viewOnly ||
+      this.lockedByOther ||
+      this.screenLocked ||
+      this.status?.status !== "online"
     );
   }
 

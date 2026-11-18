@@ -99,6 +99,12 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--port", type=int, default=int(_env("LISTEN_PORT") or 8080))
     serve.add_argument("--pin", default=_env("PIN", "0000"), help="access code (default 0000)")
     serve.add_argument(
+        "--view-pin",
+        default=_env("VIEW_PIN"),
+        help="a second access code that opens read-only sessions: everything is shown, "
+        "nothing can be changed (default: none)",
+    )
+    serve.add_argument(
         "--meter-rate",
         type=float,
         default=_env_float("METER_RATE", 5.0),
@@ -242,6 +248,7 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
         host=args.host,
         port=args.port,
         pin=args.pin,
+        view_pin=args.view_pin,
         meter_rate_hz=args.meter_rate,
         lock_idle_timeout_s=args.lock_idle_timeout,
         resync_interval_s=args.resync_interval,

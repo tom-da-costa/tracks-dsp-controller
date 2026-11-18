@@ -204,6 +204,15 @@
       <em>Stop being master</em>, logs out, or has had the app closed for 5 minutes. To exclude
       someone: disconnect them, then block.
     </dd>
+    <dt>👁 Read-only access</dt>
+    <dd>
+      If the server was started with a view code (<code>--view-pin</code>), logging in with it
+      opens a read-only access: everything is shown (levels, settings, presets), nothing can
+      be changed, and the server refuses it whatever the screen shows. For a guest, or a phone
+      left at front of house. The side bar shows <em>Read-only access</em> instead of <em>Take
+      control</em>, and the client list marks these clients. To make changes, log out and log
+      in with the access code.
+    </dd>
   </dl>
 </section>
 

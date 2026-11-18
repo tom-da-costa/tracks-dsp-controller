@@ -51,7 +51,12 @@
     <span class="name">{me}</span>
   </button>
 
-  {#if app.lockedByOther}
+  {#if app.viewOnly}
+    <div class="control other" title="Read-only access: logged in with the view code">
+      <span class="icon">👁</span>
+      <span class="text">Read-only access</span>
+    </div>
+  {:else if app.lockedByOther}
     <div class="control other" title={`Read-only: ${app.lock?.owner_name ?? "someone"} has control`}>
       <span class="icon">✋</span>
       <span class="text">{app.lock?.owner_name} has control</span>

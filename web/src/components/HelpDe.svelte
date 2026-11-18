@@ -227,6 +227,16 @@
       being master</em> antippt, sich abmeldet oder die App seit 5 Minuten geschlossen hat. Um
       jemanden auszuschließen: erst trennen, dann sperren.
     </dd>
+    <dt>👁 Nur-Lese-Zugang</dt>
+    <dd>
+      Wurde der Server mit einem Ansichtscode (<code>--view-pin</code>) gestartet, öffnet die
+      Anmeldung damit einen Nur-Lese-Zugang: alles wird angezeigt (Pegel, Einstellungen,
+      Presets), nichts lässt sich ändern, und der Server lehnt es ab, was auch immer der
+      Bildschirm zeigt. Für einen Gast oder ein am FOH liegendes Telefon. Die Seitenleiste
+      zeigt <em>Read-only access</em> statt <em>Take control</em>, und die Client-Liste
+      kennzeichnet diese Clients. Um etwas zu ändern, abmelden und mit dem Zugangscode
+      anmelden.
+    </dd>
   </dl>
 </section>
 

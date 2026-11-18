@@ -11,6 +11,7 @@ services:
     environment:
       TDSP_DSP: ${TDSP_DSP:-}             # the DSP(s): address, or demo (see .env.example)
       TDSP_PIN: ${TDSP_PIN:-0000}
+      TDSP_VIEW_PIN: ${TDSP_VIEW_PIN:-}
       TDSP_METER_RATE: ${TDSP_METER_RATE:-5}
       TDSP_LOCK_IDLE_TIMEOUT: ${TDSP_LOCK_IDLE_TIMEOUT:-120}
       TDSP_RESYNC_INTERVAL: ${TDSP_RESYNC_INTERVAL:-0}

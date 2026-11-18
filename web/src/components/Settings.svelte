@@ -18,7 +18,7 @@
   });
 
   const RATE_RANGE = [1, 10] as const;
-  const rateLocked = $derived(app.lockedByOther || app.screenLocked);
+  const rateLocked = $derived(app.viewOnly || app.lockedByOther || app.screenLocked);
 
   async function saveRate(hz: number) {
     rate = hz;
@@ -45,7 +45,7 @@
 
   // Same rule as the server: refused while another client has Control or is the master.
   const canShutdown = $derived(
-    app.connected && !app.screenLocked && !app.lockedByOther && !otherMaster,
+    app.connected && !app.viewOnly && !app.screenLocked && !app.lockedByOther && !otherMaster,
   );
 
   async function shutdown() {
@@ -168,6 +168,9 @@
             {#if client.id === app.hello?.client_id}<span class="muted">(you)</span>{/if}
             {#if client.id === app.master?.owner_id}<span class="badge master">master</span>{/if}
             {#if client.id === app.lock?.owner_id}<span class="badge">control</span>{/if}
+            {#if client.read_only}<span class="badge" title="Logged in with the view code"
+                >read-only</span
+              >{/if}
             {#if client.devices.length}
               <span class="muted">· {client.devices.join(", ")}</span>
             {/if}
@@ -211,7 +214,10 @@
       </p>
     {/if}
     <div class="actions">
-      <button onclick={toggleMaster} disabled={otherMaster || app.screenLocked || !app.connected}>
+      <button
+        onclick={toggleMaster}
+        disabled={app.viewOnly || otherMaster || app.screenLocked || !app.connected}
+      >
         {app.iAmMaster ? "Stop being master" : "Become master"}
       </button>
     </div>
@@ -259,6 +265,12 @@
   <section class="card">
     <h2>This browser</h2>
     <p>Connected as <strong>{app.hello?.name ?? app.me?.name ?? "—"}</strong>.</p>
+    {#if app.viewOnly}
+      <p class="muted">
+        <strong>Read-only access</strong>: you logged in with the view code. Everything is shown,
+        nothing can be changed. Log out and log in with the access code to make changes.
+      </p>
+    {/if}
     <div class="actions">
       <button class="danger" onclick={() => app.logout()}>Log out</button>
     </div>

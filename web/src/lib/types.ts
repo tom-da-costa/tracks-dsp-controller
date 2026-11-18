@@ -125,6 +125,8 @@ export interface Hello {
   device_id: string;
   /** This browser session's screen is locked (see App.lockScreen). */
   screen_locked: boolean;
+  /** Logged in with the view code (`--view-pin`): sees everything, changes nothing. */
+  read_only: boolean;
   server_version: string;
   /** This socket's DSP is simulated in the server (`--dsp demo`). */
   demo: boolean;
@@ -179,6 +181,8 @@ export interface DeviceEntry {
 export interface ClientEntry {
   id: string;
   name: string;
+  /** Logged in with the view code. */
+  read_only: boolean;
   /** The DSPs this client has open (one per tab). */
   devices: string[];
 }

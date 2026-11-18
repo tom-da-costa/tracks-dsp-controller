@@ -111,6 +111,7 @@ class ServerConfig:
     host: str = "0.0.0.0"
     port: int = 8080
     pin: str = DEFAULT_PIN
+    view_pin: str | None = None  # opens read-only sessions (--view-pin)
     meter_rate_hz: float = 5.0
     lock_idle_timeout_s: float = 120.0
     resync_interval_s: float = 0.0  # 0 = off
@@ -124,6 +125,10 @@ class ServerConfig:
             raise ValueError("--dsp is required: the DSP's address, or demo (repeatable)")
         if not self.pin:
             raise ValueError("the access code must not be empty")
+        if self.view_pin == "":
+            self.view_pin = None
+        if self.view_pin is not None and self.view_pin == self.pin:
+            raise ValueError("--view-pin must differ from --pin")
         if self.lock_idle_timeout_s <= 0:
             raise ValueError("--lock-idle-timeout must be > 0")
         if self.resync_interval_s < 0:
