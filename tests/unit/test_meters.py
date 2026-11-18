@@ -115,7 +115,8 @@ def test_float16_decoding() -> None:
 
 
 def test_level24_vectors_from_4x4_mini() -> None:
-    # Triplets are [mid, high, low]; values from the miniDSP-Linux sine-sweep capture.
+    # Triplets are [mid, high, low]; values from the sine-sweep meter capture of
+    # IMBArator/miniDSP-Linux, analysis/protocol.md (GPL-3.0).
     triplets = ["000014", "01000c", "0700b7", "0b0009"]
     expected = [20, 268, 1975, 2825]
     data = bytes.fromhex("".join(triplets) + "ffffff" + "000000" * 3 + "080001")

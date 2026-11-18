@@ -1,7 +1,8 @@
 """Frame encoding/decoding.
 
-Reference frames come from Aeternitaas/dsp-408-ui (GPL-3.0, captured on a DSP 408) and
-IMBArator/miniDSP-Linux (GPL-3.0). See the attribution table in README.md.
+Reference frames come from Aeternitaas/dsp-408-ui (GPL-3.0, captured on a DSP 408:
+``protocol.dart`` / ``protocol_service.dart``) and IMBArator/miniDSP-Linux (GPL-3.0,
+``analysis/protocol.md``).
 """
 
 import pytest

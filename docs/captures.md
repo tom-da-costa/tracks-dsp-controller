@@ -10,7 +10,7 @@ simulator), and how to turn the recordings into test fixtures. This is how the o
 |---|---|---|
 | Simulator | `uv run tracks-dsp-controller sim --frame-log editor.jsonl` (or the Windows executable with `sim`) | Fake DSP; logs every request it receives |
 | Proxy | `uv run tracks-dsp-controller proxy --dsp <DSP-IP> --log session.jsonl` | Sits between the editor and a real DSP; logs both directions |
-| Probe | `uv run tracks-dsp-controller probe --dsp <IP> {info,meters,dump-config,diff-config,raw}` | Query the device directly |
+| Probe | `uv run tracks-dsp-controller probe --dsp <IP> {info,meters,dump-config,diff-config,raw}` | Query the device directly ([PROBE.md](PROBE.md)) |
 | Wireshark | filter `tcp.port == 9761` | Fallback when the editor cannot be pointed at an arbitrary IP |
 
 Each line of a JSONL frame log is `{"ts", "dir", "hex", "decoded"}`. `dir` is `host->dsp` or

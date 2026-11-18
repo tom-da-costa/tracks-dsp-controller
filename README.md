@@ -121,9 +121,6 @@ chmod +x tracks-dsp-controller-<version>-linux-amd64
 
 # Demo without a DSP (a simulated DSP runs inside the app)
 ./tracks-dsp-controller-<version>-linux-amd64 --dsp demo
-
-# Read-only checks of the DSP, without the web app
-./tracks-dsp-controller-<version>-linux-amd64 probe --dsp 192.168.1.50 info
 ```
 
 ```powershell
@@ -197,8 +194,8 @@ set `TDSP_TLS_CERT` / `TDSP_TLS_KEY`.
 options can also be set with an environment variable (used by Docker and `.env`); a command-line
 option wins over its variable. The old `DSP408_*` names (read with a warning in 0.8) are no
 longer read: rename them to `TDSP_*`. `--dsp` replaced `--dsp-host` / `TDSP_HOST`, `--dsp-port`
-/ `TDSP_PORT` and `--demo` / `TDSP_DEMO` (`--dsp HOST:PORT`, `--dsp demo`), in `probe` and
-`proxy` too.
+/ `TDSP_PORT` and `--demo` / `TDSP_DEMO` (`--dsp HOST:PORT`, `--dsp demo`), in the other
+commands too.
 
 | Option | Variable | Default | What it does |
 |---|---|---|---|
@@ -226,15 +223,8 @@ Other commands, for diagnostics (`tracks-dsp-controller <command> --help` for th
 
 | Command | What it does |
 |---|---|
-| `probe --dsp IP info` | Identity, status, active preset and preset names |
-| `probe --dsp IP meters [--watch]` | Raw meter frames with their decodings |
-| `probe --dsp IP dump-config -o FILE` | Save the live config to a file (raw config blob) |
-| `probe --dsp IP export-preset -o FILE.prs` | Save the live setup as a preset file of the official editor |
-| `probe diff-config A B` | Compare two config dumps or `.prs` files (offline) |
+| `probe --dsp IP ACTION` | Query a DSP without the web app: identity, meters, config dump, preset file export ([docs/PROBE.md](docs/PROBE.md)) |
 | `proxy --dsp IP --listen HOST:PORT --log FILE` | Sit between the official editor and the DSP and log every frame ([docs/captures.md](docs/captures.md)) |
-
-The `probe` commands only read from the DSP (except `probe raw`, which sends any payload: avoid
-it on a DSP in use). The DSP accepts one client at a time: stop the app before probing.
 
 ## Using the app
 
@@ -277,6 +267,7 @@ with fault injection and a console: see [docs/SIMULATOR.md](docs/SIMULATOR.md).
 | Document | Content |
 |---|---|
 | [docs/SIMULATOR.md](docs/SIMULATOR.md) | The simulated DSP (`tracks-dsp-controller sim`): options, console, fidelity |
+| [docs/PROBE.md](docs/PROBE.md) | `tracks-dsp-controller probe`: query a DSP from the command line |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, checks, code rules, device safety |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, state model, command pipeline, simulator, client/server API, security |
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | The DSP 408 network protocol, with a confidence level for each item and the open questions |
@@ -307,17 +298,6 @@ The **Limiter calc** tab (`web/src/lib/limiter.ts`) implements the method of **M
 dBu mode: formulas and constants (open load AES / 1.5625, closed AES / 2.34375, amplifier at
 half power, 0.775 V = 0 dBu). It is re-implemented from the published formulas; no code was
 copied.
-
-Files that reuse material from these projects keep their original notices:
-
-| File in this repo | Origin |
-|---|---|
-| `tests/fixtures/config/forest_408.bin` | dsp-408-ui, `analyze5.py` (hex dump of a DSP 408 config read); 4 missing bytes filled with 0, see the `.meta.toml` |
-| `tests/unit/test_framing.py` (frame vectors) | dsp-408-ui `protocol.dart` / `protocol_service.dart`; miniDSP-Linux `analysis/protocol.md` |
-| `tests/unit/test_meters.py` (24-bit vectors) | miniDSP-Linux `analysis/protocol.md` (sine-sweep meter triplets) |
-| `tests/fixtures/config/dsp206_capture.bin`, `dsp206_capture_linked.bin` | t.racks-DSP-control, `capture_full.pcapng` (config reads of a real DSP 206), see the `.meta.toml` files |
-| `tests/unit/test_dsp204.py` (link masks, limiter status bytes) | BetterDSPControl `PROTOCOL.md` and `tests/test_protocol.py` (values read on a real DSP 204), MIT, (c) 2026 Givou |
-| `tests/fixtures/dsp206/frames.txt` | t.racks-DSP-control, `capture_full.pcapng`, `capture.pcapng`, `capture_peq_q.pcapng` (wire frames of a real DSP 206) |
 
 GPL-3.0 code may be combined with this AGPL-3.0 project (GPLv3 §13 / AGPLv3 §13); MIT material keeps
 its copyright notice.

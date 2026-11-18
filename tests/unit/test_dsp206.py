@@ -1,6 +1,7 @@
 """The protocol layer against frames and config reads captured from a real DSP 206.
 
-Fixtures from FlexiFlizz/t.racks-DSP-control (GPL-3.0), see the README attribution table.
+Fixtures from FlexiFlizz/t.racks-DSP-control (GPL-3.0, (c) FlexiFlizz): the frames of
+tests/fixtures/dsp206/frames.txt and the config reads of tests/fixtures/config/dsp206_capture*.bin.
 """
 
 from dataclasses import replace

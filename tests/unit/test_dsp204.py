@@ -1,5 +1,5 @@
 """The DSP 204 profile against what Givou/BetterDSPControl observed on a real DSP 204
-(firmware V0104P): see docs/PROTOCOL.md §10 and the README attribution table.
+(firmware V0104P): see docs/PROTOCOL.md §10.
 
 The link masks and limiter status bytes below come from BetterDSPControl
 (https://git.thiemoo.at/Givou/BetterDSPControl), Copyright (c) 2026 Givou, MIT License.
