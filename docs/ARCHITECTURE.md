@@ -343,8 +343,8 @@ tracks-dsp-controller [serve] --dsp 192.168.1.50 [options]   # "serve" is the de
   --demo-scenario demo      (of the demo DSPs: demo|silent|clipping|stress)
   --tls-cert cert.pem --tls-key key.pem  |  --tls-self-signed [--tls-names IP,name] [--tls-dir DIR]
   --log-level info
-tracks-dsp-controller probe --dsp-host IP {info|meters|dump-config|export-preset|diff-config|raw HEX}
-tracks-dsp-controller proxy --listen 0.0.0.0:9761 --dsp-host IP --log frames.jsonl
+tracks-dsp-controller probe --dsp IP {info|meters|dump-config|export-preset|diff-config|raw HEX}
+tracks-dsp-controller proxy --listen 0.0.0.0:9761 --dsp IP --log frames.jsonl
 
 tracks-dsp-controller sim [--model 408|206|204] [--host 0.0.0.0] [--port 9761] [--scenario demo]
                           [--state-dir DIR] [--preset SLOT=FILE(.bin|.prs)] [--fast] …

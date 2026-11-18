@@ -123,7 +123,7 @@ chmod +x tracks-dsp-controller-<version>-linux-amd64
 ./tracks-dsp-controller-<version>-linux-amd64 --dsp demo
 
 # Read-only checks of the DSP, without the web app
-./tracks-dsp-controller-<version>-linux-amd64 probe --dsp-host 192.168.1.50 info
+./tracks-dsp-controller-<version>-linux-amd64 probe --dsp 192.168.1.50 info
 ```
 
 ```powershell
@@ -197,7 +197,8 @@ set `TDSP_TLS_CERT` / `TDSP_TLS_KEY`.
 options can also be set with an environment variable (used by Docker and `.env`); a command-line
 option wins over its variable. The old `DSP408_*` names (read with a warning in 0.8) are no
 longer read: rename them to `TDSP_*`. `--dsp` replaced `--dsp-host` / `TDSP_HOST`, `--dsp-port`
-/ `TDSP_PORT` and `--demo` / `TDSP_DEMO` (`--dsp HOST:PORT`, `--dsp demo`).
+/ `TDSP_PORT` and `--demo` / `TDSP_DEMO` (`--dsp HOST:PORT`, `--dsp demo`), in `probe` and
+`proxy` too.
 
 | Option | Variable | Default | What it does |
 |---|---|---|---|
@@ -225,12 +226,12 @@ Other commands, for diagnostics (`tracks-dsp-controller <command> --help` for th
 
 | Command | What it does |
 |---|---|
-| `probe --dsp-host IP info` | Identity, status, active preset and preset names |
-| `probe --dsp-host IP meters [--watch]` | Raw meter frames with their decodings |
-| `probe --dsp-host IP dump-config -o FILE` | Save the live config to a file (raw config blob) |
-| `probe --dsp-host IP export-preset -o FILE.prs` | Save the live setup as a preset file of the official editor |
+| `probe --dsp IP info` | Identity, status, active preset and preset names |
+| `probe --dsp IP meters [--watch]` | Raw meter frames with their decodings |
+| `probe --dsp IP dump-config -o FILE` | Save the live config to a file (raw config blob) |
+| `probe --dsp IP export-preset -o FILE.prs` | Save the live setup as a preset file of the official editor |
 | `probe diff-config A B` | Compare two config dumps or `.prs` files (offline) |
-| `proxy --dsp-host IP --listen HOST:PORT --log FILE` | Sit between the official editor and the DSP and log every frame ([docs/captures.md](docs/captures.md)) |
+| `proxy --dsp IP --listen HOST:PORT --log FILE` | Sit between the official editor and the DSP and log every frame ([docs/captures.md](docs/captures.md)) |
 
 The `probe` commands only read from the DSP (except `probe raw`, which sends any payload: avoid
 it on a DSP in use). The DSP accepts one client at a time: stop the app before probing.

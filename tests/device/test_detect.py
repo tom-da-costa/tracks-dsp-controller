@@ -273,7 +273,7 @@ async def test_probe_detects_the_model(
     stop_later.append(server)
     port = str(server.bound_port)
     dump = tmp_path / "u.bin"
-    base = ["probe", "--dsp-host", "127.0.0.1", "--dsp-port", port]
+    base = ["probe", "--dsp", f"127.0.0.1:{port}"]
     assert await asyncio.to_thread(cli.main, [*base, "dump-config", "-o", str(dump)]) == 0
     assert dump.stat().st_size == 724
     assert await asyncio.to_thread(cli.main, [*base, "meters"]) == 0

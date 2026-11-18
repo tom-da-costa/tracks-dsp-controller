@@ -139,7 +139,7 @@ def test_cli_bad_profile(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> 
 
 
 def test_cli_probe_unreachable(capsys: pytest.CaptureFixture[str]) -> None:
-    assert cli.main(["probe", "--dsp-port", "1", "info"]) == 1
+    assert cli.main(["probe", "--dsp", "127.0.0.1:1", "info"]) == 1
     assert "error" in capsys.readouterr().err
 
 
@@ -150,25 +150,21 @@ async def run_cli_in_thread(argv: list[str]) -> int:
 async def test_cli_probe_against_simulator(
     sim: SimulatorServer, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    port = str(sim.bound_port)
+    base = ["probe", "--dsp", f"127.0.0.1:{sim.bound_port}"]
     out = tmp_path / "dump.bin"
-    assert await run_cli_in_thread(["probe", "--dsp-port", port, "info"]) == 0
-    assert await run_cli_in_thread(["probe", "--dsp-port", port, "meters"]) == 0
-    assert (
-        await run_cli_in_thread(
-            ["probe", "--dsp-port", port, "meters", "--watch", "--count", "2", "--interval", "0"]
-        )
-        == 0
-    )
-    assert await run_cli_in_thread(["probe", "--dsp-port", port, "raw", "35", "04", "01"]) == 0
-    dump = ["probe", "--dsp-port", port, "dump-config", "-o", str(out)]
+    assert await run_cli_in_thread([*base, "info"]) == 0
+    assert await run_cli_in_thread([*base, "meters"]) == 0
+    watch = [*base, "meters", "--watch", "--count", "2", "--interval", "0"]
+    assert await run_cli_in_thread(watch) == 0
+    assert await run_cli_in_thread([*base, "raw", "35", "04", "01"]) == 0
+    dump = [*base, "dump-config", "-o", str(out)]
     assert await run_cli_in_thread(dump) == 0
     text = capsys.readouterr().out
     assert "Demo 3-way" in text
     assert f"wrote {cm.CONFIG_SIZE} bytes" in text
     assert out.read_bytes() == sim.device.config_blob
     prs = tmp_path / "live.prs"
-    export = ["probe", "--dsp-port", port, "export-preset", "-o", str(prs)]
+    export = [*base, "export-preset", "-o", str(prs)]
     assert await run_cli_in_thread(export) == 0
     assert "wrote 'Demo 3-way' (1452 bytes)" in capsys.readouterr().out
     assert prs.read_bytes() == pf.encode_preset_file(
@@ -202,8 +198,18 @@ def test_options_replaced_by_dsp_say_what_to_use(
         with pytest.raises(SystemExit):
             cli.main(argv)
         assert instead in capsys.readouterr().err
-    # probe and proxy still take --dsp-host (they talk to one DSP)
-    assert cli.build_parser().parse_args(["probe", "--dsp-host", "h", "info"]).dsp_host == "h"
+    # probe and proxy too
+    with pytest.raises(SystemExit):
+        cli.main(["probe", "--dsp-host", "10.0.0.9", "info"])
+    assert "--dsp HOST" in capsys.readouterr().err
+    # probe and proxy talk to one real DSP
+    for argv, message in [
+        (["probe", "--dsp", "demo", "info"], "sim"),
+        (["probe", "--dsp", "a=10.0.0.1 b=10.0.0.2", "info"], "one DSP"),
+        (["proxy", "--log", "x.jsonl"], "--dsp is required"),
+    ]:
+        assert cli.main(argv) == 1
+        assert message in capsys.readouterr().err
     # the old variables are named, unless TDSP_DSP is set
     monkeypatch.setenv("TDSP_HOST", "10.0.0.9")
     assert cli.main(["--port", "0"]) == 1

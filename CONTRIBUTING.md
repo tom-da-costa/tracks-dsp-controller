@@ -78,7 +78,7 @@ The DSP 408 drives real sound systems, so a few things are off limits:
   (`state/registry.py`), so it is only writable with `--experimental`.
 
 **Develop and test against the simulator.** If you test on a real DSP, use a copy of a preset in
-a free slot, dump the config first (`tracks-dsp-controller probe --dsp-host IP dump-config`), and
+a free slot, dump the config first (`tracks-dsp-controller probe --dsp IP dump-config`), and
 compare after restoring. Never run the app and the official editor against the same DSP at the
 same time.
 
