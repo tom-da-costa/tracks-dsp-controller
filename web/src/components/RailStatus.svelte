@@ -141,6 +141,13 @@
     font-size: 0.8rem;
     color: var(--text);
   }
+  /* No status dot to sit on: the unsaved dot goes above the slot instead of over it. */
+  .multi .unsaved-dot {
+    position: static;
+    width: 10px;
+    height: 10px;
+    border: none;
+  }
   .dot {
     width: 12px;
     height: 12px;
