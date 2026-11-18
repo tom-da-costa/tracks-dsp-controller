@@ -173,8 +173,9 @@
     font-weight: 800;
     font-size: 0.95rem;
   }
-  /* Narrow strip: smaller indicators, tighter meter and fader (BigMeter drops its scale). */
-  @container (max-width: 118px) {
+  /* Narrow strip (content box under 114 px = meter 54 + gap 6 + fader 54; the usual 132 px
+     strip has 118): smaller indicators, tighter meter and fader (BigMeter drops its scale). */
+  @container (width < 114px) {
     .leds {
       gap: 2px;
     }

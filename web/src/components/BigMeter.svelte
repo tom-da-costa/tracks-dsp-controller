@@ -194,8 +194,9 @@
   .nodata .bar {
     opacity: 0.4;
   }
-  /* In a narrow Live strip (LiveStrip is the container): no scale, the bar and the marks only. */
-  @container (max-width: 118px) {
+  /* In a narrow Live strip (LiveStrip is the container, content box): no scale, the bar and
+     the marks only. 114 px = this meter (54) + gap (6) + fader (54); the usual strip has 118. */
+  @container (width < 114px) {
     .meter {
       grid-template-columns: 16px 14px;
     }
