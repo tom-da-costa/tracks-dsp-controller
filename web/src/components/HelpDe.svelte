@@ -136,9 +136,9 @@
   <ul>
     <li>
       Auf einem Smartphone klappt die Reihe in Live und in den Streifen-Ansichten von Params
-      zu einem schmalen Reiter <em>Channels</em> links der Kanäle zusammen (mit der Anzahl),
-      damit die Kanäle oben am Bildschirm beginnen: antippen öffnet die Tasten über den
-      Kanälen, daneben tippen schließt sie.
+      zu einer kleinen Taste oben rechts über den Kanälen zusammen, die zeigt, wie viele
+      angezeigt werden (z. B. 12/12), damit die Kanäle oben am Bildschirm beginnen: antippen
+      öffnet die Tasten, daneben tippen schließt sie.
     </li>
     <li>
       Jede Ansicht merkt sich ihre Auswahl auf diesem Gerät (Params: eine Auswahl für alle

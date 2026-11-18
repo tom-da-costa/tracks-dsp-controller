@@ -57,15 +57,12 @@
     overscroll-behavior-x: contain;
     padding-bottom: 6px;
   }
-  /* Phone: the picker folds into a tab beside the strips (ChannelPicker). */
+  /* Phone: the picker folds into a mini button over the strips (ChannelPicker), which then
+     start at the top and gain its height. */
   @media (max-width: 699px), (max-height: 499px) {
     .view {
-      flex-direction: row;
-      gap: 6px;
+      position: relative;
       min-height: 438px;
-    }
-    .strips {
-      min-width: 0;
     }
   }
 </style>

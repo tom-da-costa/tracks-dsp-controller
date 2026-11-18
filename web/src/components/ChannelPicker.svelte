@@ -3,9 +3,9 @@
   // shortcuts all / inputs / outputs, then one toggle per channel. With `side`, only that side's
   // channels are listed (a setting that exists on inputs or outputs only).
   // With `fold` (Live, Params strips), on a phone (narrow, or short in landscape) the row folds
-  // into a narrow vertical tab beside the strips, so that they start at the top of the page; a
-  // tap on it opens the row as a panel over the strips. The parent lays the tab and the strips
-  // out side by side under the same media query.
+  // into a mini button floating over the top right corner of the strips, so that they start at
+  // the top of the page and keep the whole width; a tap on it opens the row as a panel under
+  // it. The parent is the positioning box (position: relative).
   import { app } from "../lib/app.svelte";
   import { links } from "../lib/links.svelte";
   import type { ChannelSelection } from "../lib/selection.svelte";
@@ -42,8 +42,7 @@
       title="Channels shown"
       onclick={() => (open = !open)}
     >
-      <span>Channels {count}/{all.length}</span>
-      <span class="chev" aria-hidden="true">{open ? "◂" : "▸"}</span>
+      {count}/{all.length} {open ? "▴" : "▾"}
     </button>
     {#if open}
       <button class="scrim" aria-label="Close" tabindex="-1" onclick={() => (open = false)}></button>
@@ -156,34 +155,28 @@
     background: var(--line);
   }
 
-  /* Phone, folded: a narrow tab beside the strips; the row opens over them as a panel. Keep
-     the media query in step with the parents' (LiveView, Mixer, ParamStrips). */
+  /* Phone, folded: a mini button over the strips' top right corner; the row opens under it
+     as a panel. Keep the media query in step with the parents' (LiveView, Mixer, ParamStrips). */
   @media (max-width: 699px), (max-height: 499px) {
     .fold {
-      position: relative;
-      flex: 0 0 26px;
-      display: flex;
+      display: block;
+      position: absolute;
+      z-index: 3;
+      top: 4px;
+      right: 4px;
     }
     .fold .tab {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      min-height: 0;
-      padding: 8px 0;
-      border-radius: var(--radius);
-      font-size: 0.8rem;
+      display: block;
+      position: relative;
+      z-index: 3;
+      min-height: 30px;
+      padding: 0 8px;
+      border-radius: 15px;
+      font-size: 0.75rem;
       font-weight: 700;
-      color: var(--muted);
-    }
-    .fold .tab span {
-      writing-mode: vertical-rl;
-      white-space: nowrap;
-    }
-    .fold .tab .chev {
-      writing-mode: horizontal-tb;
+      color: var(--text);
+      background: color-mix(in srgb, var(--panel-2) 85%, transparent);
+      box-shadow: 0 2px 8px #0008;
     }
     .fold .tab.filtered,
     .fold.open .tab {
@@ -197,10 +190,10 @@
       display: flex;
       position: absolute;
       z-index: 3;
-      top: 0;
-      left: calc(100% + 6px);
+      top: calc(100% + 6px);
+      right: 0;
       width: max-content;
-      max-width: calc(100vw - var(--rail, 56px) - 70px);
+      max-width: calc(100vw - var(--rail, 56px) - 40px);
       flex-wrap: wrap;
       align-content: flex-start;
       padding: 8px;

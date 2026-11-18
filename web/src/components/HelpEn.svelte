@@ -115,10 +115,9 @@
   </p>
   <ul>
     <li>
-      On a phone, in Live and in the strip views of Params, the row folds into a narrow
-      <em>Channels</em> tab left of the channels (with the count shown), so that they start at
-      the top of the screen: tap it to open the buttons over the channels, tap beside them to
-      close.
+      On a phone, in Live and in the strip views of Params, the row folds into a small button
+      at the top right of the channels, showing how many are shown (e.g. 12/12), so that they
+      start at the top of the screen: tap it to open the buttons, tap beside them to close.
     </li>
     <li>Each view remembers its own choice on this device (Params: one choice for all its settings).</li>
     <li>

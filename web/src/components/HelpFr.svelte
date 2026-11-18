@@ -136,9 +136,9 @@
   <ul>
     <li>
       Sur un téléphone, dans Live et dans les vues en tranches de Params, la rangée se replie
-      en un onglet étroit <em>Channels</em> à gauche des voies (avec le nombre affiché), pour
-      que les voies commencent en haut de l'écran : touchez-le pour ouvrir les boutons
-      par-dessus les voies, touchez à côté pour refermer.
+      en un petit bouton en haut à droite des voies, qui indique combien sont affichées (par
+      exemple 12/12), pour que les voies commencent en haut de l'écran : touchez-le pour
+      ouvrir les boutons, touchez à côté pour refermer.
     </li>
     <li>
       Chaque vue mémorise son propre choix sur cet appareil (Params : un seul choix pour tous
