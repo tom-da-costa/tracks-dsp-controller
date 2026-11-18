@@ -3,7 +3,7 @@
   import { app } from "../lib/app.svelte";
   import type { ChannelSelection } from "../lib/selection.svelte";
   import { stripSpace } from "../lib/stripfit";
-  import { StripWidth } from "../lib/stripwidth.svelte";
+  import { stripPx, stripWidth } from "../lib/stripwidth.svelte";
   import ChannelPicker from "./ChannelPicker.svelte";
   import Strip from "./Strip.svelte";
   import SideDivider from "./SideDivider.svelte";
@@ -18,21 +18,20 @@
   let { selection, paths }: Props = $props();
 
   const device = $derived(app.device);
-  // Set in the folded picker's panel on a phone; unset, a strip takes 80 to 120 px (Strip).
-  const width = new StripWidth("dsp408.params.gain.width", {
-    min: 60,
-    max: 160,
-    step: 4,
-    default: 100,
-  });
+  // Strip width, set in the folded picker's panel on a phone (shared with Live): unset, a
+  // strip takes 80 to 120 px (Strip, 100 % = 100 px); its content narrows down to 60 px.
+  const GAIN = { base: 100, min: 60 };
   let rowWidth = $state(0);
-  $effect(() => width.measure(stripSpace(rowWidth, paths), paths.length));
+  const px = $derived(stripPx(stripWidth, GAIN, stripSpace(rowWidth, paths), paths.length));
+  $effect(() => {
+    if (stripWidth.fit && px !== undefined) stripWidth.fitted = Math.round((px * 100) / GAIN.base);
+  });
 </script>
 
 {#if device}
 <div class="view">
-  <ChannelPicker {selection} fold {width} />
-  <div class="strips" style:--strip-w={width.css} bind:clientWidth={rowWidth}>
+  <ChannelPicker {selection} fold width={stripWidth} />
+  <div class="strips" style:--strip-w={px === undefined ? undefined : `${px}px`} bind:clientWidth={rowWidth}>
     {#each paths as path, i (path)}
       {@const [side, n] = path.split(".")}
       {@const index = Number(n)}

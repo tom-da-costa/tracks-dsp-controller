@@ -141,15 +141,15 @@
       öffnet die Tasten, daneben tippen schließt sie.
     </li>
     <li>
-      In diesem Feld stellt <strong>Width</strong> die Breite der Kanäle ein (Live und Params
-      › Gain), um mehr davon gleichzeitig zu sehen; <strong>Fit screen</strong> teilt die
-      Bildschirmbreite auf die angezeigten Kanäle auf (und folgt einer Drehung oder einer
-      anderen Auswahl), ↺ stellt die Standardbreite wieder her. Wird auf diesem Gerät
-      gespeichert.
+      In diesem Feld stellt <strong>Width</strong> die Breite der Kanäle ein (Live und die
+      Streifen-Ansichten von Params, in Prozent ihrer üblichen Breite), um mehr davon
+      gleichzeitig zu sehen; <strong>Fit screen</strong> teilt die Bildschirmbreite auf die
+      angezeigten Kanäle auf (und folgt einer Drehung oder einer anderen Auswahl), ↺ stellt
+      die Standardbreite wieder her. Wird auf diesem Gerät gespeichert.
     </li>
     <li>
-      Jede Ansicht merkt sich ihre Auswahl auf diesem Gerät (Params: eine Auswahl für alle
-      Einstellungen).
+      Live und Params teilen eine Auswahl (und eine Breite), All-in-one hat seine eigene; auf
+      diesem Gerät gespeichert.
     </li>
     <li>
       Jeder Kanal hat seine eigene Farbe, überall dieselbe. Verlinkte Kanäle teilen die Farbe

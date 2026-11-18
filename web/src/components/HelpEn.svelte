@@ -120,12 +120,16 @@
       start at the top of the screen: tap it to open the buttons, tap beside them to close.
     </li>
     <li>
-      In that panel, <strong>Width</strong> sets the width of the channels (Live, and Params ›
-      Gain), to see more of them at once; <strong>Fit screen</strong> shares the screen's
-      width between the channels shown (and follows a rotation or another pick), ↺ goes back
-      to the default. Remembered on this device.
+      In that panel, <strong>Width</strong> sets the width of the channels (Live and the strip
+      views of Params, as a percentage of their usual width), to see more of them at once;
+      <strong>Fit screen</strong> shares the screen's width between the channels shown (and
+      follows a rotation or another pick), ↺ goes back to the default. Remembered on this
+      device.
     </li>
-    <li>Each view remembers its own choice on this device (Params: one choice for all its settings).</li>
+    <li>
+      Live and Params share one choice (and one width), All-in-one has its own; remembered on
+      this device.
+    </li>
     <li>
       Each channel has its own colour, the same everywhere. Linked channels share the colour
       of their group.

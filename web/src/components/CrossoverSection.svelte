@@ -19,8 +19,8 @@
   const profile = $derived(app.hello?.profile);
   const editable = $derived(app.editable("crossover"));
   const FILTERS = [
-    ["hpf", "High-pass"],
-    ["lpf", "Low-pass"],
+    ["hpf", "High-pass", "HP"],
+    ["lpf", "Low-pass", "LP"],
   ] as const;
 
   function setFilter(which: "hpf" | "lpf", change: Partial<Filter>) {
@@ -31,11 +31,13 @@
 <Section {id} {title} kind="crossover">
   {#if profile}
     <div class:cols={vertical}>
-    {#each FILTERS as [which, title] (which)}
+    {#each FILTERS as [which, title, short] (which)}
       {@const filter = channel.crossover[which]}
       <div class="filter" class:off={!filter.enabled}>
         <div class="head">
-          <strong>{title}</strong>
+          <strong title={title}
+            ><span class="full">{title}</span><span class="short">{short}</span></strong
+          >
           <select
             value={filter.slope}
             disabled={!editable}
@@ -126,6 +128,64 @@
     grid-column: 1 / -1;
     grid-row: 2;
     min-width: 0;
+  }
+  /* Strips of a width set on a phone (ParamStrips): the two filters share it. */
+  :global(.sized) .cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+  :global(.sized) .cols .filter + .filter {
+    padding-left: 4px;
+  }
+  :global(.sized) .cols :global(.vfield) {
+    width: min(74px, 100%);
+  }
+  :global(.sized) .cols .head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  :global(.sized) .cols .head strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :global(.sized) .cols .head select {
+    width: 100%;
+    padding: 0 2px 0 4px;
+  }
+  .short {
+    display: none;
+  }
+  /* A narrow filter column (a strip of a width set on a phone): HP / LP. */
+  :global(.sized) .cols .filter {
+    container-type: inline-size;
+  }
+  @container (width < 110px) {
+    .full {
+      display: none;
+    }
+    .short {
+      display: inline;
+    }
+    .cols .head {
+      gap: 2px;
+    }
+    .cols .head strong {
+      font-size: 0.8rem;
+      text-overflow: clip;
+    }
+    .cols .head .switch {
+      padding: 0 3px;
+      font-size: 0.75rem;
+    }
+    /* no arrow: the slope's name gets the width (still a select on tap) */
+    .cols .head select {
+      appearance: none;
+      padding: 0 2px;
+      text-align: center;
+    }
+  }
+  :global(.sized) .cols .head .switch {
+    padding: 0 6px;
   }
   .filter.off :global(.num) {
     color: var(--muted);

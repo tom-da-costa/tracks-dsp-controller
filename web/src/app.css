@@ -143,3 +143,15 @@ button.switch.danger.on {
 .vfields-grid.two-rows {
   grid-template-rows: repeat(2, minmax(min-content, 1fr));
 }
+/* Short screen (a phone in landscape): four fields on one row, so that they keep their height
+   (ParamStrips sizes those strips for it). */
+@media (max-height: 499px) {
+  .vfields-grid.two-rows {
+    grid-template-rows: minmax(min-content, 1fr);
+  }
+}
+/* Strips of a width set on a phone (ParamStrips `.sized`): the columns share it. */
+.sized .vfields-grid {
+  grid-auto-columns: minmax(0, 1fr);
+  justify-content: stretch;
+}

@@ -6,11 +6,11 @@
   // into a mini button floating over the top right corner of the strips, so that they start at
   // the top of the page and keep the whole width; a tap on it opens the row as a panel under
   // it. The parent is the positioning box (position: relative). With `width`, the panel also
-  // sets the width of the strips (Live, Params › Gain).
+  // sets the width of the strips (Live and the Params strips share it).
   import { app } from "../lib/app.svelte";
   import { links } from "../lib/links.svelte";
   import type { ChannelSelection } from "../lib/selection.svelte";
-  import type { StripWidth } from "../lib/stripwidth.svelte";
+  import { WIDTH_PERCENT, type StripWidth } from "../lib/stripwidth.svelte";
 
   interface Props {
     selection: ChannelSelection;
@@ -87,7 +87,7 @@
   {/each}
   {#if fold && width}
     <div class="width" role="group" aria-label="Strip width">
-      <span class="label">Width</span>
+      <span class="label">Width <span class="pct">{width.shown} %</span></span>
       <button
         class="fit"
         class:on={width.fit}
@@ -99,10 +99,10 @@
       <button class="step" aria-label="Narrower" onclick={() => width.nudge(-1)}>−</button>
       <input
         type="range"
-        min={width.range.min}
-        max={width.range.max}
-        step={width.range.step}
-        value={width.px}
+        min={WIDTH_PERCENT.min}
+        max={WIDTH_PERCENT.max}
+        step={WIDTH_PERCENT.step}
+        value={width.shown}
         aria-label="Strip width"
         oninput={(e) => width.set(Number(e.currentTarget.value))}
       />
@@ -111,7 +111,7 @@
         class="step"
         aria-label="Default width"
         title="Default width"
-        disabled={width.value === null && !width.fit}
+        disabled={width.percent === null && !width.fit}
         onclick={() => width.reset()}>↺</button
       >
     </div>
@@ -276,6 +276,11 @@
       min-height: 32px;
       font-size: 0.8rem;
       font-weight: 600;
+    }
+    .width .pct {
+      margin-left: 4px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
     }
     .width input {
       flex: 1;

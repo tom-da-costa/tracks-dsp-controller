@@ -1,25 +1,30 @@
 <script lang="ts">
   // "Live" tab: one strip per channel for running a show (meters, gain, mute, indicators).
-  // The channels shown are picked in the top row and remembered in this browser.
+  // The channels shown are picked in the top row and remembered in this browser, shared with
+  // Params (same choice, same strip width).
   import { ChannelSelection } from "../lib/selection.svelte";
   import { stripSpace } from "../lib/stripfit";
-  import { StripWidth } from "../lib/stripwidth.svelte";
+  import { stripPx, stripWidth } from "../lib/stripwidth.svelte";
   import ChannelPicker from "./ChannelPicker.svelte";
   import LiveStrip from "./LiveStrip.svelte";
   import SideDivider from "./SideDivider.svelte";
 
   const selection = new ChannelSelection("dsp408.live.hidden");
   const shown = $derived(selection.shown);
-  // Set in the folded picker's panel on a phone (LiveStrip's default: 132 px).
-  const width = new StripWidth("dsp408.live.width", { min: 60, max: 180, step: 4, default: 132 });
+  // Strip width, set in the folded picker's panel on a phone: LiveStrip is 132 px, its content
+  // narrows down to 60 px.
+  const LIVE = { base: 132, min: 60 };
   let rowWidth = $state(0);
-  $effect(() => width.measure(stripSpace(rowWidth, shown), shown.length));
+  const px = $derived(stripPx(stripWidth, LIVE, stripSpace(rowWidth, shown), shown.length));
+  $effect(() => {
+    if (stripWidth.fit && px !== undefined) stripWidth.fitted = Math.round((px * 100) / LIVE.base);
+  });
 </script>
 
 <div class="live">
-  <ChannelPicker {selection} fold {width} />
+  <ChannelPicker {selection} fold width={stripWidth} />
 
-  <div class="strips" style:--strip-w={width.css} bind:clientWidth={rowWidth}>
+  <div class="strips" style:--strip-w={px === undefined ? undefined : `${px}px`} bind:clientWidth={rowWidth}>
     {#each shown as path, i (path)}
       {#if i > 0 && path.startsWith("outputs.") && shown[i - 1]?.startsWith("inputs.")}
         <SideDivider />
