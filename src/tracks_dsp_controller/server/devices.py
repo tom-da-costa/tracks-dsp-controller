@@ -1,4 +1,4 @@
-"""The DSPs this server controls: one ``DeviceSession`` + ``StateStore`` + control lock each.
+"""The DSPs this server controls: one ``DeviceSession`` + ``StateStore`` each.
 
 ``DeviceManager`` keeps them in the order given on the command line; the first one is the
 default (a client that names no device, or one that no longer exists, gets it). Each DSP accepts
@@ -15,7 +15,6 @@ from dataclasses import dataclass
 
 from tracks_dsp_controller.device.session import DeviceSession
 from tracks_dsp_controller.protocol.profile import MODELS, ProtocolProfile, detect_model
-from tracks_dsp_controller.server.lock import LockManager
 from tracks_dsp_controller.server.settings import DspSpec, ServerConfig
 from tracks_dsp_controller.simulator import Faults, SimulatedDevice, SimulatorServer, apply_scenario
 from tracks_dsp_controller.simulator.models import SIM_MODELS
@@ -28,12 +27,12 @@ type ModelProfile = Callable[[str], ProtocolProfile]
 
 @dataclass(eq=False)
 class Device:
-    """One DSP: its connection, its state mirror and who has control of it."""
+    """One DSP: its connection and its state mirror. Control (the ``LockManager``) belongs to
+    the server: whoever has it is the only one who may write, on every DSP."""
 
     spec: DspSpec
     session: DeviceSession
     store: StateStore
-    lock: LockManager
     simulator: SimulatorServer | None = None
 
     @property
@@ -128,6 +127,5 @@ def build_devices(
             profile_for=model_profile,
             device_id=spec.device_id,
         )
-        lock = LockManager(config.lock_idle_timeout_s)
-        devices.append(Device(spec, session, store, lock, simulator))
+        devices.append(Device(spec, session, store, simulator))
     return DeviceManager(devices)

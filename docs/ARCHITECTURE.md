@@ -58,16 +58,17 @@ Rules:
 ### Several DSPs
 
 `DeviceManager` (`server/devices.py`) holds one `Device` per DSP, in the order of the `--dsp`
-options: its `DspSpec` (name, host, port, front-panel ID, model), `DeviceSession`, `StateStore`
-and `LockManager` (control is per DSP), and in demo mode its own in-process simulator. Without
+options: its `DspSpec` (name, host, port, front-panel ID, model), `DeviceSession` and
+`StateStore`, and in demo mode its own in-process simulator. Without
 `--dsp`, `--dsp-host` makes a single one named `dsp`. Each DSP has its own model detection,
 pipeline, reconnection and meter rate; a DSP that is offline does not affect the others.
 
 Each WebSocket controls one DSP, named in its URL (`/ws?device=NAME`; the first one when the name
 is missing or unknown, and `hello.device_id` says which). Everything about a DSP (`hello`'s
-profile, `snapshot`, `patch`, `meters`, `device`, `lock`, `settings`) goes only to its sockets;
-the `devices` message, the overview of every DSP, goes to every socket. Clients, the master role
-and the screen lock belong to the server. Switching to another DSP in the UI opens a new socket,
+profile, `snapshot`, `patch`, `meters`, `device`, `settings`) goes only to its sockets; the
+`devices` message, the overview of every DSP, goes to every socket. Clients, control (one
+`LockManager`: its holder is the only one who may write, on every DSP), the master role and the
+screen lock belong to the server. Switching to another DSP in the UI opens a new socket,
 so meters only flow for the DSP a tab shows. Parameters are not linked across DSPs.
 
 ## 3. State model
@@ -196,12 +197,11 @@ varies and can exceed the 0.5 s that a DSP on the LAN needs.
 - Each client has a display name, chosen at login; it cannot be changed during the session.
 - Any number of clients see the same state. By default the **last writer wins**: writes are
   applied in arrival order and the result goes to every client, the sender included.
-- A client can take **control** of a DSP (the `lock.*` messages and `LockManager`, a name kept
-  from before); every other client is then read-only on that DSP (meters keep working), and
-  another client can still take control of another DSP. The holder keeps it while active: any
-  write, preset or control action, or UI interaction (reported with a throttled `activity`
-  message, which counts for every DSP it has control of). It is released on request, on logout,
-  on a kick, or after 120 s without activity (`--lock-idle-timeout`).
+- A client can take **control** (the `lock.*` messages and `LockManager`, a name kept from
+  before); every other client is then read-only (meters keep working), on every DSP of the
+  server. The holder keeps it while active: any write, preset or control action, or UI
+  interaction (reported with a throttled `activity` message). It is released on request, on
+  logout, on a kick, or after 120 s without activity (`--lock-idle-timeout`).
 - The **screen lock** is another thing: it makes one browser session (all its tabs) read-only,
   the screen staying readable, until *Unlock screen* and the access code, for a device left
   unattended. The UI also freezes the view: tabs, sub-tabs, the channels shown and the browser's
@@ -275,7 +275,7 @@ JSON messages `{type, ...}`:
 | S→C | `patch` | `rev`, `changes: [{path, value}]`, `origin` (client_id or `device`) |
 | S→C | `meters` | `seq`, `levels` (12 values in dB or `null`; the whole field is `null` when the poll failed), `clip` (12 bools), `limit` (8 bools or `null`), `comp` (8 bools or `null`), `input_clip` |
 | S→C | `device` | `status`, `error?`, `model`, `firmware`, `identity`, `model_tested` |
-| S→C | `devices` | every DSP: `{id, target, status, error, model, active_slot, preset_name, modified, control, control_id}` (sent on connect and when one of these changes) |
+| S→C | `devices` | every DSP: `{id, target, status, error, model, active_slot, preset_name, modified}` (sent on connect and when one of these changes) |
 | S→C | `lock` | control: `owner_id?`, `owner_name?`, `idle_remaining_s?`, `idle_timeout_s` |
 | S→C | `shutdown` | `by`: the server was shut down from Settings; the UI stops reconnecting and shows it |
 | S→C | `master` | master role: `owner_id?`, `owner_name?`, `logins_blocked` |
@@ -293,7 +293,7 @@ JSON messages `{type, ...}`:
 | C→S | `master.acquire` / `master.release` | `req`; take or give up the master role (giving it up allows new logins again) |
 | C→S | `client.kick` | `req`, `client_id`; master only: end that client's session |
 | C→S | `logins.block` | `req`, `blocked` (bool); master only |
-| C→S | `server.shutdown` | `req`; refused (`locked` / `not_master`) while another client has control of a DSP or is the master. Every client gets `shutdown`, the connection to every DSP is closed, then the process exits (code 0) |
+| C→S | `server.shutdown` | `req`; refused (`locked` / `not_master`) while another client has control or is the master. Every client gets `shutdown`, the connection to every DSP is closed, then the process exits (code 0) |
 | C→S | `screen.lock` / `screen.unlock` | `req`; `pin` (the access code) to unlock |
 | C→S | `activity` | no payload; user interaction, throttled to one every 10 s |
 | C→S | `settings.set` | `req`, `meter_rate_hz` (clamped to 1–10; this DSP's) |

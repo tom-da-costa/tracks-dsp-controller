@@ -63,8 +63,8 @@ On a phone, in landscape:
 - Multi-client: last writer wins by default. A client can **take control**: the others become
   read-only while it is active (released after 120 s of inactivity)
 - **Several DSPs** from one server (`--dsp`, e.g. a main system and a delay line, models mixed):
-  a picker at the top of the tab bar shows every DSP's status, preset and who has control, and
-  switches the browser tab to another one. Control is taken per DSP
+  a picker at the top of the tab bar shows every DSP's status and preset, and switches the
+  browser tab to another one. *Take control* covers every DSP of the server
 - **Master**: one client can become master (Settings) and then disconnect another client (back to
   the login screen) and block new connections; browsers already connected stay connected. The
   block ends with the role (released, logged out, or the app closed for 5 minutes)

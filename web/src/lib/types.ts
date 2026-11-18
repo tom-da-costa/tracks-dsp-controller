@@ -160,7 +160,8 @@ export interface DeviceMessage {
   model_tested: boolean;
 }
 
-/** One DSP of the server, at a glance (the `devices` message; the device picker). */
+/** One DSP of the server, at a glance (the `devices` message; the device picker). Control
+ * (the `lock` message) belongs to the server and covers every DSP. */
 export interface DeviceEntry {
   id: string;
   /** "host:port", or "simulated" in demo mode. */
@@ -171,9 +172,6 @@ export interface DeviceEntry {
   active_slot: number;
   preset_name: string;
   modified: boolean | null;
-  /** The client that has control of it, if any. */
-  control: string | null;
-  control_id: string | null;
 }
 
 export interface ClientEntry {

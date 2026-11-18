@@ -43,13 +43,9 @@
     if (await app.run({ type: "client.kick", client_id: id })) app.toast(`${name} disconnected`);
   }
 
-  // Same rule as the server: refused while another client has Control (of any of the server's
-  // DSPs) or is the master.
-  const otherControl = $derived(
-    app.devices.find((d) => d.control_id && d.control_id !== app.hello?.client_id),
-  );
+  // Same rule as the server: refused while another client has Control or is the master.
   const canShutdown = $derived(
-    app.connected && !app.screenLocked && !app.lockedByOther && !otherMaster && !otherControl,
+    app.connected && !app.screenLocked && !app.lockedByOther && !otherMaster,
   );
 
   async function shutdown() {
@@ -252,8 +248,7 @@
       Shut the server down cleanly: it frees {app.multiDevice ? "every DSP (each one" : "the DSP (which"}
       accepts one program at a time) and stops the app for every client.
       {#if app.lockedByOther}Only {app.lock?.owner_name}, who has control, can do it now.
-      {:else if otherControl}Only {otherControl.control}, who has control of {otherControl.id}, can
-        do it now.
+
       {:else if otherMaster}Only {app.master?.owner_name}, the master, can do it now.{/if}
     </p>
   </section>

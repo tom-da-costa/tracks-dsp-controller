@@ -148,8 +148,8 @@ describe("link to the server", () => {
 
 describe("several DSPs on one server", () => {
   const devices = [
-    { id: "main", status: "online", model: "DSP408", control: null, control_id: null },
-    { id: "delay", status: "online", model: "DSP206", control: null, control_id: null },
+    { id: "main", status: "online", model: "DSP408" },
+    { id: "delay", status: "online", model: "DSP206" },
   ];
 
   it("asks for the remembered DSP and follows the one the server gives", async () => {

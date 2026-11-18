@@ -154,10 +154,11 @@ def test_each_socket_controls_one_dsp(two: TestClient) -> None:
             assert receive_until(ws, "hello")["device_id"] == "main"
 
 
-def test_patches_and_control_stay_with_their_dsp(two: TestClient) -> None:
+def test_patches_stay_with_their_dsp_and_control_covers_them_all(two: TestClient) -> None:
     ctx = ctx_of(two)
     main, delay = list(ctx.devices)
     login(two, "Alice")
+    alice_cookie = two.cookies["dsp408_session"]
     with two.websocket_connect("/ws?device=main") as alice:
         login(two, "Bob")
         with two.websocket_connect("/ws?device=delay") as bob:
@@ -171,50 +172,64 @@ def test_patches_and_control_stay_with_their_dsp(two: TestClient) -> None:
                 "Bob": ["delay"],
             }
 
-            # Alice takes control of main: Bob still controls the delay line
-            assert request(alice, {"type": "lock.acquire", "req": 1})["ok"]
-            assert main.lock.state().owner_id == alice_id
-            assert delay.lock.state().owner_id is None
-            overview = receive_until(bob, "devices")["devices"]
-            while overview[0]["control"] is None:
-                overview = receive_until(bob, "devices")["devices"]
-            assert [d["control"] for d in overview] == ["Alice", None]
-            assert request(bob, {"type": "set", "req": 2, "path": "inputs.1.mute", "value": True})[
+            assert request(bob, {"type": "set", "req": 1, "path": "inputs.1.mute", "value": True})[
                 "ok"
             ]
             # Bob only gets the delay line's patches
             patch = receive_until(bob, "patch")
             assert {"path": "inputs.1.mute", "value": True} in patch["changes"]
+            assert delay.store.state.inputs[1].mute
             assert not main.store.state.inputs[1].mute
-            assert request(bob, {"type": "lock.acquire", "req": 3})["ok"]  # the delay line's
             # a recall shows in everyone's overview
-            assert request(alice, {"type": "preset.recall", "req": 4, "slot": 2})["ok"]
+            assert request(alice, {"type": "preset.recall", "req": 2, "slot": 2})["ok"]
             overview = receive_until(bob, "devices")["devices"]
             while overview[0]["active_slot"] != 2:
                 overview = receive_until(bob, "devices")["devices"]
             # the meter rate is set per DSP
-            assert request(bob, {"type": "settings.set", "req": 5, "meter_rate_hz": 2})["ok"]
+            assert request(bob, {"type": "settings.set", "req": 3, "meter_rate_hz": 2})["ok"]
             assert delay.session.meter_rate_hz == 2
             assert main.session.meter_rate_hz == 10
-            # nobody else may shut the server down while holding control of a DSP
-            ctx.hub.request_exit = lambda: None
-            denied = request(alice, {"type": "server.shutdown", "req": 6})
+
+            # Control belongs to the server: Alice, on main, makes Bob read-only on the delay
+            # line too, and every socket hears of it
+            assert request(alice, {"type": "lock.acquire", "req": 4})["ok"]
+            assert ctx.lock.state().owner_id == alice_id
+            lock = receive_until(bob, "lock")
+            while lock["owner_id"] is None:
+                lock = receive_until(bob, "lock")
+            assert lock["owner_name"] == "Alice"
+            denied = request(
+                bob, {"type": "set", "req": 5, "path": "inputs.1.mute", "value": False}
+            )
             assert denied["error"] == "locked"
-            assert "delay" in denied["message"]
-            # the master's kick releases every control its target held
-            assert request(alice, {"type": "master.acquire", "req": 7})["ok"]
-            assert delay.lock.state().owner_id == bob_id
-            assert request(alice, {"type": "client.kick", "req": 8, "client_id": bob_id})["ok"]
-            assert delay.lock.state().owner_id is None
-            assert main.lock.state().owner_id == alice_id
+            assert request(bob, {"type": "lock.acquire", "req": 6})["error"] == "locked"
+            assert (
+                request(bob, {"type": "settings.set", "req": 7, "meter_rate_hz": 4})["error"]
+                == "locked"
+            )
+            # Alice writes to the delay line from another tab
+            two.cookies.set("dsp408_session", alice_cookie)
+            with two.websocket_connect("/ws?device=delay") as alice_delay:
+                assert request(
+                    alice_delay, {"type": "set", "req": 1, "path": "inputs.1.mute", "value": False}
+                )["ok"]
+            assert not delay.store.state.inputs[1].mute
+            # nobody else may shut the server down while Alice has control
+            ctx.hub.request_exit = lambda: None
+            assert request(bob, {"type": "server.shutdown", "req": 8})["error"] == "locked"
+            # the master's kick releases the control its target held
+            assert request(alice, {"type": "lock.release", "req": 9})["ok"]
+            assert request(bob, {"type": "lock.acquire", "req": 10})["ok"]
+            assert request(alice, {"type": "master.acquire", "req": 11})["ok"]
+            assert request(alice, {"type": "client.kick", "req": 12, "client_id": bob_id})["ok"]
+            assert ctx.lock.state().owner_id is None
 
 
-def test_logout_releases_control_of_every_dsp(two: TestClient) -> None:
+def test_logout_releases_control(two: TestClient) -> None:
     ctx = ctx_of(two)
     login(two, "Alice")
-    for device in ("main", "delay"):
-        with two.websocket_connect(f"/ws?device={device}") as ws:
-            assert request(ws, {"type": "lock.acquire", "req": 1})["ok"]
-    assert all(d.lock.state().owner_name == "Alice" for d in ctx.devices)
+    with two.websocket_connect("/ws?device=delay") as ws:
+        assert request(ws, {"type": "lock.acquire", "req": 1})["ok"]
+    assert ctx.lock.state().owner_name == "Alice"
     assert two.post("/api/logout").json() == {"ok": True}
-    assert all(d.lock.state().owner_id is None for d in ctx.devices)
+    assert ctx.lock.state().owner_id is None

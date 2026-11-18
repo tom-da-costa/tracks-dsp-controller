@@ -34,9 +34,9 @@
     <dd>
       Quand le serveur pilote plusieurs DSP (un système principal et une ligne de délai, par
       exemple), le premier élément indique celui que cet onglet pilote. Touchez-le pour la liste
-      de tous les DSP : leur état, leur preset, les modifications non enregistrées et qui en a
-      le contrôle ; touchez-en un pour y passer. Chaque onglet du navigateur peut afficher un
-      DSP différent. Le contrôle se prend DSP par DSP.
+      de tous les DSP : leur état, leur preset et les modifications non enregistrées ;
+      touchez-en un pour y passer. Chaque onglet du navigateur peut afficher un DSP différent.
+      <em>Take control</em> vaut pour tous les DSP du serveur.
     </dd>
     <dt>État (point et preset)</dt>
     <dd>

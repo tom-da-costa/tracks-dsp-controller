@@ -34,8 +34,8 @@
     <dd>
       Steuert der Server mehrere DSPs (etwa ein Hauptsystem und eine Delay-Line), zeigt der
       erste Eintrag, welchen dieser Tab steuert. Antippen öffnet die Liste aller DSPs: Status,
-      Preset, ungespeicherte Änderungen und wer die Kontrolle hat; einen antippen wechselt zu
-      ihm. Jeder Browser-Tab kann einen anderen DSP zeigen. Die Kontrolle gilt je DSP.
+      Preset und ungespeicherte Änderungen; einen antippen wechselt zu ihm. Jeder Browser-Tab
+      kann einen anderen DSP zeigen. <em>Take control</em> gilt für alle DSPs des Servers.
     </dd>
     <dt>Status (Punkt und Preset)</dt>
     <dd>

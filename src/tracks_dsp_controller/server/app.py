@@ -68,6 +68,7 @@ class AppContext:
     profile: ProtocolProfile
     devices: DeviceManager
     auth: AuthManager
+    lock: LockManager  # control: one for the server, over every DSP
     master: MasterManager
     hub: Hub
 
@@ -83,10 +84,6 @@ class AppContext:
     @property
     def store(self) -> StateStore:
         return self.devices.default.store
-
-    @property
-    def lock(self) -> LockManager:
-        return self.devices.default.lock
 
     @property
     def simulator(self) -> SimulatorServer | None:
@@ -131,16 +128,17 @@ def create_app(
     profile = with_timeout(profile)
     devices = build_devices(config, profile, model_profile, simulated_device=simulated_device)
     auth = AuthManager(config.pin)
+    lock = LockManager(config.lock_idle_timeout_s)
     master = MasterManager(MASTER_ABSENT_S)
-    hub = Hub(config, devices, auth, master)
-    ctx = AppContext(config, profile, devices, auth, master, hub)
+    hub = Hub(config, devices, auth, lock, master)
+    ctx = AppContext(config, profile, devices, auth, lock, master, hub)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if config.pin == DEFAULT_PIN:
             log.warning("using the default access code %s: set --pin or TDSP_PIN", DEFAULT_PIN)
         await devices.start()
-        tasks = [asyncio.create_task(_ticker(devices, master))]
+        tasks = [asyncio.create_task(_ticker(lock, master))]
         if config.resync_interval_s > 0:
             tasks.append(asyncio.create_task(devices.resync_loop(config.resync_interval_s)))
         try:
@@ -190,8 +188,7 @@ def create_app(
     async def logout(request: Request, response: Response) -> dict[str, bool]:
         client = auth.logout(request.cookies.get(SESSION_COOKIE))
         if client is not None:
-            for device in devices:
-                device.lock.release(client.client_id)
+            lock.release(client.client_id)
             master.release(client.client_id)
             await hub.close_client_sessions(client.client_id)
         response.delete_cookie(SESSION_COOKIE, path="/")
@@ -248,9 +245,8 @@ def create_app(
     return app
 
 
-async def _ticker(devices: DeviceManager, master: MasterManager) -> None:
+async def _ticker(lock: LockManager, master: MasterManager) -> None:
     while True:
         await asyncio.sleep(LOCK_TICK_S)
-        for device in devices:
-            device.lock.expire()
+        lock.expire()
         master.expire()

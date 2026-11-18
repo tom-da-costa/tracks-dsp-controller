@@ -1,6 +1,6 @@
 <script lang="ts">
   // Top of the tab rail when the server controls several DSPs: the DSP this tab shows, and a
-  // panel with every DSP at a glance (status, preset, who has control) to switch to another.
+  // panel with every DSP at a glance (status, preset) to switch to another.
   import { app } from "../lib/app.svelte";
   import type { DeviceEntry } from "../lib/types";
 
@@ -100,7 +100,6 @@
                       : ""}</span
                   >
                 {/if}
-                {#if entry.control}<span class="badge">{entry.control} has control</span>{/if}
               </span>
             </span>
           </button>
@@ -245,13 +244,6 @@
   .unsaved {
     color: var(--warn);
     font-weight: 600;
-  }
-  .badge {
-    padding: 0 5px;
-    border-radius: 4px;
-    background: var(--panel-2);
-    color: var(--warn);
-    font-size: 0.75rem;
   }
   /* Phone: the panel spans the screen width. */
   @media (max-width: 699px) {

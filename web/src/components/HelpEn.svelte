@@ -32,8 +32,8 @@
     <dd>
       When the server controls several DSPs (a main system and a delay line, say), the first
       item shows which one this tab controls. Tap it for the list of every DSP: its status, its
-      preset, unsaved changes and who has control of it; tap one to switch to it. Each browser
-      tab can show a different DSP. Control is taken per DSP.
+      preset and unsaved changes; tap one to switch to it. Each browser tab can show a different
+      DSP. <em>Take control</em> covers every DSP of the server.
     </dd>
     <dt>Status (dot and preset)</dt>
     <dd>
