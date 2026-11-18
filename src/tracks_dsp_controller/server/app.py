@@ -18,24 +18,19 @@ from pydantic import BaseModel
 
 from tracks_dsp_controller import __version__
 from tracks_dsp_controller.device.session import DeviceSession, ProfileFactory
-from tracks_dsp_controller.protocol.profile import (
-    MODELS,
-    ProtocolProfile,
-    detect_model,
-    load_profile,
-)
+from tracks_dsp_controller.protocol.profile import ProtocolProfile, load_profile
 from tracks_dsp_controller.server.auth import (
     SESSION_COOKIE,
     AuthManager,
     LoginError,
     RateLimitedError,
 )
+from tracks_dsp_controller.server.devices import Device, DeviceManager, build_devices
 from tracks_dsp_controller.server.lock import LockManager
 from tracks_dsp_controller.server.master import MasterManager
 from tracks_dsp_controller.server.settings import DEFAULT_PIN, ServerConfig
 from tracks_dsp_controller.server.ws import Hub
-from tracks_dsp_controller.simulator import Faults, SimulatedDevice, SimulatorServer, apply_scenario
-from tracks_dsp_controller.simulator.models import SIM_MODELS
+from tracks_dsp_controller.simulator import SimulatedDevice, SimulatorServer
 from tracks_dsp_controller.state.store import StateStore
 
 log = logging.getLogger(__name__)
@@ -71,13 +66,28 @@ def default_web_dir() -> Path:
 class AppContext:
     config: ServerConfig
     profile: ProtocolProfile
-    store: StateStore
-    session: DeviceSession
+    devices: DeviceManager
     auth: AuthManager
-    lock: LockManager
+    lock: LockManager  # control: one for the server, over every DSP
     master: MasterManager
     hub: Hub
-    simulator: SimulatorServer | None = None
+
+    # The first DSP (the only one without --dsp).
+    @property
+    def device(self) -> Device:
+        return self.devices.default
+
+    @property
+    def session(self) -> DeviceSession:
+        return self.devices.default.session
+
+    @property
+    def store(self) -> StateStore:
+        return self.devices.default.store
+
+    @property
+    def simulator(self) -> SimulatorServer | None:
+        return self.devices.default.simulator
 
 
 def _origin_allowed(websocket: WebSocket) -> bool:
@@ -115,61 +125,28 @@ def create_app(
     def model_profile(key: str) -> ProtocolProfile:
         return with_timeout(base_profile_for(key))
 
-    if config.model in MODELS and detect_model(profile.model) != config.model:
-        profile = model_profile(config.model)
     profile = with_timeout(profile)
-    store = StateStore()
+    devices = build_devices(config, profile, model_profile, simulated_device=simulated_device)
     auth = AuthManager(config.pin)
     lock = LockManager(config.lock_idle_timeout_s)
     master = MasterManager(MASTER_ABSENT_S)
-    simulator: SimulatorServer | None = None
-    if config.demo:
-        # The simulated model: --model, or the profile's (408 by default) with --model auto.
-        demo_key = config.model if config.model in MODELS else detect_model(profile.model) or "408"
-        demo_profile = (
-            profile if demo_key == detect_model(profile.model) else model_profile(demo_key)
-        )
-        device = simulated_device or SimulatedDevice(demo_profile, model=SIM_MODELS[demo_key])
-        faults = Faults()
-        if simulated_device is None:
-            apply_scenario(config.demo_scenario, device, faults)
-        simulator = SimulatorServer(
-            device, host="127.0.0.1", port=0, faults=faults, device_id=config.device_id
-        )
-    # The simulator's port is only known once it runs, so the session resolves it lazily.
-    session = DeviceSession(
-        config.dsp_host or "127.0.0.1",
-        config.dsp_port,
-        profile,
-        store,
-        meter_rate_hz=config.meter_rate_hz,
-        model=config.model,
-        profile_for=model_profile,
-        device_id=config.device_id,
-    )
-    hub = Hub(config, session, store, auth, lock, master)
-    ctx = AppContext(config, profile, store, session, auth, lock, master, hub, simulator)
+    hub = Hub(config, devices, auth, lock, master)
+    ctx = AppContext(config, profile, devices, auth, lock, master, hub)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        if ctx.simulator is not None:
-            await ctx.simulator.start()
-            session.port = ctx.simulator.bound_port
-            session.host = "127.0.0.1"
         if config.pin == DEFAULT_PIN:
             log.warning("using the default access code %s: set --pin or TDSP_PIN", DEFAULT_PIN)
-        await session.start()
+        await devices.start()
         tasks = [asyncio.create_task(_ticker(lock, master))]
         if config.resync_interval_s > 0:
-            tasks.append(asyncio.create_task(_resync_loop(session, config.resync_interval_s)))
+            tasks.append(asyncio.create_task(devices.resync_loop(config.resync_interval_s)))
         try:
             yield
         finally:
             for task in tasks:
                 task.cancel()
-            await session.stop()
-            if ctx.simulator is not None:
-                await ctx.simulator.stop()
+            await devices.stop()
 
     app = FastAPI(title="tracks-dsp-controller", version=__version__, lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)  # fmt: skip
@@ -230,9 +207,12 @@ def create_app(
     async def health() -> dict[str, Any]:
         return {
             "status": "ok",
-            "device_status": session.status.value,
+            "device_status": devices.default.session.status.value,  # the first DSP
+            "devices": [
+                {"id": d.id, "status": d.session.status.value, "demo": d.spec.demo} for d in devices
+            ],
             "version": __version__,
-            "demo": config.demo,
+            "demo": all(d.spec.demo for d in devices),  # no real DSP at all
         }
 
     @app.websocket("/ws")
@@ -249,7 +229,10 @@ def create_app(
             await websocket.close(code=4401)
             return
         await websocket.accept()
-        await hub.serve(websocket, client)
+        # ?device=NAME: the DSP this socket controls (the first one when unknown or missing:
+        # the hello says which one it got).
+        device = devices.get(websocket.query_params.get("device")) or devices.default
+        await hub.serve(websocket, client, device)
 
     @app.get("/{path:path}", include_in_schema=False)
     async def static(path: str) -> Response:
@@ -269,10 +252,3 @@ async def _ticker(lock: LockManager, master: MasterManager) -> None:
         await asyncio.sleep(LOCK_TICK_S)
         lock.expire()
         master.expire()
-
-
-async def _resync_loop(session: DeviceSession, interval: float) -> None:
-    while True:
-        await asyncio.sleep(interval)
-        with contextlib.suppress(Exception):
-            await session.resync()

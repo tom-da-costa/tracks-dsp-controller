@@ -5,6 +5,8 @@ import { channelColor } from "./colors";
 import { setPath } from "./paths";
 import type {
   Change,
+  ClientEntry,
+  DeviceEntry,
   DeviceMessage,
   DeviceState,
   Hello,
@@ -42,6 +44,25 @@ const SILENCE_TIMEOUT_MS = 12_000;
 const CONNECT_TIMEOUT_MS = 8_000;
 const RETRY_MIN_MS = 500;
 const RETRY_MAX_MS = 5_000;
+// The DSP picked in this tab (sessionStorage), and the default of new tabs (localStorage).
+const DEVICE_KEY = "dsp408.device";
+
+function savedDevice(): string | null {
+  try {
+    return sessionStorage.getItem(DEVICE_KEY) ?? localStorage.getItem(DEVICE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveDevice(id: string): void {
+  try {
+    sessionStorage.setItem(DEVICE_KEY, id);
+    localStorage.setItem(DEVICE_KEY, id);
+  } catch {
+    // not persisted: fine
+  }
+}
 
 class App {
   view = $state<"loading" | "login" | "app" | "shutdown">("loading");
@@ -49,6 +70,10 @@ class App {
   shutdownBy = $state("");
   me = $state<api.Me | null>(null);
   hello = $state<Hello | null>(null);
+  /** The DSP this tab controls (several DSPs on one server; the first one by default). */
+  deviceId = $state<string | null>(savedDevice());
+  /** Every DSP of the server at a glance. */
+  devices = $state<DeviceEntry[]>([]);
   device = $state<DeviceState | null>(null);
   status = $state<DeviceMessage | null>(null);
   /** Control: the client that alone may write, if any (the `lock` messages). */
@@ -63,7 +88,7 @@ class App {
    * is typed (kept by the server on the session, so a reload stays locked). */
   screenLocked = $state(false);
   meters = $state.raw<Meters | null>(null);
-  clients = $state<{ id: string; name: string }[]>([]);
+  clients = $state<ClientEntry[]>([]);
   settings = $state<Settings | null>(null);
   connected = $state(false);
   /** Number of failed attempts since the link to the server was lost (0 while connected). */
@@ -91,6 +116,11 @@ class App {
 
   get iAmMaster(): boolean {
     return !!this.master?.owner_id && this.master.owner_id === this.hello?.client_id;
+  }
+
+  /** The current DSP's entry in the overview. */
+  get currentDevice(): DeviceEntry | undefined {
+    return this.devices.find((d) => d.id === this.deviceId);
   }
 
   get iOwnLock(): boolean {
@@ -150,16 +180,34 @@ class App {
   }
 
   private reset(): void {
+    this.resetDevice();
+    this.devices = [];
+    this.master = null;
+    this.screenLocked = false;
+    this.connected = false;
+    this.retries = 0;
+  }
+
+  /** Forget what belongs to the DSP being left (another one is picked, or logout). */
+  private resetDevice(): void {
     this.hello = null;
     this.device = null;
     this.status = null;
     this.lock = null;
-    this.master = null;
-    this.screenLocked = false;
+    this.lockDeadline = null;
     this.meters = null;
-    this.connected = false;
-    this.retries = 0;
     this.rev = 0;
+  }
+
+  /** Control another DSP of the server: a new connection, which gets its state. */
+  selectDevice(id: string): void {
+    if (this.screenLocked || id === this.deviceId) return;
+    this.deviceId = id;
+    saveDevice(id);
+    this.drop();
+    this.resetDevice();
+    this.retryMs = RETRY_MIN_MS;
+    if (!this.stopped && this.view === "app") this.connect();
   }
 
   private connect(): void {
@@ -167,7 +215,8 @@ class App {
     if (this.retryTimer !== null) clearTimeout(this.retryTimer);
     this.retryTimer = null;
     const scheme = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+    const query = this.deviceId ? `?device=${encodeURIComponent(this.deviceId)}` : "";
+    const ws = new WebSocket(`${scheme}://${location.host}/ws${query}`);
     this.ws = ws;
     this.lastSeen = Date.now();
     ws.onopen = () => {
@@ -300,6 +349,11 @@ class App {
     switch (msg.type) {
       case "hello":
         this.hello = msg as unknown as Hello;
+        // The server falls back to its first DSP when the one asked for is unknown.
+        if (this.hello.device_id && this.hello.device_id !== this.deviceId) {
+          this.deviceId = this.hello.device_id;
+          saveDevice(this.deviceId);
+        }
         this.settings = this.hello.settings;
         this.screenLocked = this.hello.screen_locked;
         break;
@@ -323,8 +377,7 @@ class App {
       case "device":
         this.status = msg as unknown as DeviceMessage;
         if (this.status.status !== "online") this.meters = null; // no stale levels
-        // "DSP206" -> "DSP 206": the tab / home-screen title follows the detected model
-        if (this.status.model) document.title = this.status.model.replace(/^DSP\s*/, "DSP ");
+        this.updateTitle();
         break;
       case "lock":
         this.lock = msg as unknown as LockMessage;
@@ -347,7 +400,11 @@ class App {
         this.screenLocked = msg.locked as boolean;
         break;
       case "clients":
-        this.clients = msg.clients as { id: string; name: string }[];
+        this.clients = msg.clients as ClientEntry[];
+        break;
+      case "devices":
+        this.devices = msg.devices as DeviceEntry[];
+        this.updateTitle();
         break;
       case "pong":
         break; // only proves the link is alive (lastSeen)
@@ -365,6 +422,13 @@ class App {
         break;
       }
     }
+  }
+
+  /** The tab / home-screen title: the DSP's name and its detected model ("DSP206" -> "DSP 206"). */
+  private updateTitle(): void {
+    const model = this.status?.model ? this.status.model.replace(/^DSP\s*/, "DSP ") : "";
+    const title = [this.deviceId ?? "", model].filter(Boolean).join(" · ");
+    if (title) document.title = title;
   }
 
   // --- outgoing --------------------------------------------------------------------------------

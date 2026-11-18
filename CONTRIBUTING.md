@@ -14,23 +14,23 @@ image.
 
 ```bash
 uv sync                              # install the backend and dev tools
-uv run tracks-dsp-controller --demo  # app + in-process simulated DSP on :8080 (code 0000)
-make dev                             # UI with hot reload on :5173, backend --demo on :8080
+uv run tracks-dsp-controller --dsp demo  # app + in-process simulated DSP on :8080 (code 0000)
+make dev                                 # UI with hot reload on :5173, backend --dsp demo on :8080
 ```
 
 To test the real network path, run the simulator as a separate program:
 
 ```bash
 uv run tracks-dsp-controller sim --host 127.0.0.1  # simulated DSP 408 on :9761, with a console
-uv run tracks-dsp-controller --dsp-host 127.0.0.1  # the app, connected to it like to a real DSP
+uv run tracks-dsp-controller --dsp 127.0.0.1  # the app, connected to it like to a real DSP
 ```
 
-`make dev` takes the backend options in `DEV_BACKEND` (default `--demo`). Point it at the
+`make dev` takes the backend options in `DEV_BACKEND` (default `--dsp demo`). Point it at the
 simulator or at a real DSP to work on the UI with hot reload against them:
 
 ```bash
-make dev DEV_BACKEND="--dsp-host 127.0.0.1"     # the separate simulator above
-make dev DEV_BACKEND="--dsp-host 192.168.1.50"  # a real DSP (see Device safety below)
+make dev DEV_BACKEND="--dsp 127.0.0.1"     # the separate simulator above
+make dev DEV_BACKEND="--dsp 192.168.1.50"  # a real DSP (see Device safety below)
 ```
 
 Against a real DSP, every change made in the UI is sent to the device: read
@@ -78,7 +78,7 @@ The DSP 408 drives real sound systems, so a few things are off limits:
   (`state/registry.py`), so it is only writable with `--experimental`.
 
 **Develop and test against the simulator.** If you test on a real DSP, use a copy of a preset in
-a free slot, dump the config first (`tracks-dsp-controller probe --dsp-host IP dump-config`), and
+a free slot, dump the config first (`tracks-dsp-controller probe --dsp IP dump-config`), and
 compare after restoring. Never run the app and the official editor against the same DSP at the
 same time.
 

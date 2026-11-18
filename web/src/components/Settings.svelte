@@ -168,6 +168,9 @@
             {#if client.id === app.hello?.client_id}<span class="muted">(you)</span>{/if}
             {#if client.id === app.master?.owner_id}<span class="badge master">master</span>{/if}
             {#if client.id === app.lock?.owner_id}<span class="badge">control</span>{/if}
+            {#if client.devices.length}
+              <span class="muted">· {client.devices.join(", ")}</span>
+            {/if}
           </span>
           {#if app.iAmMaster && client.id !== app.hello?.client_id}
             <button
@@ -217,6 +220,13 @@
   <section class="card">
     <h2>Device</h2>
     <dl>
+      <dt>DSP</dt>
+      <dd>
+        {app.deviceId ?? "—"}
+        <span class="muted"
+          >({app.hello?.demo ? "demo: simulated in the server" : (app.currentDevice?.target ?? "—")})</span
+        >
+      </dd>
       <dt>Status</dt>
       <dd>{app.status?.status ?? "—"}{app.status?.error ? ` (${app.status.error})` : ""}</dd>
       <dt>Model</dt>
@@ -229,7 +239,7 @@
       <dt>Firmware</dt>
       <dd>{app.status?.firmware || "—"}</dd>
       <dt>Server</dt>
-      <dd>{app.hello?.server_version ?? "—"}{app.hello?.demo ? " (demo mode)" : ""}</dd>
+      <dd>{app.hello?.server_version ?? "—"}</dd>
     </dl>
     <div class="actions">
       <button onclick={refresh} disabled={app.readOnly}>Refresh from device</button>
@@ -238,9 +248,10 @@
       </button>
     </div>
     <p class="muted">
-      Shut the server down cleanly: it frees the DSP (which accepts one program at a time) and
-      stops the app for every client.
+      Shut the server down cleanly: it frees its DSPs (each one accepts one program at a time)
+      and stops the app for every client.
       {#if app.lockedByOther}Only {app.lock?.owner_name}, who has control, can do it now.
+
       {:else if otherMaster}Only {app.master?.owner_name}, the master, can do it now.{/if}
     </p>
   </section>

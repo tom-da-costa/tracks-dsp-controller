@@ -5,7 +5,7 @@ process of its own. The app, started as a second process, connects to it exactly
 device, so the whole path is tested: connection, init sequence, timeouts, reconnects, several
 clients. From a clone, `uv run tracks-dsp-sim` is the same command.
 
-For a quick look, `tracks-dsp-controller --demo` runs the same simulated device inside the app,
+For a quick look, `tracks-dsp-controller --dsp demo` runs the same simulated device inside the app,
 with no second program.
 
 ## Running it
@@ -14,7 +14,7 @@ with no second program.
 # Terminal 1: the simulated DSP (listens on 0.0.0.0:9761, like a real one)
 uv run tracks-dsp-controller sim --state-dir sim-state
 # Terminal 2: the app, pointed at it (or at the IP of the machine running the simulator)
-uv run tracks-dsp-controller --dsp-host 127.0.0.1
+uv run tracks-dsp-controller --dsp 127.0.0.1
 
 # Both in Docker; `docker attach tracks-dsp-sim` opens the simulator console
 docker compose -f compose.sim.yaml up -d
@@ -25,7 +25,7 @@ The standalone executable of each
 
 ```bash
 ./tracks-dsp-controller-<version>-linux-amd64 sim --model 206           # terminal 1
-./tracks-dsp-controller-<version>-linux-amd64 --dsp-host 127.0.0.1      # terminal 2
+./tracks-dsp-controller-<version>-linux-amd64 --dsp 127.0.0.1           # terminal 2
 ```
 
 Up to 0.7 the simulator was a separate executable, `tracks-dsp-sim-<version>-…`.

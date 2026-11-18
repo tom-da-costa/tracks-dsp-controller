@@ -28,12 +28,15 @@
   <dl>
     <dt>»</dt>
     <dd>Unfolds the bar to show the names of the tabs; tap again to fold it.</dd>
-    <dt>Status (dot and preset)</dt>
+    <dt>DSP (dot, name and model)</dt>
     <dd>
-      The dot is green when the DSP is online, red when the DSP or the server cannot be reached: a banner at the top then says which one (<em>SERVER</em> or <em>DSP</em>). The values shown are the last known and the controls are disabled until the link comes back, by itself (<em>Retry now</em> tries at once). Below it, the preset currently in the DSP
-      (U01…U20, or F00). A small orange dot means <em>unsaved changes</em>: the settings
-      differ from the stored preset. <em>DEMO</em> means there is no DSP (a simulated one).
-      Tap it to open <em>Presets</em>.
+      The DSP this tab controls. The dot is green when it is online, red when the DSP or the server cannot be reached: a banner at the top then says which one (<em>SERVER</em> or <em>DSP</em>). The values shown are the last known and the controls are disabled until the link comes back, by itself (<em>Retry now</em> tries at once). Tap it for the list of the server's DSPs (a main system and a delay line, say): their status, preset and unsaved changes; tap one to switch to it. Each browser tab can show a different DSP. <em>Take control</em> covers every DSP of the server.
+    </dd>
+    <dt>Preset</dt>
+    <dd>
+      The preset currently in the DSP (U01…U20, or F00). A small orange dot means <em>unsaved
+      changes</em>: the settings differ from the stored preset. <em>DEMO</em> means the DSP is
+      simulated by the server (no device). Tap it to open <em>Presets</em>.
     </dd>
     <dt>The tabs</dt>
     <dd>One icon per view (see <em>The tabs</em>).</dd>

@@ -26,9 +26,7 @@ from tracks_dsp_controller.protocol.profile import (
     detect_model,
     load_profile,
 )
-
-DSP_PORT = 9761
-
+from tracks_dsp_controller.server.settings import DspSpec, parse_dsps
 
 ENV = Env("TDSP_")
 _env = ENV.get
@@ -55,14 +53,16 @@ def _common(suppress: bool) -> argparse.ArgumentParser:
         "--model",
         choices=["auto", *MODELS],
         default=default or _env("MODEL", "auto"),
-        help="DSP model: auto (default: detected from the device's identity), 408, 206 or 204",
+        help="DSP model: auto (default: detected from the device's identity), 408, 206 or 204; "
+        "with serve, the default of every --dsp",
     )
     env_id = _env("DEVICE_ID")
     common.add_argument(
         "--device-id",
         type=_device_id,
         default=default or (int(env_id) if env_id else None),
-        help="the ID number set on the DSP (1-250); default: searched for",
+        help="the ID number set on the DSP (1-250); default: searched for; with serve, the "
+        "default of every --dsp",
     )
     return common
 
@@ -86,8 +86,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     # serve (default)
     serve = sub.add_parser("serve", parents=[common], help="run the web application (default)")
-    serve.add_argument("--dsp-host", default=_env("HOST"), help="DSP IP address")
-    serve.add_argument("--dsp-port", type=int, default=int(_env("PORT") or DSP_PORT))
+    serve.add_argument(
+        "--dsp",
+        action="append",
+        metavar="[NAME=][MODEL@]HOST[:PORT][/ID]",
+        default=None,  # TDSP_DSP (read in _serve: --dsp replaces it, not adds to it)
+        help="a DSP to control (required; repeat it for several), e.g. --dsp 192.168.1.50, "
+        "or --dsp main=192.168.1.50 --dsp delay=206@192.168.1.51:9761/2. "
+        "HOST 'demo' runs a simulated DSP inside this process (--dsp demo, --dsp 206@demo)",
+    )
     serve.add_argument("--host", default=_env("LISTEN_HOST", "0.0.0.0"), help="listen address")
     serve.add_argument("--port", type=int, default=int(_env("LISTEN_PORT") or 8080))
     serve.add_argument("--pin", default=_env("PIN", "0000"), help="access code (default 0000)")
@@ -121,13 +128,6 @@ def build_parser() -> argparse.ArgumentParser:
         default=_env_flag("EXPERIMENTAL"),
         help="allow parameters not yet verified on a DSP 408 (the 206 and 204 use the same list)",
     )
-    serve.add_argument(
-        "--demo",
-        action="store_true",
-        default=_env_flag("DEMO"),
-        help="demo mode: no DSP, a simulated one runs inside this process "
-        "(to test against a separate fake DSP on the network, use the sim command)",
-    )
     tls = serve.add_argument_group("HTTPS (one port: plain http on it is redirected to https)")
     tls.add_argument("--tls-cert", default=_env("TLS_CERT"), help="certificate file (PEM)")
     tls.add_argument("--tls-key", default=_env("TLS_KEY"), help="private key file (PEM)")
@@ -153,13 +153,17 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument(
         "--demo-scenario",
         default=_env("DEMO_SCENARIO", "demo"),
-        help="presets and signals of the demo mode (demo, silent, clipping, stress)",
+        help="presets and signals of the simulated (--dsp demo) DSPs "
+        "(demo, silent, clipping, stress)",
     )
 
     # probe
     probe = sub.add_parser("probe", parents=[common], help="query a DSP or the simulator directly")
-    probe.add_argument("--dsp-host", default=_env("HOST", "127.0.0.1"))
-    probe.add_argument("--dsp-port", type=int, default=int(_env("PORT", str(DSP_PORT)) or DSP_PORT))
+    probe.add_argument(
+        "--dsp",
+        metavar="[MODEL@]HOST[:PORT][/ID]",
+        help="the DSP to query, as for serve (default: TDSP_DSP, else 127.0.0.1, the simulator)",
+    )
     probe.add_argument("--timeout", type=float, help="response timeout in seconds")
     actions = probe.add_subparsers(dest="action", metavar="ACTION", required=True)
     actions.add_parser("info", help="identity, status, active preset, preset names")
@@ -188,8 +192,11 @@ def build_parser() -> argparse.ArgumentParser:
     proxy = sub.add_parser(
         "proxy", parents=[common], help="log every frame between a client and the DSP"
     )
-    proxy.add_argument("--dsp-host", default=_env("HOST"), required=_env("HOST") is None)
-    proxy.add_argument("--dsp-port", type=int, default=DSP_PORT)
+    proxy.add_argument(
+        "--dsp",
+        metavar="HOST[:PORT]",
+        help="the DSP the frames go to, as for serve (required, or TDSP_DSP)",
+    )
     proxy.add_argument("--listen", default="0.0.0.0:9761", help="HOST:PORT to listen on")
     proxy.add_argument("--log", type=Path, required=True, help="JSONL frame log file")
 
@@ -210,7 +217,7 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
     from tracks_dsp_controller.server import tls
     from tracks_dsp_controller.server.app import create_app
     from tracks_dsp_controller.server.listener import HttpsServer
-    from tracks_dsp_controller.server.settings import ServerConfig
+    from tracks_dsp_controller.server.settings import ServerConfig, parse_dsps
 
     context = None
     if args.tls_cert or args.tls_key or args.tls_self_signed:
@@ -225,9 +232,13 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
             raise ValueError("--tls-cert and --tls-key go together")
         context = tls.server_context(files)
 
+    _check_removed_variables(args)
     config = ServerConfig(
-        dsp_host=args.dsp_host,
-        dsp_port=args.dsp_port,
+        dsps=parse_dsps(
+            args.dsp or [_env("DSP") or ""],
+            device_id=getattr(args, "device_id", None),
+            model=args.model,
+        ),
         host=args.host,
         port=args.port,
         pin=args.pin,
@@ -236,14 +247,11 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
         resync_interval_s=args.resync_interval,
         command_timeout_s=args.command_timeout,
         experimental=args.experimental,
-        demo=args.demo,
         demo_scenario=args.demo_scenario,
-        model=args.model,
-        device_id=getattr(args, "device_id", None),
         tls=context is not None,
     )
     app = create_app(config, profile, profile_for=lambda key: load_profile(args.profile, key))
-    target = "demo mode (no DSP)" if config.demo else f"{config.dsp_host}:{config.dsp_port}"
+    target = ", ".join(f"{spec.name}={spec.target}" for spec in config.dsps)
     scheme = "https" if context else "http"
     print(
         f"tracks-dsp-controller {__version__}: {scheme}://{config.host}:{config.port} -> {target}",
@@ -289,7 +297,8 @@ async def _probe(args: argparse.Namespace, profile: ProtocolProfile) -> int:
     device_id = getattr(args, "device_id", None)
     if device_id is not None:
         profile = replace(profile, host_dst=device_id)
-    async with DspConnection(args.dsp_host, args.dsp_port, profile) as conn:
+    spec = args.dsp_spec
+    async with DspConnection(spec.host, spec.port, profile) as conn:
         if args.model == "auto" and args.action != "raw":
             identity = await probe.read_identity(conn, scan=device_id is None)
             key = detect_model(identity)
@@ -332,11 +341,12 @@ async def _proxy(args: argparse.Namespace, profile: ProtocolProfile) -> int:
     from tracks_dsp_controller.framelog import FrameLog
     from tracks_dsp_controller.tools.proxy import ProxyServer
 
+    spec = args.dsp_spec
     host, _, port = args.listen.rpartition(":")
     frame_log = FrameLog(args.log, profile)
     proxy = ProxyServer(
-        args.dsp_host,
-        args.dsp_port,
+        spec.host,
+        spec.port,
         frame_log,
         listen_host=host or "0.0.0.0",
         listen_port=int(port),
@@ -344,7 +354,7 @@ async def _proxy(args: argparse.Namespace, profile: ProtocolProfile) -> int:
     await proxy.start()
     print(
         f"Proxy listening on {host or '0.0.0.0'}:{proxy.bound_port} -> "
-        f"{args.dsp_host}:{args.dsp_port}, logging to {args.log}",
+        f"{spec.target}, logging to {args.log}",
         flush=True,
     )
     try:
@@ -356,11 +366,59 @@ async def _proxy(args: argparse.Namespace, profile: ProtocolProfile) -> int:
 
 
 COMMANDS = {"serve": _serve, "probe": _probe, "proxy": _proxy}
+# Options and variables replaced by --dsp (0.10): what to use instead.
+REMOVED_OPTIONS = {
+    "--dsp-host": "--dsp HOST",
+    "--dsp-port": "--dsp HOST:PORT",
+    "--demo": "--dsp demo",
+}
+REMOVED_VARIABLES = {
+    "TDSP_HOST": "TDSP_DSP=HOST",
+    "TDSP_PORT": "TDSP_DSP=HOST:PORT",
+    "TDSP_DEMO": "TDSP_DSP=demo",
+}
+
+
+def _removed_options(argv: list[str]) -> str | None:
+    """The message for an option that --dsp replaced (None when there is none)."""
+    for arg in argv:
+        option = arg.partition("=")[0]
+        if option in REMOVED_OPTIONS:
+            return f"{option} was replaced by --dsp: use {REMOVED_OPTIONS[option]}"
+    return None
+
+
+def _check_removed_variables(args: argparse.Namespace) -> None:
+    """Without --dsp or TDSP_DSP, name an old variable that is set (rather than ignore it)."""
+    if args.dsp or _env("DSP"):
+        return
+    for name, instead in REMOVED_VARIABLES.items():
+        if _env(name.removeprefix("TDSP_")):
+            raise ValueError(f"{name} is no longer read: use {instead}")
+
+
+def _one_dsp(args: argparse.Namespace, default: str | None) -> DspSpec:
+    """The DSP of probe and proxy: --dsp, else TDSP_DSP, else ``default``; a real one."""
+    _check_removed_variables(args)
+    text = args.dsp or _env("DSP") or default
+    if not text:
+        raise ValueError("--dsp is required: the DSP's address")
+    specs = parse_dsps([text], device_id=getattr(args, "device_id", None), model=args.model)
+    if len(specs) != 1:
+        raise ValueError(f"{args.command} talks to one DSP: pick it with --dsp")
+    if specs[0].demo:
+        raise ValueError(
+            f"{args.command} talks to a DSP on the network: for a simulated one, run "
+            "'tracks-dsp-controller sim' and give --dsp 127.0.0.1"
+        )
+    return specs[0]
+
+
 SIM_COMMAND = "sim"
 
 
 def _with_default_command(argv: Sequence[str]) -> list[str]:
-    """``tracks-dsp-controller --dsp-host X`` means ``tracks-dsp-controller serve --dsp-host X``."""
+    """``tracks-dsp-controller --dsp X`` means ``tracks-dsp-controller serve --dsp X``."""
     args = list(argv)
     if any(a in (*COMMANDS, SIM_COMMAND, "-h", "--help", "--version") for a in args):
         return args
@@ -374,7 +432,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         return sim_cli.main(argv[1:], prog=f"tracks-dsp-controller {SIM_COMMAND}")
     parser = build_parser()
-    args = parser.parse_args(_with_default_command(argv))
+    argv = _with_default_command(argv)
+    if removed := _removed_options(argv):
+        parser.error(removed)
+    args = parser.parse_args(argv)
     if args.command == SIM_COMMAND:  # options before "sim" would belong to the wrong program
         parser.error(f"put the simulator's options after '{SIM_COMMAND}', e.g. sim --model 206")
     logging.basicConfig(
@@ -384,6 +445,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command is None:
         parser.print_help()
         return 0
+    if args.command in ("probe", "proxy") and getattr(args, "action", None) != "diff-config":
+        try:  # MODEL@ and /ID of --dsp override --model and --device-id
+            args.dsp_spec = _one_dsp(args, "127.0.0.1" if args.command == "probe" else None)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        args.model, args.device_id = args.dsp_spec.model, args.dsp_spec.device_id
     try:
         profile = load_profile(args.profile, "408" if args.model == "auto" else args.model)
     except (OSError, ValueError) as exc:

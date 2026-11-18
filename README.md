@@ -21,12 +21,12 @@ offline.
 > on the simulator or on a spare preset first, keep backups of your presets, and use it at your
 > own risk. The software comes with **no warranty** ([AGPL-3.0](LICENSE), sections 15–16).
 
-Try it without a DSP: `uv run tracks-dsp-controller --demo`, then open http://localhost:8080 (code
-`0000`).
+Try it without a DSP: `uv run tracks-dsp-controller --dsp demo`, then open http://localhost:8080
+(code `0000`).
 
 ## Screenshots
 
-Taken in demo mode (simulated DSP 408).
+Taken with a simulated DSP 408 (`--dsp demo`).
 
 ![Live view on a computer: meters, faders and mute for the 4 inputs and 8 outputs](docs/screenshots/desktop-live.png)
 
@@ -62,6 +62,9 @@ On a phone, in landscape:
   adjustable from 1 to 10 Hz
 - Multi-client: last writer wins by default. A client can **take control**: the others become
   read-only while it is active (released after 120 s of inactivity)
+- One DSP or several from one server (one `--dsp` each, e.g. a main system and a delay line,
+  models mixed): the DSP picker at the top of the tab bar shows every DSP's status and preset,
+  and switches the browser tab to another one. *Take control* covers every DSP of the server
 - **Master**: one client can become master (Settings) and then disconnect another client (back to
   the login screen) and block new connections; browsers already connected stay connected. The
   block ends with the role (released, logged out, or the app closed for 5 minutes)
@@ -114,18 +117,18 @@ address:
 ```bash
 # Linux
 chmod +x tracks-dsp-controller-<version>-linux-amd64
-./tracks-dsp-controller-<version>-linux-amd64 --dsp-host 192.168.1.50 --pin 1234
+./tracks-dsp-controller-<version>-linux-amd64 --dsp 192.168.1.50 --pin 1234
 
 # Demo without a DSP (a simulated DSP runs inside the app)
-./tracks-dsp-controller-<version>-linux-amd64 --demo
+./tracks-dsp-controller-<version>-linux-amd64 --dsp demo
 
 # Read-only checks of the DSP, without the web app
-./tracks-dsp-controller-<version>-linux-amd64 probe --dsp-host 192.168.1.50 info
+./tracks-dsp-controller-<version>-linux-amd64 probe --dsp 192.168.1.50 info
 ```
 
 ```powershell
 # Windows (PowerShell); Windows may ask to allow it on the network the first time
-.\tracks-dsp-controller-<version>-windows-amd64.exe --dsp-host 192.168.1.50 --pin 1234
+.\tracks-dsp-controller-<version>-windows-amd64.exe --dsp 192.168.1.50 --pin 1234
 ```
 
 The latest build of `main` is always available as the
@@ -148,17 +151,27 @@ Then:
 
 ```bash
 git clone https://github.com/tom-da-costa/tracks-dsp-controller.git && cd tracks-dsp-controller
-uv run tracks-dsp-controller --dsp-host 192.168.1.50 --pin 1234
-uv run tracks-dsp-controller --demo   # demo without a DSP
+uv run tracks-dsp-controller --dsp 192.168.1.50 --pin 1234
+uv run tracks-dsp-controller --dsp demo   # demo without a DSP
+```
+
+Each DSP is a `--dsp [NAME=][MODEL@]HOST[:PORT][/ID]`, repeated for several. The name is the
+DSP's label in the app (default `dsp`, then `dsp2`…); the model, port and front-panel ID are
+optional (default: `--model`, i.e. detected; 9761; `--device-id`, i.e. searched for). `demo` in
+place of the address runs a simulated DSP inside the app.
+
+```bash
+uv run tracks-dsp-controller --dsp main=192.168.1.50 --dsp delay=192.168.1.51 --pin 1234
+uv run tracks-dsp-controller --dsp main=demo --dsp delay=206@demo   # demo: a 408 and a 206
 ```
 
 ### Docker
 
 ```bash
-docker run -d -p 8080:8080 -e TDSP_PIN=1234 ghcr.io/tom-da-costa/tracks-dsp-controller --dsp-host 192.168.1.50
+docker run -d -p 8080:8080 -e TDSP_PIN=1234 ghcr.io/tom-da-costa/tracks-dsp-controller --dsp 192.168.1.50
 
 # Or Docker Compose
-cp .env.example .env   # set TDSP_HOST, TDSP_PIN …
+cp .env.example .env   # set TDSP_DSP, TDSP_PIN …
 docker compose up -d
 ```
 
@@ -168,10 +181,10 @@ Optional, on the same port; typing the address in `http://` redirects to `https:
 
 ```bash
 # Your own certificate (PEM files)
-uv run tracks-dsp-controller --dsp-host 192.168.1.50 --tls-cert cert.pem --tls-key key.pem
+uv run tracks-dsp-controller --dsp 192.168.1.50 --tls-cert cert.pem --tls-key key.pem
 # Or a self-signed one, generated offline and kept for the next runs: each browser asks once
 # to accept it. --tls-names adds the address the browsers use (needed in Docker)
-uv run tracks-dsp-controller --dsp-host 192.168.1.50 --tls-self-signed --tls-names 192.168.1.10
+uv run tracks-dsp-controller --dsp 192.168.1.50 --tls-self-signed --tls-names 192.168.1.10
 ```
 
 With Docker Compose: `TDSP_TLS_SELF_SIGNED=true` and `TDSP_TLS_NAMES=<this host's IP>` in
@@ -183,24 +196,24 @@ set `TDSP_TLS_CERT` / `TDSP_TLS_KEY`.
 `tracks-dsp-controller [options]` runs the web app (the `serve` command, the default). Most
 options can also be set with an environment variable (used by Docker and `.env`); a command-line
 option wins over its variable. The old `DSP408_*` names (read with a warning in 0.8) are no
-longer read: rename them to `TDSP_*`.
+longer read: rename them to `TDSP_*`. `--dsp` replaced `--dsp-host` / `TDSP_HOST`, `--dsp-port`
+/ `TDSP_PORT` and `--demo` / `TDSP_DEMO` (`--dsp HOST:PORT`, `--dsp demo`), in `probe` and
+`proxy` too.
 
 | Option | Variable | Default | What it does |
 |---|---|---|---|
-| `--dsp-host IP` | `TDSP_HOST` | | The DSP's IP address (required, unless `--demo`) |
-| `--dsp-port N` | `TDSP_PORT` | `9761` | The DSP's TCP port |
-| `--model auto\|408\|206\|204` | `TDSP_MODEL` | `auto` | `auto` detects the model; a number enforces it (refused if the device differs) |
-| `--device-id N` | `TDSP_DEVICE_ID` | searched for | The ID number set on the DSP's front panel (1-250); setting it skips the search |
+| `--dsp [NAME=][MODEL@]HOST[:PORT][/ID]` | `TDSP_DSP` | | A DSP to control (required); repeat it for several (in the variable, separate them with spaces). `HOST` is its address, or `demo` for a DSP simulated inside the app; port 9761 by default |
+| `--model auto\|408\|206\|204` | `TDSP_MODEL` | `auto` | Default model of every `--dsp`: `auto` detects it; a number enforces it (refused if the device differs) |
+| `--device-id N` | `TDSP_DEVICE_ID` | searched for | Default ID number (set on the DSP's front panel, 1-250) of every `--dsp`; setting it skips the search |
 | `--pin CODE` | `TDSP_PIN` | `0000` | Access code asked by the web UI |
 | `--host IP` | `TDSP_LISTEN_HOST` | `0.0.0.0` | Address the web server listens on |
 | `--port N` | `TDSP_LISTEN_PORT` | `8080` | Port of the web UI |
-| `--meter-rate HZ` | `TDSP_METER_RATE` | `5` | Meter refresh rate, 1-10 Hz (also in the app's Settings) |
+| `--meter-rate HZ` | `TDSP_METER_RATE` | `5` | Meter refresh rate, 1-10 Hz (also in the app's Settings, per DSP) |
 | `--lock-idle-timeout S` | `TDSP_LOCK_IDLE_TIMEOUT` | `120` | Seconds of inactivity before the control lock is released |
 | `--resync-interval S` | `TDSP_RESYNC_INTERVAL` | `0` (off) | Re-read the whole DSP config every S seconds |
 | `--command-timeout S` | `TDSP_COMMAND_TIMEOUT` | `0.5` | Floor of the adaptive command timeout; it grows on a slow link |
-| `--experimental` | `TDSP_EXPERIMENTAL` | off | Allow parameters not yet verified on a real DSP 408 |
-| `--demo` | `TDSP_DEMO` | off | No DSP: a simulated one runs inside the app |
-| `--demo-scenario NAME` | `TDSP_DEMO_SCENARIO` | `demo` | Presets and signals of the demo: `demo`, `silent`, `clipping`, `stress` |
+| `--experimental` | `TDSP_EXPERIMENTAL` | off | Allow parameters not yet verified on a real DSP 408 (always allowed on a `demo` DSP) |
+| `--demo-scenario NAME` | `TDSP_DEMO_SCENARIO` | `demo` | Presets and signals of the `demo` DSPs: `demo`, `silent`, `clipping`, `stress` |
 | `--tls-cert FILE`, `--tls-key FILE` | `TDSP_TLS_CERT`, `TDSP_TLS_KEY` | | HTTPS with your certificate and key (PEM) |
 | `--tls-self-signed` | `TDSP_TLS_SELF_SIGNED` | off | HTTPS with a generated self-signed certificate |
 | `--tls-names NAMES` | `TDSP_TLS_NAMES` | | Extra names or addresses for that certificate, comma-separated |
@@ -213,12 +226,12 @@ Other commands, for diagnostics (`tracks-dsp-controller <command> --help` for th
 
 | Command | What it does |
 |---|---|
-| `probe --dsp-host IP info` | Identity, status, active preset and preset names |
-| `probe --dsp-host IP meters [--watch]` | Raw meter frames with their decodings |
-| `probe --dsp-host IP dump-config -o FILE` | Save the live config to a file (raw config blob) |
-| `probe --dsp-host IP export-preset -o FILE.prs` | Save the live setup as a preset file of the official editor |
+| `probe --dsp IP info` | Identity, status, active preset and preset names |
+| `probe --dsp IP meters [--watch]` | Raw meter frames with their decodings |
+| `probe --dsp IP dump-config -o FILE` | Save the live config to a file (raw config blob) |
+| `probe --dsp IP export-preset -o FILE.prs` | Save the live setup as a preset file of the official editor |
 | `probe diff-config A B` | Compare two config dumps or `.prs` files (offline) |
-| `proxy --dsp-host IP --listen HOST:PORT --log FILE` | Sit between the official editor and the DSP and log every frame ([docs/captures.md](docs/captures.md)) |
+| `proxy --dsp IP --listen HOST:PORT --log FILE` | Sit between the official editor and the DSP and log every frame ([docs/captures.md](docs/captures.md)) |
 
 The `probe` commands only read from the DSP (except `probe raw`, which sends any payload: avoid
 it on a DSP in use). The DSP accepts one client at a time: stop the app before probing.
@@ -255,7 +268,7 @@ it on a DSP in use). The DSP accepts one client at a time: stop the app before p
 
 ## Testing without a DSP
 
-`tracks-dsp-controller --demo` runs a simulated DSP inside the app. To test the whole network
+`tracks-dsp-controller --dsp demo` runs a simulated DSP inside the app. To test the whole network
 path, `tracks-dsp-controller sim` runs, as a second process, a simulated DSP on TCP port 9761,
 with fault injection and a console: see [docs/SIMULATOR.md](docs/SIMULATOR.md).
 

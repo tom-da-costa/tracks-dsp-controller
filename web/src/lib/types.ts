@@ -121,9 +121,12 @@ export interface Hello {
   type: "hello";
   client_id: string;
   name: string;
+  /** The DSP this connection controls (an id of the `devices` message). */
+  device_id: string;
   /** This browser session's screen is locked (see App.lockScreen). */
   screen_locked: boolean;
   server_version: string;
+  /** This socket's DSP is simulated in the server (`--dsp demo`). */
   demo: boolean;
   experimental: boolean;
   verified_kinds: string[];
@@ -156,6 +159,28 @@ export interface DeviceMessage {
   identity: string;
   /** False for a model this project has not verified on real hardware (DSP 206, 204). */
   model_tested: boolean;
+}
+
+/** One DSP of the server, at a glance (the `devices` message; the device picker). Control
+ * (the `lock` message) belongs to the server and covers every DSP. */
+export interface DeviceEntry {
+  id: string;
+  /** "host:port", or "demo" for a DSP simulated in the server. */
+  target: string;
+  demo: boolean;
+  status: DeviceStatus;
+  error: string | null;
+  model: string;
+  active_slot: number;
+  preset_name: string;
+  modified: boolean | null;
+}
+
+export interface ClientEntry {
+  id: string;
+  name: string;
+  /** The DSPs this client has open (one per tab). */
+  devices: string[];
 }
 
 /** Master role: may disconnect clients and block new logins (blocking ends with the role). */

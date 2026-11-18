@@ -31,7 +31,7 @@ services:
     ports:
       - "${TDSP_LISTEN_PORT:-8080}:8080"
     environment:
-      TDSP_HOST: tracks-dsp-sim
+      TDSP_DSP: tracks-dsp-sim
       TDSP_PIN: ${TDSP_PIN:-0000}
       TDSP_LOG_LEVEL: ${TDSP_LOG_LEVEL:-info}
 

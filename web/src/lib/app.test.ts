@@ -145,3 +145,64 @@ describe("link to the server", () => {
     expect(app.meters).toBeNull();
   });
 });
+
+describe("several DSPs on one server", () => {
+  const devices = [
+    { id: "main", status: "online", model: "DSP408" },
+    { id: "delay", status: "online", model: "DSP206" },
+  ];
+
+  it("asks for the remembered DSP and follows the one the server gives", async () => {
+    const store = new Map<string, string>([["dsp408.device", "gone"]]);
+    const storage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => store.set(k, v),
+    };
+    vi.stubGlobal("localStorage", storage);
+    vi.stubGlobal("sessionStorage", storage);
+    const app = await freshApp();
+    const ws = FakeSocket.last();
+    expect(ws.url).toBe("ws://dsp.test/ws?device=gone");
+    ws.open();
+    ws.receive({ type: "hello", device_id: "main", settings: {}, screen_locked: false });
+    expect(app.deviceId).toBe("main");
+    expect(store.get("dsp408.device")).toBe("main");
+  });
+
+  it("switches to another DSP with a new connection and forgets the old state", async () => {
+    const app = await freshApp();
+    const ws = FakeSocket.last();
+    expect(ws.url).toBe("ws://dsp.test/ws");
+    ws.open();
+    ws.receive({ type: "hello", device_id: "main", settings: {}, screen_locked: false });
+    ws.receive({ type: "devices", devices });
+    ws.receive({ type: "device", status: "online", model: "DSP408" });
+    ws.receive({ type: "meters", seq: 1, levels: [-10] });
+    expect(app.currentDevice?.model).toBe("DSP408");
+    expect(fakeDocument.title).toBe("main · DSP 408");
+
+    app.selectDevice("delay");
+    expect(ws.readyState).toBe(FakeSocket.CLOSED);
+    expect(app.status).toBeNull();
+    expect(app.meters).toBeNull();
+    expect(app.devices.length).toBe(2); // the overview stays while switching
+    const next = FakeSocket.last();
+    expect(next).not.toBe(ws);
+    expect(next.url).toBe("ws://dsp.test/ws?device=delay");
+    next.open();
+    next.receive({ type: "hello", device_id: "delay", settings: {}, screen_locked: false });
+    expect(app.deviceId).toBe("delay");
+    app.selectDevice("delay"); // already there: nothing happens
+    expect(FakeSocket.last()).toBe(next);
+  });
+
+  it("does not switch on a locked screen", async () => {
+    const app = await freshApp();
+    const ws = FakeSocket.last();
+    ws.open();
+    ws.receive({ type: "hello", device_id: "main", settings: {}, screen_locked: true });
+    app.selectDevice("delay");
+    expect(FakeSocket.last()).toBe(ws);
+    expect(app.deviceId).toBe("main");
+  });
+});
