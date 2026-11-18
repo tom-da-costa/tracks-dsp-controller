@@ -11,7 +11,7 @@ connection and serves the API, the WebSocket and the static UI.
 
 Read these before doing anything substantial:
 
-- `README.md`: features, compatibility, usage, sources and the attribution table
+- `README.md`: features, compatibility, usage, sources and credits
 - `CONTRIBUTING.md`: development setup, checks, code rules, device safety
 - `docs/ARCHITECTURE.md`: components, state model, command pipeline, simulator, WebSocket API,
   security, design choices (keep it in sync with the code)
@@ -97,7 +97,7 @@ make web-test                                      # svelte-check + vitest
   `chore: release X.Y.Z` directly on `main` and pushed, then the `vX.Y.Z` tag is pushed
   (`docs/release.md`). Other changes still go through a PR.
 - Upstream projects (README, "Sources and credits") can be cloned for reference **outside the repo**, in a
-  scratch directory. Never vendor them. Copied code or test vectors keep their copyright notice
-  and get a row in the README attribution table.
+  scratch directory. Never vendor them. Copied code or test vectors keep their origin and
+  copyright notice in the file itself (its header, or the `.meta.toml` of a fixture).
 - When a protocol question is answered, update `docs/PROTOCOL.md` (confidence tag), the profile
   defaults and the fixtures together.

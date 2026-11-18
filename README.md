@@ -42,65 +42,71 @@ On a phone, in landscape:
 
 ## Features
 
-- Gain, mute, phase, 4 → 8 routing matrix, PEQ (8 bands on inputs, 9 on outputs), high/low-pass
-  filters and delay (in ms and metres) on every channel, compressor and limiter on outputs, noise
-  gate and 31-band GEQ on inputs, channel names
-- Channel links, as on the DSP: linked channels follow each other. Optionally (Settings ›
+- **Every DSP parameter**: gain, mute, phase, 4 → 8 routing matrix, PEQ (8 bands on inputs, 9 on
+  outputs), high/low-pass filters, delay (in ms or metres), compressor and limiter on outputs,
+  noise gate and 31-band GEQ on inputs, channel names.
+- **Channel links**: linked channels follow each other, as on the DSP. Optionally (Settings ›
   *Merge linked channels*), a link group shows as one channel ("Out 1+5") in every view except
-  the Matrix and Link tabs; names and routing stay per channel
-- A colour per channel, the same in every view; linked channels share the colour of the
-  lowest-numbered channel of their group
-- Frequency response graph on each channel page (filters, PEQ, GEQ), with other channels' curves
-  as an overlay. The PEQ bands are edited on it: drag a band's marker for its frequency
-  (horizontally) and gain (vertically), turn the mouse wheel over it for its Q
-- Limiter calculator: compressor and limiter thresholds from the amplifier gain and the speaker
-  power, impedance and load
-- DSP presets U01–U20: recall, store, rename, with an "unsaved changes" indicator
-- Preset files (`.prs`) of the official t.racks editor: export the live setup, import a file
-  into it (and store it in a slot). The outputs are muted while a file loads
-- Live meters per channel (level, peak, clip, limiter and compressor indicators), 5 Hz by default,
-  adjustable from 1 to 10 Hz
-- Multi-client: last writer wins by default. A client can **take control**: the others become
-  read-only while it is active (released after 120 s of inactivity)
-- One DSP or several from one server (one `--dsp` each, e.g. a main system and a delay line,
-  models mixed): the DSP picker at the top of the tab bar shows every DSP's status and preset,
-  and switches the browser tab to another one. *Take control* covers every DSP of the server
-- **Master**: one client can become master (Settings) and then disconnect another client (back to
-  the login screen) and block new connections; browsers already connected stay connected. The
-  block ends with the role (released, logged out, or the app closed for 5 minutes)
-- **Disconnect from DSP and shutdown** (Settings): frees the DSP cleanly (it accepts one program
-  at a time, e.g. before opening the t.racks editor) and stops the server, for everyone. With
-  Docker Compose the container then stays stopped (`restart: on-failure`)
-- **Lock screen**: this browser becomes read-only and stays on the current view (everything
-  stays readable, meters included) until *Unlock screen* and the access code, for a computer or
-  phone left unattended; a reload stays locked
-- Survives an unstable network: a heartbeat detects a dead link within ~12 s, every browser
-  reconnects by itself (at once when a phone wakes up or the Wi-Fi comes back) and the server
-  reconnects to the DSP. Towards the DSP the command timeout adapts to the measured round trip
-  (a Wi-Fi bridge or a VPN is fine), late answers are never taken for the next command's, and
-  an operation that fails half-way makes the server re-read the DSP rather than guess. A banner says which link is down (*SERVER* or *DSP*); meanwhile the
-  values shown are the last known and every control is disabled, so no change is silently lost
-- Access protected by a shared code (default `0000`, set with `--pin`); optional HTTPS with
-  your certificate or a self-signed one, on the same port (plain http is redirected)
-- No database, no internet access needed, no external assets
-- `tracks-dsp-controller sim`: a simulated DSP 408, 206 or 204 on the network, run as a second
-  process, to test the app without a device (presets kept across restarts, fault injection, live console)
+  the Matrix and Link tabs.
+- **Channel colours**: one colour per channel, the same in every view; a link group takes the
+  colour of its lowest-numbered channel.
+- **Frequency response graph**: on each channel page (filters, PEQ, GEQ), with other channels'
+  curves as overlays. Drag a PEQ band's marker for its frequency and gain, turn the mouse wheel
+  over it for its Q.
+- **Limiter calculator**: compressor and limiter thresholds from the amplifier gain and the
+  speaker's power, impedance and load.
+- **Presets**: recall, store and rename U01–U20, with an "unsaved changes" indicator.
+- **Preset files**: export the live setup as a `.prs` file of the official t.racks editor, or
+  import one (and store it in a slot); the outputs are muted while a file loads.
+- **Live meters**: level, peak, clip, limiter and compressor indicators on every channel, 1 to
+  10 Hz (5 by default).
+- **Several DSPs**: one server controls one DSP or several (one `--dsp` each, models mixed, e.g. a
+  main system and a delay line); the DSP picker shows each one's status and preset and switches
+  the browser tab to another.
+- **Several people at once**: every browser sees every change, the last writer wins. A client can
+  *take control*: the others are read-only while it is active (released after 120 s idle).
+- **Master**: one client can disconnect another one and block new connections; the block ends
+  with the role (released, logged out, or the app closed for 5 minutes).
+- **Lock screen**: this browser becomes read-only on its current view until the access code is
+  typed, for a computer or phone left unattended; a reload stays locked.
+- **Clean shutdown**: *Disconnect from DSP and shutdown* (Settings) frees the DSPs (each accepts
+  one program at a time, e.g. before opening the t.racks editor) and stops the server; with
+  Docker Compose the container then stays stopped.
+- **Unstable networks**: a dead link is detected within ~12 s, browsers and the server reconnect
+  by themselves, and the command timeout adapts to the DSP's round trip (a Wi-Fi bridge or a VPN
+  is fine). A banner says which link is down, and the controls are disabled meanwhile, so no
+  change is silently lost.
+- **Access code and HTTPS**: a shared code (`--pin`, default `0000`); optional HTTPS with your
+  certificate or a self-signed one, on the same port.
+- **Offline**: no database, no internet access, no external assets.
+- **Simulator**: `tracks-dsp-controller sim` runs a simulated DSP 408, 206 or 204 on the network,
+  to test without a device (presets kept across restarts, fault injection, live console).
 
 ## Compatibility
 
-| Component | Status |
+✅ supported and tested · 🟡 should work, not tested by this project · ❌ not supported
+
+| DSP | |
 |---|---|
-| **t.racks DSP 408**, firmware **V0104P** | Supported. Every parameter the app edits was verified on this device: the DSP acknowledged the write and its config read showed the expected bytes |
-| DSP 408 with another firmware | Probably works, not tested. Parameters behave the same as long as the protocol did not change; reports welcome |
-| t.racks DSP 206 / DSP 204 (firmware V0104P) | Supported, **not tested by this project**: detected automatically, same commands and config records as the 408, checked against captures of a real 206 and the notes of an app used on a real 204 ([docs/PROTOCOL.md §10](docs/PROTOCOL.md)). The parameters verified on the 408 are enabled; reports welcome |
-| Other t.racks / Musicrown models (DSP 4x4 Mini, …) | Not supported. They share the protocol family but have other channel counts and config layouts |
-| Connection to the DSP | Ethernet, TCP port 9761. No USB. Use the app **or** the official editor, not both at the same time |
-| Server: Linux x86-64 and arm64 | Standalone executables (glibc ≥ 2.36: Debian 12, Ubuntu 24.04, Raspberry Pi OS bookworm 64-bit and later), Docker image, or `uv run` |
-| Server: Raspberry Pi 3 / 4 / 5 | Designed for it (64-bit OS, arm64 executable or Docker image); not tested on a Pi yet |
-| Server: Windows 10 / 11 x64 | Standalone executable built in CI; not tested on a real Windows machine yet |
-| Server: macOS | No executable; `uv run` from a clone or Docker should work, not tested |
-| Server: from source | Python ≥ 3.12 with [uv](https://docs.astral.sh/uv/); Node is not needed |
-| Clients | Current Safari (iOS), Chrome (Android), Firefox and Chrome (desktop), at 360 px width and up |
+| t.racks DSP 408, firmware V0104P | ✅ every parameter the app edits was verified on this device |
+| t.racks DSP 408, other firmware | 🟡 |
+| t.racks DSP 206, DSP 204 (V0104P) | 🟡 same commands as the 408, checked against captures of a real 206 and notes from a real 204 ([PROTOCOL.md §10](docs/PROTOCOL.md)) |
+| Other t.racks / Musicrown models (DSP 4x4 Mini…) | ❌ other channel counts and config layouts |
+
+The model is detected automatically. The DSP is reached over Ethernet (TCP port 9761, no USB)
+and accepts one program at a time: the app **or** the official editor. Reports on untested
+devices are welcome.
+
+| Server | |
+|---|---|
+| Linux x86-64 | ✅ executable, Docker image or `uv run` |
+| Linux arm64, e.g. Raspberry Pi 3 / 4 / 5 with a 64-bit OS | 🟡 executable, Docker image or `uv run` |
+| Windows 10 / 11 x64 | 🟡 executable (built in CI) |
+| macOS | 🟡 `uv run` or Docker (no executable) |
+
+The Linux executables need glibc ≥ 2.36 (Debian 12, Ubuntu 24.04, Raspberry Pi OS bookworm and
+later). From source: Python ≥ 3.12 with [uv](https://docs.astral.sh/uv/); Node is not needed.
+Browsers: current Safari (iOS), Chrome (Android), Firefox and Chrome (desktop), from 360 px wide.
 
 ## Usage
 
@@ -112,23 +118,25 @@ and enter the access code (`--pin`, default `0000`: change it).
 Download the file for your system from the
 [latest release](https://github.com/tom-da-costa/tracks-dsp-controller/releases/latest)
 (linux-amd64, linux-arm64 for a Raspberry Pi 64-bit, windows-amd64), then run it with the DSP's
-address:
+address. With the command line, for example for version v0.9.0:
 
 ```bash
-# Linux
-chmod +x tracks-dsp-controller-<version>-linux-amd64
-./tracks-dsp-controller-<version>-linux-amd64 --dsp 192.168.1.50 --pin 1234
+# Linux (linux-arm64 on a Raspberry Pi)
+VERSION=v0.9.0
+curl -LO https://github.com/tom-da-costa/tracks-dsp-controller/releases/download/$VERSION/tracks-dsp-controller-$VERSION-linux-amd64
+chmod +x tracks-dsp-controller-$VERSION-linux-amd64
+./tracks-dsp-controller-$VERSION-linux-amd64 --dsp 192.168.1.50 --pin 1234
 
 # Demo without a DSP (a simulated DSP runs inside the app)
-./tracks-dsp-controller-<version>-linux-amd64 --dsp demo
-
-# Read-only checks of the DSP, without the web app
-./tracks-dsp-controller-<version>-linux-amd64 probe --dsp 192.168.1.50 info
+./tracks-dsp-controller-$VERSION-linux-amd64 --dsp demo
 ```
 
 ```powershell
 # Windows (PowerShell); Windows may ask to allow it on the network the first time
-.\tracks-dsp-controller-<version>-windows-amd64.exe --dsp 192.168.1.50 --pin 1234
+$VERSION = "v0.9.0"
+Invoke-WebRequest -OutFile tracks-dsp-controller-$VERSION-windows-amd64.exe `
+  https://github.com/tom-da-costa/tracks-dsp-controller/releases/download/$VERSION/tracks-dsp-controller-$VERSION-windows-amd64.exe
+.\tracks-dsp-controller-$VERSION-windows-amd64.exe --dsp 192.168.1.50 --pin 1234
 ```
 
 The latest build of `main` is always available as the
@@ -175,30 +183,14 @@ cp .env.example .env   # set TDSP_DSP, TDSP_PIN …
 docker compose up -d
 ```
 
-### HTTPS
-
-Optional, on the same port; typing the address in `http://` redirects to `https://`.
-
-```bash
-# Your own certificate (PEM files)
-uv run tracks-dsp-controller --dsp 192.168.1.50 --tls-cert cert.pem --tls-key key.pem
-# Or a self-signed one, generated offline and kept for the next runs: each browser asks once
-# to accept it. --tls-names adds the address the browsers use (needed in Docker)
-uv run tracks-dsp-controller --dsp 192.168.1.50 --tls-self-signed --tls-names 192.168.1.10
-```
-
-With Docker Compose: `TDSP_TLS_SELF_SIGNED=true` and `TDSP_TLS_NAMES=<this host's IP>` in
-`.env` (the certificate is kept in the `tracks-dsp-tls` volume), or mount your certificate and
-set `TDSP_TLS_CERT` / `TDSP_TLS_KEY`.
-
 ### Command-line options
 
 `tracks-dsp-controller [options]` runs the web app (the `serve` command, the default). Most
 options can also be set with an environment variable (used by Docker and `.env`); a command-line
 option wins over its variable. The old `DSP408_*` names (read with a warning in 0.8) are no
 longer read: rename them to `TDSP_*`. `--dsp` replaced `--dsp-host` / `TDSP_HOST`, `--dsp-port`
-/ `TDSP_PORT` and `--demo` / `TDSP_DEMO` (`--dsp HOST:PORT`, `--dsp demo`), in `probe` and
-`proxy` too.
+/ `TDSP_PORT` and `--demo` / `TDSP_DEMO` (`--dsp HOST:PORT`, `--dsp demo`), in the other
+commands too.
 
 | Option | Variable | Default | What it does |
 |---|---|---|---|
@@ -226,15 +218,8 @@ Other commands, for diagnostics (`tracks-dsp-controller <command> --help` for th
 
 | Command | What it does |
 |---|---|
-| `probe --dsp IP info` | Identity, status, active preset and preset names |
-| `probe --dsp IP meters [--watch]` | Raw meter frames with their decodings |
-| `probe --dsp IP dump-config -o FILE` | Save the live config to a file (raw config blob) |
-| `probe --dsp IP export-preset -o FILE.prs` | Save the live setup as a preset file of the official editor |
-| `probe diff-config A B` | Compare two config dumps or `.prs` files (offline) |
+| `probe --dsp IP ACTION` | Query a DSP without the web app: identity, meters, config dump, preset file export ([docs/PROBE.md](docs/PROBE.md)) |
 | `proxy --dsp IP --listen HOST:PORT --log FILE` | Sit between the official editor and the DSP and log every frame ([docs/captures.md](docs/captures.md)) |
-
-The `probe` commands only read from the DSP (except `probe raw`, which sends any payload: avoid
-it on a DSP in use). The DSP accepts one client at a time: stop the app before probing.
 
 ## Using the app
 
@@ -277,6 +262,7 @@ with fault injection and a console: see [docs/SIMULATOR.md](docs/SIMULATOR.md).
 | Document | Content |
 |---|---|
 | [docs/SIMULATOR.md](docs/SIMULATOR.md) | The simulated DSP (`tracks-dsp-controller sim`): options, console, fidelity |
+| [docs/PROBE.md](docs/PROBE.md) | `tracks-dsp-controller probe`: query a DSP from the command line |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, checks, code rules, device safety |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, state model, command pipeline, simulator, client/server API, security |
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | The DSP 408 network protocol, with a confidence level for each item and the open questions |
@@ -307,17 +293,6 @@ The **Limiter calc** tab (`web/src/lib/limiter.ts`) implements the method of **M
 dBu mode: formulas and constants (open load AES / 1.5625, closed AES / 2.34375, amplifier at
 half power, 0.775 V = 0 dBu). It is re-implemented from the published formulas; no code was
 copied.
-
-Files that reuse material from these projects keep their original notices:
-
-| File in this repo | Origin |
-|---|---|
-| `tests/fixtures/config/forest_408.bin` | dsp-408-ui, `analyze5.py` (hex dump of a DSP 408 config read); 4 missing bytes filled with 0, see the `.meta.toml` |
-| `tests/unit/test_framing.py` (frame vectors) | dsp-408-ui `protocol.dart` / `protocol_service.dart`; miniDSP-Linux `analysis/protocol.md` |
-| `tests/unit/test_meters.py` (24-bit vectors) | miniDSP-Linux `analysis/protocol.md` (sine-sweep meter triplets) |
-| `tests/fixtures/config/dsp206_capture.bin`, `dsp206_capture_linked.bin` | t.racks-DSP-control, `capture_full.pcapng` (config reads of a real DSP 206), see the `.meta.toml` files |
-| `tests/unit/test_dsp204.py` (link masks, limiter status bytes) | BetterDSPControl `PROTOCOL.md` and `tests/test_protocol.py` (values read on a real DSP 204), MIT, (c) 2026 Givou |
-| `tests/fixtures/dsp206/frames.txt` | t.racks-DSP-control, `capture_full.pcapng`, `capture.pcapng`, `capture_peq_q.pcapng` (wire frames of a real DSP 206) |
 
 GPL-3.0 code may be combined with this AGPL-3.0 project (GPLv3 §13 / AGPLv3 §13); MIT material keeps
 its copyright notice.

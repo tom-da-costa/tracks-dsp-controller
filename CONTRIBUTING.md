@@ -99,9 +99,10 @@ update these together:
   (`feat:`, `fix:`, `docs:`, `ci:` …).
 - Code, comments, docs and UI strings are in English.
 - Keep a pull request focused on one topic, and update the docs it affects.
-- Code or test vectors copied from another project keep their copyright notice and get a row in
-  the attribution table of the [README](README.md#sources-and-credits). Reference projects can be
-  cloned outside the repository; do not vendor them.
+- Code or test vectors copied from another project keep their origin and copyright notice in
+  the file itself (its header, or the `.meta.toml` of a fixture); the projects are listed in
+  the [README](README.md#sources-and-credits). Reference projects can be cloned outside the
+  repository; do not vendor them.
 
 ## License
 

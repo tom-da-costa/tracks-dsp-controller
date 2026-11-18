@@ -18,7 +18,7 @@ open is listed in §9. The DSP 206 and 204, which the simulator can also play, a
 The first three are **GPL-3.0**, BetterDSPControl is **MIT**. This project is **AGPL-3.0**;
 GPLv3 §13 / AGPLv3 §13 allow combining GPL code, and MIT code can be included with its notice, so
 code may be reused **with attribution** (keep copyright
-headers, list the origin in the README's attribution table).
+headers, and state the origin in the file that reuses it).
 
 Confidence tags used below:
 
