@@ -228,6 +228,17 @@
       <em>Stop being master</em>, se déconnecte, ou a fermé l'appli depuis 5 minutes. Pour
       exclure quelqu'un : le déconnecter, puis bloquer.
     </dd>
+    <dt>👁 Accès en lecture seule</dt>
+    <dd>
+      Se connecter avec le code de consultation ouvre un accès en lecture seule : tout est affiché (niveaux,
+      réglages, presets), rien ne peut être modifié, et le serveur le refuse quoi qu'affiche
+      l'écran. Pour un invité, ou un téléphone laissé à la régie. La barre latérale affiche
+      <em>Read-only access</em> au lieu de <em>Take control</em>, et la liste des clients les
+      signale. Pour modifier, déconnectez-vous et reconnectez-vous avec le code d'accès. Le code de consultation est affiché dans
+      Settings › Connected clients (aux sessions ouvertes avec le code d'accès) ; sauf si le
+      serveur le fixe (<code>--view-pin</code>), c'est un nouveau code aléatoire à chaque
+      démarrage, et <code>--view-pin off</code> désactive l'accès en lecture seule.
+    </dd>
   </dl>
 </section>
 

@@ -18,7 +18,7 @@ from tracks_dsp_controller.server.app import AppContext, create_app
 from tracks_dsp_controller.server.auth import AuthManager, LoginError, RateLimitedError, clean_name
 from tracks_dsp_controller.server.lock import LockManager
 from tracks_dsp_controller.server.master import MasterManager, MasterState
-from tracks_dsp_controller.server.settings import DspSpec, ServerConfig
+from tracks_dsp_controller.server.settings import DspSpec, ServerConfig, view_pin_for
 from tracks_dsp_controller.simulator import Faults, SimulatedDevice, apply_scenario
 from tracks_dsp_controller.state import registry
 
@@ -46,6 +46,23 @@ def test_auth_login_logout_and_rate_limit() -> None:
     assert auth.get(session.token) is None
     assert clean_name("", "fallback") == "fallback"
     assert len(clean_name("x" * 100, "f")) == 32
+
+
+def test_auth_view_code_opens_read_only_sessions() -> None:
+    auth = AuthManager("1234", "5678")
+    assert not auth.login("1234", "FOH", "10.0.0.2").read_only
+    assert auth.login("5678", "Guest", "10.0.0.2").read_only
+    assert auth.check_pin("5678", "10.0.0.2") is True
+    assert auth.check_pin("1234", "10.0.0.2") is False
+    # One rate limit for both codes.
+    for _ in range(5):
+        with pytest.raises(LoginError):
+            auth.login("0000", None, "10.0.0.3")
+    with pytest.raises(RateLimitedError):
+        auth.login("5678", None, "10.0.0.3")
+    # Without a view code, only the access code opens a session.
+    with pytest.raises(LoginError):
+        AuthManager("1234").login("5678", None, "10.0.0.4")
 
 
 # --- unit: lock -----------------------------------------------------------------------------------
@@ -118,10 +135,25 @@ def test_server_config_validation() -> None:
         ServerConfig(DEMO, lock_idle_timeout_s=0)
     with pytest.raises(ValueError, match="resync"):
         ServerConfig(DEMO, resync_interval_s=-1)
+    with pytest.raises(ValueError, match="differ"):
+        ServerConfig(DEMO, pin="1234", view_pin="1234")
+    assert ServerConfig(DEMO, view_pin="").view_pin is None
     real = DspSpec("dsp", "10.0.0.9")
     assert ServerConfig(DEMO).allow_unverified(DEMO[0])
     assert not ServerConfig([real]).allow_unverified(real)
     assert ServerConfig([real], experimental=True).allow_unverified(real)
+
+
+def test_view_pin_generated_unless_set_or_off() -> None:
+    assert view_pin_for("2468", "0000") == ("2468", False)
+    assert view_pin_for("OFF", "0000") == (None, False)
+    for unset in (None, ""):
+        code, generated = view_pin_for(unset, "0000")
+        assert generated
+        assert code is not None
+        assert len(code) == 6
+        assert code.isdigit()
+        assert code != "0000"
 
 
 # --- integration -------------------------------------------------------------------------------
@@ -746,3 +778,55 @@ def test_pings_are_answered_during_a_long_request(web_dir: Path) -> None:
                     order.append((message["type"], message["req"]))
             assert order == [("pong", 2), ("result", 1)]
             assert device.presets[2].preset_name == "FSMXLmGDLsEq"
+
+
+def test_read_only_access(web_dir: Path) -> None:
+    """The view code opens a session that sees everything and changes nothing."""
+    app, _ = make_app(web_dir, view_pin="8765")
+    with TestClient(app) as test_client:
+        ctx: AppContext = app.state.ctx
+        deadline = time.monotonic() + 5
+        while ctx.session.status.value != "online" and time.monotonic() < deadline:
+            time.sleep(0.02)
+        reply = test_client.post("/api/login", json={"pin": "8765", "name": "Guest"})
+        assert reply.json()["read_only"] is True
+        assert test_client.get("/api/session").json()["read_only"] is True
+        with test_client.websocket_connect("/ws") as ws:
+            hello = receive_until(ws, "hello")
+            assert hello["read_only"] is True
+            assert hello["view_pin"] is None  # the code is not handed to its own guests
+            assert receive_until(ws, "snapshot")["state"]["inputs"]
+            guest = next(c for c in receive_until(ws, "clients")["clients"])
+            assert guest["read_only"] is True
+            for n, refused in enumerate(
+                [
+                    {"type": "set", "path": "outputs.0.mute", "value": True},
+                    {"type": "preset.recall", "slot": 1},
+                    {"type": "preset.store", "slot": 1, "name": "x"},
+                    {"type": "link.set", "side": "inputs", "groups": []},
+                    {"type": "lock.acquire"},
+                    {"type": "master.acquire"},
+                    {"type": "settings.set", "meter_rate_hz": 2},
+                    {"type": "resync"},
+                    {"type": "server.shutdown"},
+                ]
+            ):
+                assert request(ws, {**refused, "req": n})["error"] == "read_only", refused
+            assert request(ws, {"type": "changes", "req": 20})["ok"]
+            assert request(ws, {"type": "preset.export", "req": 21})["ok"]
+            # A read-only client is never activity for Control.
+            assert ctx.hub.lock.state().owner_id is None
+            assert request(ws, {"type": "screen.lock", "req": 22})["ok"]
+            assert request(ws, {"type": "screen.unlock", "req": 23, "pin": "8765"})["ok"]
+
+
+def test_view_code_does_not_unlock_a_full_session(web_dir: Path) -> None:
+    app, _ = make_app(web_dir, view_pin="8765")
+    with TestClient(app) as test_client:
+        login(test_client, "FOH")
+        with test_client.websocket_connect("/ws") as ws:
+            assert receive_until(ws, "hello")["view_pin"] == "8765"  # to hand to guests
+            assert request(ws, {"type": "screen.lock", "req": 1})["ok"]
+            wrong = request(ws, {"type": "screen.unlock", "req": 2, "pin": "8765"})
+            assert wrong["error"] == "wrong_code"
+            assert request(ws, {"type": "screen.unlock", "req": 3, "pin": "4321"})["ok"]

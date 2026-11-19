@@ -279,7 +279,7 @@ JSON messages `{type, ...}`:
 
 | Direction | Type | Payload |
 |---|---|---|
-| S→C | `hello` | `client_id`, `name`, `device_id` (the DSP of this socket), `screen_locked`, `server_version`, `demo` (this DSP is simulated), `experimental`, `verified_kinds`, `profile` (channel counts, PEQ types, slopes, ratios, frequency/Q/delay ranges), `limits`, `settings` |
+| S→C | `hello` | `client_id`, `name`, `device_id` (the DSP of this socket), `screen_locked`, `read_only` (logged in with the view code), `view_pin` (the view code, for full sessions; else null), `server_version`, `demo` (this DSP is simulated), `experimental`, `verified_kinds`, `profile` (channel counts, PEQ types, slopes, ratios, frequency/Q/delay ranges), `limits`, `settings` |
 | S→C | `snapshot` | `rev`, full `state` (device info, presets, channels, `modified`: the live setup changed since the last recall or store, `null` when unknown) |
 | S→C | `patch` | `rev`, `changes: [{path, value}]`, `origin` (client_id or `device`) |
 | S→C | `meters` | `seq`, `levels` (12 values in dB or `null`; the whole field is `null` when the poll failed), `clip` (12 bools), `limit` (8 bools or `null`), `comp` (8 bools or `null`), `input_clip` |
@@ -290,8 +290,8 @@ JSON messages `{type, ...}`:
 | S→C | `master` | master role: `owner_id?`, `owner_name?`, `logins_blocked` |
 | S→C | `screen_lock` | `locked` (to every tab of the session) |
 | S→C | `settings` | `meter_rate_hz` (of this DSP), `lock_idle_timeout_s` (sent on change) |
-| S→C | `clients` | list of `{id, name, devices}` (the DSPs it has open) |
-| S→C | `result` | `req`, `ok`, extra fields of some requests (`preset.import`: `name`, `notes`; `preset.export`: `filename`, `data`, `notes`; `changes`: `known`, `changes`), `error?` (`locked`: another client has control, `screen_locked`, `master_taken`, `not_master`, `wrong_code`, `rate_limited`, `invalid`, `experimental`, `device_offline`, `device_timeout`), `message?` |
+| S→C | `clients` | list of `{id, name, read_only, devices}` (the DSPs it has open) |
+| S→C | `result` | `req`, `ok`, extra fields of some requests (`preset.import`: `name`, `notes`; `preset.export`: `filename`, `data`, `notes`; `changes`: `known`, `changes`), `error?` (`locked`: another client has control, `screen_locked`, `read_only`: a read-only access (view code), `master_taken`, `not_master`, `wrong_code`, `rate_limited`, `invalid`, `experimental`, `device_offline`, `device_timeout`), `message?` |
 | S→C | `pong` | `req` |
 | C→S | `set` | `req`, `path`, `value` |
 | C→S | `preset.recall` | `req`, `slot` |
@@ -304,7 +304,7 @@ JSON messages `{type, ...}`:
 | C→S | `client.kick` | `req`, `client_id`; master only: end that client's session |
 | C→S | `logins.block` | `req`, `blocked` (bool); master only |
 | C→S | `server.shutdown` | `req`; refused (`locked` / `not_master`) while another client has control or is the master. Every client gets `shutdown`, the connection to every DSP is closed, then the process exits (code 0) |
-| C→S | `screen.lock` / `screen.unlock` | `req`; `pin` (the access code) to unlock |
+| C→S | `screen.lock` / `screen.unlock` | `req`; `pin` (the access code; the view code unlocks a read-only session only) to unlock |
 | C→S | `activity` | no payload; user interaction, throttled to one every 10 s |
 | C→S | `settings.set` | `req`, `meter_rate_hz` (clamped to 1–10; this DSP's) |
 | C→S | `resync` | `req` |
@@ -319,6 +319,13 @@ The threat model is a trusted private LAN; the goal is to stop casual or acciden
 
 - One shared code (`--pin`, or `TDSP_PIN` so that it does not show in `ps` or
   `docker inspect`); a warning is logged while the default `0000` is in use.
+- A view code (`--view-pin`, `TDSP_VIEW_PIN`, different from `--pin`; unset: a random 6-digit
+  code made at start, printed and sent in `hello` to full sessions; `off`: none) opens
+  **read-only sessions**: the WebSocket hub only accepts `activity`, `changes`, `preset.export`
+  and the screen lock from them (`READ_ONLY_TYPES`) and answers anything else with the error
+  `read_only`, whatever the UI shows. A read-only client is never activity for Control, and the
+  view code does not unlock the screen of a full session. Logins with either code share the rate
+  limit and the master's block on new connections.
 - Sessions are random 256-bit tokens kept in memory; they end on logout or server restart.
 - Login rate limit: 5 failures per IP, then a 30 s cool-down; the screen unlock shares it.
 - The WebSocket `Origin` must match the `Host` header (no cross-site WebSocket hijacking).
@@ -344,7 +351,8 @@ Every option also reads `TDSP_<NAME>` from the environment (the simulator: `TDSP
 tracks-dsp-controller [serve] --dsp 192.168.1.50 [options]   # "serve" is the default sub-command
   --dsp [NAME=][MODEL@]HOST[:PORT][/ID]   (required, repeatable; HOST demo: simulated in-process)
   --host 0.0.0.0           --port 8080
-  --pin 0000               --meter-rate 5        (1–10 Hz)
+  --pin 0000               --view-pin CODE|off   (read-only access; default: generated)
+  --meter-rate 5           (1–10 Hz)
   --lock-idle-timeout 120  --resync-interval 0   (seconds, 0 = off)
   --command-timeout 0.5    --experimental        --profile file.toml
   --model auto              (default of every --dsp; auto: detected; or 408, 206, 204)

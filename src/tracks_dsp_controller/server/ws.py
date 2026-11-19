@@ -48,6 +48,9 @@ QUEUE_SIZE = 256
 SHUTDOWN_FLUSH_S = 0.3  # lets the clients get the "shutdown" message before the server stops
 # Accepted while the session's screen is locked.
 SCREEN_LOCK_TYPES = {"screen.lock", "screen.unlock"}
+# What a read-only session (opened with the view code) may send: nothing that changes anything,
+# on the DSP or on the server (control, master, settings).
+READ_ONLY_TYPES = {"activity", "changes", "preset.export", "screen.lock", "screen.unlock"}
 ACTIVITY_TYPES = {
     "set",
     "preset.recall",
@@ -267,15 +270,22 @@ class Hub:
 
     def clients_message(self) -> dict[str, Any]:
         names: dict[str, str] = {}
+        read_only: dict[str, bool] = {}
         devices: dict[str, set[str]] = {}
         for cl in self.clients:
             names[cl.id] = cl.session.name
+            read_only[cl.id] = cl.session.read_only
             devices.setdefault(cl.id, set()).add(cl.device.id)
         order = [device.id for device in self.devices]
         return {
             "type": "clients",
             "clients": [
-                {"id": cid, "name": name, "devices": [d for d in order if d in devices[cid]]}
+                {
+                    "id": cid,
+                    "name": name,
+                    "read_only": read_only[cid],
+                    "devices": [d for d in order if d in devices[cid]],
+                }
                 for cid, name in sorted(names.items())
             ],
         }
@@ -295,6 +305,9 @@ class Hub:
             "name": client.session.name,
             "device_id": client.device.id,
             "screen_locked": client.session.screen_locked,
+            "read_only": client.session.read_only,
+            # the view code, to hand to guests: for full sessions only
+            "view_pin": None if client.session.read_only else self.config.view_pin,
             "server_version": __version__,
             # this socket's DSP is simulated (demo); unverified parameters are allowed on it
             "demo": client.device.spec.demo,
@@ -398,7 +411,10 @@ class Hub:
             if kind != "activity":  # interactions behind the lock screen are not activity
                 self._send(client, _result(req, "screen_locked", "the screen is locked"))
             return
-        if kind in ACTIVITY_TYPES:
+        if client.session.read_only and kind not in READ_ONLY_TYPES:
+            self._send(client, _result(req, "read_only", "this access is read-only"))
+            return
+        if kind in ACTIVITY_TYPES and not client.session.read_only:
             self.lock.touch(client.id)
         if kind == "activity":
             return
@@ -525,11 +541,14 @@ class Hub:
                     raise RequestError("invalid", "pin must be a string")
                 address = client.websocket.client.host if client.websocket.client else "unknown"
                 try:
-                    self.auth.check_pin(pin, address)
+                    view_code = self.auth.check_pin(pin, address)
                 except RateLimitedError as exc:
                     raise RequestError("rate_limited", str(exc)) from exc
                 except LoginError as exc:
                     raise RequestError("wrong_code", "wrong code") from exc
+                if view_code and not client.session.read_only:
+                    # The view code must not hand a full session back to whoever holds it.
+                    raise RequestError("wrong_code", "wrong code")
                 self.set_screen_lock(client.session, False)
             case "settings.set":
                 self._require_lock(client)

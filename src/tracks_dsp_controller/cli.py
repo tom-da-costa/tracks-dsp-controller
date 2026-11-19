@@ -99,6 +99,13 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--port", type=int, default=int(_env("LISTEN_PORT") or 8080))
     serve.add_argument("--pin", default=_env("PIN", "0000"), help="access code (default 0000)")
     serve.add_argument(
+        "--view-pin",
+        default=_env("VIEW_PIN"),
+        help="a second access code that opens read-only sessions: everything is shown, "
+        "nothing can be changed (default: a random 6-digit code, new at each start, printed "
+        "and shown in Settings; off: no read-only access)",
+    )
+    serve.add_argument(
         "--meter-rate",
         type=float,
         default=_env_float("METER_RATE", 5.0),
@@ -217,7 +224,7 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
     from tracks_dsp_controller.server import tls
     from tracks_dsp_controller.server.app import create_app
     from tracks_dsp_controller.server.listener import HttpsServer
-    from tracks_dsp_controller.server.settings import ServerConfig, parse_dsps
+    from tracks_dsp_controller.server.settings import ServerConfig, parse_dsps, view_pin_for
 
     context = None
     if args.tls_cert or args.tls_key or args.tls_self_signed:
@@ -233,6 +240,7 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
         context = tls.server_context(files)
 
     _check_removed_variables(args)
+    view_pin, generated = view_pin_for(args.view_pin, args.pin)
     config = ServerConfig(
         dsps=parse_dsps(
             args.dsp or [_env("DSP") or ""],
@@ -242,6 +250,8 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
         host=args.host,
         port=args.port,
         pin=args.pin,
+        view_pin=view_pin,
+        view_pin_generated=generated,
         meter_rate_hz=args.meter_rate,
         lock_idle_timeout_s=args.lock_idle_timeout,
         resync_interval_s=args.resync_interval,
@@ -257,6 +267,11 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
         f"tracks-dsp-controller {__version__}: {scheme}://{config.host}:{config.port} -> {target}",
         flush=True,
     )
+    if config.view_pin is None:
+        print("read-only access: off", flush=True)
+    else:
+        how = "generated, new at each start; --view-pin sets it" if generated else "--view-pin"
+        print(f"view code (read-only access): {config.view_pin} ({how})", flush=True)
     uv_config = uvicorn.Config(
         app,
         host=config.host,

@@ -3,9 +3,30 @@
 from __future__ import annotations
 
 import re
+import secrets
 from dataclasses import dataclass, field
 
 DEFAULT_PIN = "0000"
+VIEW_PIN_OFF = "off"  # --view-pin off: no read-only access
+VIEW_PIN_DIGITS = 6
+
+
+def view_pin_for(value: str | None, pin: str) -> tuple[str | None, bool]:
+    """The view code from --view-pin: (code, generated).
+
+    Unset or empty: a random code, new at each start (it can always be read in the app's
+    Settings by a full session, and is printed at start). ``off``: no read-only access.
+    """
+    if value is not None and value.strip().lower() == VIEW_PIN_OFF:
+        return None, False
+    if value:
+        return value, False
+    while True:
+        code = "".join(secrets.choice("0123456789") for _ in range(VIEW_PIN_DIGITS))
+        if code != pin:
+            return code, True
+
+
 DEFAULT_DSP_PORT = 9761
 MODEL_CHOICES = ("auto", "408", "206", "204")
 # In place of a DSP's address: a simulated DSP runs inside this process.
@@ -111,6 +132,8 @@ class ServerConfig:
     host: str = "0.0.0.0"
     port: int = 8080
     pin: str = DEFAULT_PIN
+    view_pin: str | None = None  # opens read-only sessions (--view-pin; view_pin_for)
+    view_pin_generated: bool = False  # made up at start: printed, and shown in Settings
     meter_rate_hz: float = 5.0
     lock_idle_timeout_s: float = 120.0
     resync_interval_s: float = 0.0  # 0 = off
@@ -124,6 +147,10 @@ class ServerConfig:
             raise ValueError("--dsp is required: the DSP's address, or demo (repeatable)")
         if not self.pin:
             raise ValueError("the access code must not be empty")
+        if self.view_pin == "":
+            self.view_pin = None
+        if self.view_pin is not None and self.view_pin == self.pin:
+            raise ValueError("--view-pin must differ from --pin")
         if self.lock_idle_timeout_s <= 0:
             raise ValueError("--lock-idle-timeout must be > 0")
         if self.resync_interval_s < 0:
