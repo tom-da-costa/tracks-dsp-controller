@@ -229,13 +229,15 @@
     </dd>
     <dt>👁 Nur-Lese-Zugang</dt>
     <dd>
-      Wurde der Server mit einem Ansichtscode (<code>--view-pin</code>) gestartet, öffnet die
-      Anmeldung damit einen Nur-Lese-Zugang: alles wird angezeigt (Pegel, Einstellungen,
+      Die Anmeldung mit dem Ansichtscode öffnet einen Nur-Lese-Zugang: alles wird angezeigt (Pegel, Einstellungen,
       Presets), nichts lässt sich ändern, und der Server lehnt es ab, was auch immer der
       Bildschirm zeigt. Für einen Gast oder ein am FOH liegendes Telefon. Die Seitenleiste
       zeigt <em>Read-only access</em> statt <em>Take control</em>, und die Client-Liste
       kennzeichnet diese Clients. Um etwas zu ändern, abmelden und mit dem Zugangscode
-      anmelden.
+      anmelden. Der Ansichtscode steht unter Settings › Connected clients (für Sitzungen mit
+      dem Zugangscode); legt ihn der Server nicht fest (<code>--view-pin</code>), ist er bei
+      jedem Start ein neuer Zufallscode, und <code>--view-pin off</code> schaltet den
+      Nur-Lese-Zugang ab.
     </dd>
   </dl>
 </section>

@@ -306,6 +306,8 @@ class Hub:
             "device_id": client.device.id,
             "screen_locked": client.session.screen_locked,
             "read_only": client.session.read_only,
+            # the view code, to hand to guests: for full sessions only
+            "view_pin": None if client.session.read_only else self.config.view_pin,
             "server_version": __version__,
             # this socket's DSP is simulated (demo); unverified parameters are allowed on it
             "demo": client.device.spec.demo,

@@ -185,6 +185,12 @@
         </li>
       {/each}
     </ul>
+    {#if app.hello?.view_pin}
+      <p class="muted">
+        View code, for read-only access: <strong class="code">{app.hello.view_pin}</strong>. Who
+        logs in with it sees everything and can change nothing.
+      </p>
+    {/if}
     <h3>Master</h3>
     <p class="muted">
       {#if app.iAmMaster}
@@ -279,6 +285,11 @@
 </div>
 
 <style>
+  .code {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.1em;
+    color: var(--text);
+  }
   .grid {
     display: grid;
     gap: 12px;

@@ -18,7 +18,7 @@ from tracks_dsp_controller.server.app import AppContext, create_app
 from tracks_dsp_controller.server.auth import AuthManager, LoginError, RateLimitedError, clean_name
 from tracks_dsp_controller.server.lock import LockManager
 from tracks_dsp_controller.server.master import MasterManager, MasterState
-from tracks_dsp_controller.server.settings import DspSpec, ServerConfig
+from tracks_dsp_controller.server.settings import DspSpec, ServerConfig, view_pin_for
 from tracks_dsp_controller.simulator import Faults, SimulatedDevice, apply_scenario
 from tracks_dsp_controller.state import registry
 
@@ -142,6 +142,18 @@ def test_server_config_validation() -> None:
     assert ServerConfig(DEMO).allow_unverified(DEMO[0])
     assert not ServerConfig([real]).allow_unverified(real)
     assert ServerConfig([real], experimental=True).allow_unverified(real)
+
+
+def test_view_pin_generated_unless_set_or_off() -> None:
+    assert view_pin_for("2468", "0000") == ("2468", False)
+    assert view_pin_for("OFF", "0000") == (None, False)
+    for unset in (None, ""):
+        code, generated = view_pin_for(unset, "0000")
+        assert generated
+        assert code is not None
+        assert len(code) == 6
+        assert code.isdigit()
+        assert code != "0000"
 
 
 # --- integration -------------------------------------------------------------------------------
@@ -780,7 +792,9 @@ def test_read_only_access(web_dir: Path) -> None:
         assert reply.json()["read_only"] is True
         assert test_client.get("/api/session").json()["read_only"] is True
         with test_client.websocket_connect("/ws") as ws:
-            assert receive_until(ws, "hello")["read_only"] is True
+            hello = receive_until(ws, "hello")
+            assert hello["read_only"] is True
+            assert hello["view_pin"] is None  # the code is not handed to its own guests
             assert receive_until(ws, "snapshot")["state"]["inputs"]
             guest = next(c for c in receive_until(ws, "clients")["clients"])
             assert guest["read_only"] is True
@@ -811,7 +825,7 @@ def test_view_code_does_not_unlock_a_full_session(web_dir: Path) -> None:
     with TestClient(app) as test_client:
         login(test_client, "FOH")
         with test_client.websocket_connect("/ws") as ws:
-            receive_until(ws, "hello")
+            assert receive_until(ws, "hello")["view_pin"] == "8765"  # to hand to guests
             assert request(ws, {"type": "screen.lock", "req": 1})["ok"]
             wrong = request(ws, {"type": "screen.unlock", "req": 2, "pin": "8765"})
             assert wrong["error"] == "wrong_code"

@@ -76,9 +76,10 @@ On a phone, in landscape:
   by themselves, and the command timeout adapts to the DSP's round trip (a Wi-Fi bridge or a VPN
   is fine). A banner says which link is down, and the controls are disabled meanwhile, so no
   change is silently lost.
-- **Access code and HTTPS**: a shared code (`--pin`, default `0000`), and optionally a view code
-  (`--view-pin`) for read-only access: everything is shown, nothing can be changed (a guest, a
-  phone left at front of house); optional HTTPS with your certificate or a self-signed one, on the
+- **Access code and HTTPS**: a shared code (`--pin`, default `0000`), and a view code
+  (`--view-pin`, generated at start if not set, shown in Settings) for read-only access:
+  everything is shown, nothing can be changed (a guest, a phone left at front of house); optional
+  HTTPS with your certificate or a self-signed one, on the
   same port.
 - **Offline**: no database, no internet access, no external assets.
 - **Simulator**: `tracks-dsp-controller sim` runs a simulated DSP 408, 206 or 204 on the network,
@@ -200,7 +201,7 @@ commands too.
 | `--model auto\|408\|206\|204` | `TDSP_MODEL` | `auto` | Default model of every `--dsp`: `auto` detects it; a number enforces it (refused if the device differs) |
 | `--device-id N` | `TDSP_DEVICE_ID` | searched for | Default ID number (set on the DSP's front panel, 1-250) of every `--dsp`; setting it skips the search |
 | `--pin CODE` | `TDSP_PIN` | `0000` | Access code asked by the web UI |
-| `--view-pin CODE` | `TDSP_VIEW_PIN` | none | A second code, for read-only access: the server refuses every change from those sessions (writes, presets, control, settings) |
+| `--view-pin CODE` | `TDSP_VIEW_PIN` | generated | A second code, for read-only access: the server refuses every change from those sessions (writes, presets, control, settings). Unset: a random 6-digit code, new at each start, printed and shown in Settings; `off`: no read-only access |
 | `--host IP` | `TDSP_LISTEN_HOST` | `0.0.0.0` | Address the web server listens on |
 | `--port N` | `TDSP_LISTEN_PORT` | `8080` | Port of the web UI |
 | `--meter-rate HZ` | `TDSP_METER_RATE` | `5` | Meter refresh rate, 1-10 Hz (also in the app's Settings, per DSP) |

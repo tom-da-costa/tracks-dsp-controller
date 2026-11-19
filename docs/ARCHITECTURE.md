@@ -279,7 +279,7 @@ JSON messages `{type, ...}`:
 
 | Direction | Type | Payload |
 |---|---|---|
-| S→C | `hello` | `client_id`, `name`, `device_id` (the DSP of this socket), `screen_locked`, `read_only` (logged in with the view code), `server_version`, `demo` (this DSP is simulated), `experimental`, `verified_kinds`, `profile` (channel counts, PEQ types, slopes, ratios, frequency/Q/delay ranges), `limits`, `settings` |
+| S→C | `hello` | `client_id`, `name`, `device_id` (the DSP of this socket), `screen_locked`, `read_only` (logged in with the view code), `view_pin` (the view code, for full sessions; else null), `server_version`, `demo` (this DSP is simulated), `experimental`, `verified_kinds`, `profile` (channel counts, PEQ types, slopes, ratios, frequency/Q/delay ranges), `limits`, `settings` |
 | S→C | `snapshot` | `rev`, full `state` (device info, presets, channels, `modified`: the live setup changed since the last recall or store, `null` when unknown) |
 | S→C | `patch` | `rev`, `changes: [{path, value}]`, `origin` (client_id or `device`) |
 | S→C | `meters` | `seq`, `levels` (12 values in dB or `null`; the whole field is `null` when the poll failed), `clip` (12 bools), `limit` (8 bools or `null`), `comp` (8 bools or `null`), `input_clip` |
@@ -319,7 +319,8 @@ The threat model is a trusted private LAN; the goal is to stop casual or acciden
 
 - One shared code (`--pin`, or `TDSP_PIN` so that it does not show in `ps` or
   `docker inspect`); a warning is logged while the default `0000` is in use.
-- An optional view code (`--view-pin`, `TDSP_VIEW_PIN`, different from `--pin`) opens
+- A view code (`--view-pin`, `TDSP_VIEW_PIN`, different from `--pin`; unset: a random 6-digit
+  code made at start, printed and sent in `hello` to full sessions; `off`: none) opens
   **read-only sessions**: the WebSocket hub only accepts `activity`, `changes`, `preset.export`
   and the screen lock from them (`READ_ONLY_TYPES`) and answers anything else with the error
   `read_only`, whatever the UI shows. A read-only client is never activity for Control, and the
@@ -350,7 +351,7 @@ Every option also reads `TDSP_<NAME>` from the environment (the simulator: `TDSP
 tracks-dsp-controller [serve] --dsp 192.168.1.50 [options]   # "serve" is the default sub-command
   --dsp [NAME=][MODEL@]HOST[:PORT][/ID]   (required, repeatable; HOST demo: simulated in-process)
   --host 0.0.0.0           --port 8080
-  --pin 0000               --view-pin CODE       (read-only access; default: none)
+  --pin 0000               --view-pin CODE|off   (read-only access; default: generated)
   --meter-rate 5           (1–10 Hz)
   --lock-idle-timeout 120  --resync-interval 0   (seconds, 0 = off)
   --command-timeout 0.5    --experimental        --profile file.toml
