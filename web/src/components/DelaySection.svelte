@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // Delay of one channel, in milliseconds and as a distance.
   import { app } from "../lib/app.svelte";
   import { inStrip } from "../lib/layout";
@@ -14,7 +15,7 @@
     title?: string;
   }
 
-  let { channel, path, id = "delay", title = "Delay" }: Props = $props();
+  let { channel, path, id = "delay", title }: Props = $props();
 
   const vertical = inStrip();
   const limits = $derived(app.hello?.limits);
@@ -24,12 +25,12 @@
   const rate = $derived(app.hello?.profile.delay_sample_rate_hz ?? 96000);
 </script>
 
-<Section {id} {title} kind="delay_ms">
+<Section {id} title={title ?? t("param.delay")} kind="delay_ms">
   {#if limits}
     {@const c = limits.speed_of_sound_m_s}
     <div class:vfields-grid={vertical}>
     <Field
-      label="Delay"
+      label={t("param.delay")}
       value={channel.delay_ms}
       min={0}
       max={maxMs}
@@ -41,7 +42,7 @@
       onchange={(v) => app.set(`${path}.delay_ms`, v)}
     />
     <Field
-      label="Distance"
+      label={t("delay.distance")}
       value={(channel.delay_ms * c) / 1000}
       min={0}
       max={(maxMs * c) / 1000}

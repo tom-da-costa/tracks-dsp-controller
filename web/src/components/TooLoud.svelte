@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // "Too loud" tab: one indicator that fills the screen, for whoever sets the volume. It lights
   // in the compressor's colour when at least one output's compressor or limiter acts (a single
   // colour, so that it does not flash between two), and stays grey otherwise. The outputs
@@ -49,10 +50,12 @@
   const lit = $derived(limiting.length > 0 || compressing.length > 0);
   // One line for the compressors, one for the limiters.
   const compLine = $derived(
-    compressing.length ? `Compressor: ${compressing.join(", ")}` : "No compressor acting",
+    compressing.length
+      ? t("loud.compressor", { names: compressing.join(", ") })
+      : t("loud.no_compressor"),
   );
   const limitLine = $derived(
-    limiting.length ? `Limiter: ${limiting.join(", ")}` : "No limiter acting",
+    limiting.length ? t("loud.limiter", { names: limiting.join(", ") }) : t("loud.no_limiter"),
   );
 </script>
 
@@ -65,21 +68,23 @@
     style:--glow={`${Math.round((40 * brightness) / 100)}px`}
     role="status"
     aria-live="polite"
-    aria-label={!live ? "No meter data" : lit ? `Too loud. ${compLine}. ${limitLine}.` : "Level fine"}
+    aria-label={!live
+      ? t("loud.no_data")
+      : lit
+        ? t("loud.aria_lit", { comp: compLine, limit: limitLine })
+        : t("loud.fine")}
   >
-    <strong>TOO LOUD</strong>
+    <strong>{t("loud.title")}</strong>
     {#if live}
       <span class="detail">{compLine}</span>
       <span class="detail">{limitLine}</span>
     {:else}
-      <span class="detail">No meter data: the DSP or the server is not reachable</span>
+      <span class="detail">{t("loud.no_data_long")}</span>
     {/if}
   </div>
-  <p class="hint">
-    Flashing now and then is fine. If it stays lit, turn the volume down.
-  </p>
+  <p class="hint">{t("loud.hint")}</p>
   <label class="brightness">
-    <span>Brightness</span>
+    <span>{t("loud.brightness")}</span>
     <input
       type="range"
       min={MIN_BRIGHTNESS}

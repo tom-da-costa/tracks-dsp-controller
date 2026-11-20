@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // A setting with a slider between − and + buttons (Settings). `live` calls onchange while the
   // slider moves; otherwise only when it is released (e.g. a value sent to the server).
   interface Props {
@@ -42,7 +43,7 @@
 <div class="setting">
   <label for={id}>{label}: <strong>{format(draft)}</strong></label>
   <div class="stepper">
-    <button disabled={disabled || draft <= min} aria-label={`${label} down`} onclick={() => set(draft - step)}
+    <button disabled={disabled || draft <= min} aria-label={t("field.step_down", { label })} onclick={() => set(draft - step)}
       >−</button
     >
     <input
@@ -59,7 +60,7 @@
       }}
       onchange={(e) => set(Number(e.currentTarget.value))}
     />
-    <button disabled={disabled || draft >= max} aria-label={`${label} up`} onclick={() => set(draft + step)}
+    <button disabled={disabled || draft >= max} aria-label={t("field.step_up", { label })} onclick={() => set(draft + step)}
       >+</button
     >
   </div>

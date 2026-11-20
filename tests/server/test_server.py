@@ -658,6 +658,7 @@ def test_master_disconnects_a_client_and_blocks_new_logins(client: TestClient) -
             assert refused.json() == {
                 "error": "logins_blocked",
                 "message": "New connections are blocked by Alice",
+                "owner": "Alice",
             }
             assert client.post("/api/login", json={"pin": "nope"}).status_code == 401
 

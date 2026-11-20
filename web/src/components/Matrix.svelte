@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import { app } from "../lib/app.svelte";
 
   const device = $derived(app.device);
@@ -13,7 +14,7 @@
 
 {#if device}
   <div class="card">
-    <h2>Routing matrix</h2>
+    <h2>{t("matrix.title")}</h2>
     <table>
       <thead>
         <tr>
@@ -32,7 +33,7 @@
                 <button
                   class:on
                   aria-pressed={on}
-                  aria-label={`${device.inputs[i]?.name} to ${output.name}`}
+                  aria-label={t("matrix.cell", { input: device.inputs[i]?.name ?? "", output: output.name })}
                   disabled={app.readOnly}
                   onclick={() => toggle(o, i)}>{on ? "●" : ""}</button
                 >

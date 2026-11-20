@@ -1,10 +1,24 @@
 <script lang="ts">
   import { LoginError } from "../lib/api";
   import { app } from "../lib/app.svelte";
+  import { i18n, LANG_NAMES, LANGS, t, type Lang } from "../lib/i18n/index.svelte";
 
   let pin = $state("");
   let name = $state(localStorageGet("dsp408.name"));
-  let error = $state("");
+  // The failed login, in words when shown (follows a change of language).
+  let failure = $state<LoginError | "unreachable" | null>(null);
+  const error = $derived(
+    failure === null
+      ? ""
+      : failure === "unreachable"
+        ? t("error.unreachable")
+        : app.errorText({ error: failure.code, message: failure.message, owner: failure.owner }),
+  );
+  // Why the login is shown: "Disconnected by <master>" when kicked (the server's close reason).
+  const notice = $derived.by(() => {
+    const kicked = /^Disconnected by (.+)$/.exec(app.loginNotice);
+    return kicked ? t("login.kicked", { name: kicked[1] ?? "" }) : app.loginNotice;
+  });
   let busy = $state(false);
 
   function localStorageGet(key: string): string {
@@ -18,7 +32,7 @@
   async function submit(event: SubmitEvent) {
     event.preventDefault();
     busy = true;
-    error = "";
+    failure = null;
     app.loginNotice = "";
     try {
       try {
@@ -28,7 +42,7 @@
       }
       await app.login(pin, name.trim());
     } catch (exc) {
-      error = exc instanceof LoginError ? exc.message : "cannot reach the server";
+      failure = exc instanceof LoginError ? exc : "unreachable";
       pin = "";
     } finally {
       busy = false;
@@ -39,8 +53,14 @@
 <main>
   <form class="card" onsubmit={submit}>
     <h1>t.racks DSP controller</h1>
+    <label class="lang">
+      <span class="muted">{t("common.language")}</span>
+      <select value={i18n.lang} onchange={(e) => i18n.set(e.currentTarget.value as Lang)}>
+        {#each LANGS as code (code)}<option value={code}>{LANG_NAMES[code]}</option>{/each}
+      </select>
+    </label>
     <label>
-      Access code
+      {t("login.code")}
       <input
         type="password"
         inputmode="numeric"
@@ -50,12 +70,12 @@
       />
     </label>
     <label>
-      Your name <span class="muted">(optional)</span>
-      <input type="text" maxlength="32" placeholder="e.g. FOH phone" bind:value={name} />
+      <span>{t("login.name")} <span class="muted">{t("common.optional")}</span></span>
+      <input type="text" maxlength="32" placeholder={t("login.name_placeholder")} bind:value={name} />
     </label>
-    {#if app.loginNotice}<p class="notice" role="status">{app.loginNotice}</p>{/if}
+    {#if notice}<p class="notice" role="status">{notice}</p>{/if}
     {#if error}<p class="error" role="alert">{error}</p>{/if}
-    <button class="primary" type="submit" disabled={busy || !pin}>Connect</button>
+    <button class="primary" type="submit" disabled={busy || !pin}>{t("login.connect")}</button>
   </form>
 </main>
 
@@ -85,6 +105,11 @@
   label {
     display: grid;
     gap: 6px;
+  }
+  .lang {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
   }
   .error {
     color: var(--danger);

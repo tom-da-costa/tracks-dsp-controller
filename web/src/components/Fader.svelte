@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import {
     dbToPos,
     formatDb,
@@ -123,11 +124,11 @@
         onblur={() => (editing = false)}
         onfocus={(e) => e.currentTarget.select()}
         autofocus
-        aria-label={`${label} gain in dB`}
+        aria-label={t("fader.typing", { label })}
       />
     </form>
   {:else}
-    <button class="value" onclick={startEdit} {disabled} aria-label={`${label} gain, tap to type`}>
+    <button class="value" onclick={startEdit} {disabled} aria-label={t("fader.tap", { label })}>
       {formatDb(shown)}
     </button>
   {/if}
@@ -135,7 +136,7 @@
     class="step"
     use:holdRepeat={{ step: () => nudge(1), end: () => stepSender.flush(), disabled }}
     {disabled}
-    aria-label="gain up (hold to repeat)">+</button
+    aria-label={t("field.up", { label: t("param.gain") })}>+</button
   >
   <div class="track" bind:this={track}>
     <div class="unity" style:bottom={`${dbToPos(0) * 100}%`}></div>
@@ -161,7 +162,7 @@
     class="step"
     use:holdRepeat={{ step: () => nudge(-1), end: () => stepSender.flush(), disabled }}
     {disabled}
-    aria-label="gain down (hold to repeat)">−</button
+    aria-label={t("field.down", { label: t("param.gain") })}>−</button
   >
 </div>
 

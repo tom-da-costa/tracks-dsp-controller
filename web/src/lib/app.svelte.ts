@@ -2,6 +2,7 @@
 
 import * as api from "./api";
 import { channelColor } from "./colors";
+import { t } from "./i18n/index.svelte";
 import { setPath } from "./paths";
 import type {
   Change,
@@ -484,9 +485,7 @@ class App {
     const result = await this.request(message);
     if (!result.ok) {
       this.toast(
-        result.error === "disconnected"
-          ? "Connection to the server lost: check that the change was applied"
-          : (result.message ?? result.error ?? "error"),
+        result.error === "disconnected" ? t("error.change_lost") : this.errorText(result),
         "error",
       );
     }
@@ -504,7 +503,50 @@ class App {
   /** Unlock the screen with the access code; returns the error message, or null on success. */
   async unlockScreen(pin: string): Promise<string | null> {
     const result = await this.request({ type: "screen.unlock", pin });
-    return result.ok ? null : (result.message ?? result.error ?? "error");
+    return result.ok ? null : this.errorText(result);
+  }
+
+  /** A refused request in words: the server's error code in the UI's language (its English
+   * message only for the details of `invalid` and of unknown codes). */
+  errorText(result: { error?: string; message?: string; owner?: string | null }): string {
+    const message = result.message ?? result.error ?? "?";
+    switch (result.error) {
+      case "disconnected":
+        return t("error.disconnected");
+      case "timeout":
+        return t("error.timeout");
+      case "locked": {
+        const name = this.lockedByOther ? this.lock?.owner_name : null;
+        return name ? t("error.locked", { name }) : t("error.locked_other");
+      }
+      case "screen_locked":
+        return t("error.screen_locked");
+      case "read_only":
+        return t("error.read_only");
+      case "master_taken":
+      case "not_master": {
+        const name = this.iAmMaster ? null : this.master?.owner_name;
+        return name ? t("error.master_taken", { name }) : t("error.not_master");
+      }
+      case "wrong_code":
+        return t("error.wrong_code");
+      case "rate_limited":
+        return t("error.rate_limited");
+      case "logins_blocked":
+        return t("error.logins_blocked", { name: result.owner ?? "?" });
+      case "device_offline":
+        return t("error.device_offline");
+      case "device_timeout":
+        return t("error.device_timeout");
+      case "experimental":
+        return t("error.experimental");
+      case "unsupported":
+        return t("error.unsupported");
+      case "invalid":
+        return t("error.invalid", { message });
+      default:
+        return t("error.other", { message });
+    }
   }
 
   /** Report a user interaction (throttled). Resets the local lock countdown when we own it. */

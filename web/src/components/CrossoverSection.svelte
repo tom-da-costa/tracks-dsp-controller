@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import { app } from "../lib/app.svelte";
   import { inStrip } from "../lib/layout";
   import { formatHz, logIndexStep } from "../lib/scale";
@@ -13,14 +14,14 @@
     title?: string;
   }
 
-  let { channel, path, id = "crossover", title = "High-pass / low-pass" }: Props = $props();
+  let { channel, path, id = "crossover", title }: Props = $props();
 
   const vertical = inStrip();
   const profile = $derived(app.hello?.profile);
   const editable = $derived(app.editable("crossover"));
   const FILTERS = [
-    ["hpf", "High-pass", "HP"],
-    ["lpf", "Low-pass", "LP"],
+    ["hpf", "xo.hpf", "HP"],
+    ["lpf", "xo.lpf", "LP"],
   ] as const;
 
   function setFilter(which: "hpf" | "lpf", change: Partial<Filter>) {
@@ -28,11 +29,12 @@
   }
 </script>
 
-<Section {id} {title} kind="crossover">
+<Section {id} title={title ?? t("xo.title")} kind="crossover">
   {#if profile}
     <div class:cols={vertical}>
-    {#each FILTERS as [which, title, short] (which)}
+    {#each FILTERS as [which, titleKey, short] (which)}
       {@const filter = channel.crossover[which]}
+      {@const title = t(titleKey)}
       <div class="filter" class:off={!filter.enabled}>
         <div class="head">
           <strong title={title}
@@ -41,7 +43,7 @@
           <select
             value={filter.slope}
             disabled={!editable}
-            aria-label={`${title} slope`}
+            aria-label={t("xo.slope", { filter: title })}
             onchange={(e) => setFilter(which, { slope: Number((e.currentTarget as HTMLSelectElement).value) })}
           >
             {#each profile.slopes as name, i (i)}
@@ -53,13 +55,13 @@
             class:on={filter.enabled}
             disabled={!editable}
             aria-pressed={filter.enabled}
-            aria-label={`${title} ${filter.enabled ? "on" : "off"}`}
+            aria-label={t(filter.enabled ? "xo.state_on" : "xo.state_off", { filter: title })}
             onclick={() => setFilter(which, { enabled: !filter.enabled })}
-            >{filter.enabled ? "On" : "Off"}</button
+            >{filter.enabled ? t("common.on") : t("common.off")}</button
           >
         </div>
         <Field
-          label="Frequency"
+          label={t("field.frequency")}
           value={filter.freq_hz}
           min={profile.freq_min_hz}
           max={profile.freq_max_hz}
@@ -74,7 +76,7 @@
     {/each}
     </div>
     {#if !vertical}
-      <p class="hint muted">Off bypasses the filter; the slope is kept for when it is turned back on.</p>
+      <p class="hint muted">{t("xo.hint")}</p>
     {/if}
   {/if}
 </Section>

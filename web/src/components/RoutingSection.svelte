@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // Which inputs feed one output (its row of the routing matrix).
   import { app } from "../lib/app.svelte";
   import { slotLabel } from "../lib/nav.svelte";
@@ -12,7 +13,7 @@
     title?: string;
   }
 
-  let { channel, path, id = "routing", title = "Routing" }: Props = $props();
+  let { channel, path, id = "routing", title }: Props = $props();
 
   const inputs = $derived(app.device?.inputs ?? []);
 
@@ -22,8 +23,8 @@
   }
 </script>
 
-<Section {id} {title} kind="matrix">
-  <div class="row" role="group" aria-label="Inputs routed to this output">
+<Section {id} title={title ?? t("routing.title")} kind="matrix">
+  <div class="row" role="group" aria-label={t("routing.group")}>
     {#each channel.matrix as on, i (i)}
       <button
         class="ch-bar"

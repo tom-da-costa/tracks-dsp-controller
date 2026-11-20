@@ -1,5 +1,6 @@
 <script lang="ts">
   import { app } from "../lib/app.svelte";
+  import { t, tn } from "../lib/i18n/index.svelte";
   import { describe, type UnsavedChange } from "../lib/changes";
   import { links } from "../lib/links.svelte";
   import {
@@ -35,12 +36,12 @@
 
   function checkName(value: string): string {
     return value.length === 0
-      ? "a name is required"
+      ? t("presets.name_required")
       : value.length > 14
-        ? "14 characters at most"
+        ? t("presets.name_long")
         : /^[\x20-\x7e]*$/.test(value)
           ? ""
-          : "plain ASCII characters only";
+          : t("presets.name_ascii");
   }
   const nameError = $derived(checkName(name));
   const importNameError = $derived(importSlot > 0 ? checkName(importName) : "");
@@ -58,26 +59,22 @@
       return `• ${links.slot(channel)} ${text.setting}: ${text.before} → ${text.after}`;
     });
     const more = list.length - SHOWN_CHANGES;
-    return [...lines, ...(more > 0 ? [`… and ${more} more`] : [])].join("\n");
+    return [...lines, ...(more > 0 ? [t("presets.more", { n: more })] : [])].join("\n");
   }
 
   /** What a recall loses, for its confirmation. */
   function lostText(): string {
-    if (device?.modified === null)
-      return "\n\nChanges made before this app connected, if any, will be lost.";
+    if (device?.modified === null) return `\n\n${t("presets.lost_unknown")}`;
     if (device?.modified !== true) return "";
-    if (!changes || changes.length === 0)
-      return "\n\nThe current setup has UNSAVED CHANGES: they will be lost.";
-    const n = changes.length;
-    return `\n\nThe current setup has ${n} UNSAVED CHANGE${n === 1 ? "" : "S"}: they will be lost.\n${changeLines(changes)}`;
+    if (!changes || changes.length === 0) return `\n\n${t("presets.lost")}`;
+    return `\n\n${tn("presets.lost_n", changes.length)}\n${changeLines(changes)}`;
   }
 
   async function recall(slot: number, presetName: string) {
     const lost = lostText();
-    if (!confirm(`Recall ${label(slot)} "${presetName}"? Every current setting is replaced.${lost}`))
-      return;
+    if (!confirm(t("presets.recall_confirm", { slot: label(slot), name: presetName }) + lost)) return;
     busy = true;
-    if (await app.run({ type: "preset.recall", slot })) app.toast(`${label(slot)} recalled`);
+    if (await app.run({ type: "preset.recall", slot })) app.toast(t("presets.recalled", { slot: label(slot) }));
     busy = false;
   }
 
@@ -92,7 +89,7 @@
     busy = false;
     if (!result.ok || !result.data || !result.filename) return;
     download(fromBase64(result.data), result.filename);
-    app.toast(`Exported ${result.filename}`);
+    app.toast(t("presets.exported", { file: result.filename }));
     for (const note of result.notes ?? []) app.toast(note);
   }
 
@@ -109,7 +106,10 @@
     }
     const model = device?.info.model.replace(/^DSP/, "");
     if (model && info.model !== model) {
-      app.toast(`${file.name} is a DSP ${info.model} preset, this is a DSP ${model}`, "error");
+      app.toast(
+        t("presets.wrong_model", { file: file.name, file_model: info.model, model }),
+        "error",
+      );
       return;
     }
     importing = { file: file.name, bytes, info, unsaved: device?.modified === true };
@@ -120,7 +120,7 @@
   async function importPreset(event: SubmitEvent) {
     event.preventDefault();
     if (importing === null || importNameError) return;
-    const where = importSlot > 0 ? ` and stored to ${label(importSlot)}` : "";
+    const stored = importSlot > 0 ? label(importSlot) : null;
     busy = true;
     const result = await app.call({
       type: "preset.import",
@@ -134,7 +134,12 @@
       if (!REFUSED.has(result.error ?? "")) importing = null;
       return;
     }
-    app.toast(`"${importing.info.name}" loaded${where}`);
+    const name = importing.info.name;
+    app.toast(
+      stored === null
+        ? t("presets.loaded", { name })
+        : t("presets.loaded_stored", { name, slot: stored }),
+    );
     for (const note of result.notes ?? []) app.toast(note, "error");
     importing = null;
   }
@@ -144,7 +149,7 @@
     if (storing === null || nameError) return;
     busy = true;
     if (await app.run({ type: "preset.store", slot: storing, name })) {
-      app.toast(`Stored to ${label(storing)}`);
+      app.toast(t("presets.stored", { slot: label(storing) }));
       storing = null;
     }
     busy = false;
@@ -153,17 +158,19 @@
 
 {#if device}
   <div class="card">
-    <h2>Presets</h2>
+    <h2>{t("presets.title")}</h2>
     <p class="live">
-      <span class="muted">Live: {label(device.active_slot)} — {device.preset_name}</span>
+      <span class="muted"
+        >{t("presets.live", { slot: label(device.active_slot), name: device.preset_name })}</span
+      >
       {#if device.modified}
-        <span class="unsaved">● unsaved changes</span>
+        <span class="unsaved">{t("presets.unsaved")}</span>
         {#if device.active_slot > 0}
           <button
             class="primary"
             disabled={app.readOnly || busy}
             onclick={() => startStore(device.active_slot, device.preset_name)}
-            >Save to {label(device.active_slot)}</button
+            >{t("presets.save_to", { slot: label(device.active_slot) })}</button
           >
         {/if}
       {/if}
@@ -171,9 +178,9 @@
     <UnsavedChanges bind:changes />
     <ul>
       <li class:active={device.active_slot === 0}>
-        <span class="slot">F00</span><span class="name">Factory default</span>
-        <button disabled={app.readOnly || busy} onclick={() => recall(0, "Factory default")}
-          >Recall</button
+        <span class="slot">F00</span><span class="name">{t("presets.factory")}</span>
+        <button disabled={app.readOnly || busy} onclick={() => recall(0, t("presets.factory"))}
+          >{t("presets.recall")}</button
         >
         <span class="spacer"></span>
       </li>
@@ -182,45 +189,41 @@
           <span class="slot">{label(preset.slot)}</span>
           <span class="name">{preset.name}</span>
           <button disabled={app.readOnly || busy} onclick={() => recall(preset.slot, preset.name)}
-            >Recall</button
+            >{t("presets.recall")}</button
           >
           <button
             disabled={app.readOnly || busy}
-            onclick={() => startStore(preset.slot, preset.name)}>Store</button
+            onclick={() => startStore(preset.slot, preset.name)}>{t("presets.store")}</button
           >
         </li>
       {/each}
     </ul>
     <div class="files">
-      <button disabled={!exportable || busy} onclick={exportPreset}>Export live setup (.prs)</button>
-      <button disabled={app.readOnly || busy} onclick={() => picker?.click()}>Import .prs…</button>
+      <button disabled={!exportable || busy} onclick={exportPreset}>{t("presets.export")}</button>
+      <button disabled={app.readOnly || busy} onclick={() => picker?.click()}>{t("presets.import")}</button>
       <input bind:this={picker} type="file" accept=".prs" hidden onchange={pickFile} />
     </div>
-    <p class="muted hint">
-      Preset files of the official t.racks editor. Export saves the live setup; import loads a
-      file into it.
-    </p>
+    <p class="muted hint">{t("presets.files_help")}</p>
   </div>
 
   {#if storing !== null}
     <div class="backdrop" role="presentation" onclick={() => (storing = null)}></div>
     <form class="card dialog" onsubmit={store}>
-      <h2>Store to {label(storing)}</h2>
-      <p class="muted">This overwrites the preset stored in the DSP.</p>
+      <h2>{t("presets.store_title", { slot: label(storing) })}</h2>
+      <p class="muted">{t("presets.overwrite")}</p>
       {#if storing === device.active_slot && changes && changes.length > 0}
-        <p class="muted">
-          It keeps the {changes.length} unsaved change{changes.length === 1 ? "" : "s"} listed on
-          this page.
-        </p>
+        <p class="muted">{tn("presets.keeps", changes.length)}</p>
       {/if}
       <label>
-        Name
+        {t("presets.name")}
         <input type="text" maxlength="14" bind:value={name} />
       </label>
       {#if nameError}<p class="error">{nameError}</p>{/if}
       <div class="actions">
-        <button type="button" onclick={() => (storing = null)}>Cancel</button>
-        <button class="primary" type="submit" disabled={!!nameError || busy}>Store</button>
+        <button type="button" onclick={() => (storing = null)}>{t("common.cancel")}</button>
+        <button class="primary" type="submit" disabled={!!nameError || busy}
+          >{t("presets.store")}</button
+        >
       </div>
     </form>
   {/if}
@@ -229,35 +232,36 @@
 {#if importing !== null}
   <div class="backdrop" role="presentation" onclick={() => (busy ? null : (importing = null))}></div>
   <form class="card dialog" onsubmit={importPreset}>
-    <h2>Import "{importing.info.name}"</h2>
+    <h2>{t("presets.import_title", { name: importing.info.name })}</h2>
     <p class="muted">
-      From {importing.file}. Every current setting is replaced; the outputs are muted while it
-      loads (a few seconds).
-      {#if importing.unsaved}<strong class="unsaved"
-          >The current setup has UNSAVED CHANGES: they will be lost.</strong
-        >{/if}
+      {t("presets.import_help", { file: importing.file })}
+      {#if importing.unsaved}<strong class="unsaved">{t("presets.lost")}</strong>{/if}
     </p>
     <label>
-      Then
+      {t("presets.then")}
       <select bind:value={importSlot}>
-        <option value={0}>keep it as the live setup only</option>
+        <option value={0}>{t("presets.keep_live")}</option>
         {#each device?.presets ?? [] as preset (preset.slot)}
-          <option value={preset.slot}>store it to {label(preset.slot)} ({preset.name})</option>
+          <option value={preset.slot}
+            >{t("presets.store_it", { slot: label(preset.slot), name: preset.name })}</option
+          >
         {/each}
       </select>
     </label>
     {#if importSlot > 0}
-      <p class="muted">This overwrites the preset stored in {label(importSlot)}.</p>
+      <p class="muted">{t("presets.overwrite_slot", { slot: label(importSlot) })}</p>
       <label>
-        Name
+        {t("presets.name")}
         <input type="text" maxlength="14" bind:value={importName} />
       </label>
       {#if importNameError}<p class="error">{importNameError}</p>{/if}
     {/if}
     <div class="actions">
-      <button type="button" disabled={busy} onclick={() => (importing = null)}>Cancel</button>
+      <button type="button" disabled={busy} onclick={() => (importing = null)}
+        >{t("common.cancel")}</button
+      >
       <button class="primary" type="submit" disabled={!!importNameError || busy || app.readOnly}
-        >{busy ? "Loading…" : "Load"}</button
+        >{busy ? t("presets.loading") : t("presets.load")}</button
       >
     </div>
   </form>

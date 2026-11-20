@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // Vertical meter of the Live view: linear dBu scale over the range set in Settings (−40 to
   // +20 dBu by default), graduated every 10 dB, colour zones
   // (dimmed behind the level), peak hold, and markers at the compressor and limiter thresholds.
@@ -72,7 +73,7 @@
       <span style:bottom={`${pos(db) * 100}%`}>{db > 0 ? `+${db}` : db}</span>
     {/each}
   </div>
-  <div class="bar" role="meter" aria-label="Level in dBu" aria-valuenow={level ?? BOTTOM}
+  <div class="bar" role="meter" aria-label={t("meter.level_dbu")} aria-valuenow={level ?? BOTTOM}
     aria-valuemin={BOTTOM} aria-valuemax={TOP}>
     <div class="zones" style:background={ZONES} style:opacity={METER_BACKGROUND_OPACITY}></div>
     <div
@@ -96,7 +97,7 @@
         class="mark"
         style:bottom={`${pos(compThreshold) * 100}%`}
         style:--c={COMP_COLOR}
-        title={`Compressor threshold ${compThreshold} dBu`}>C</span
+        title={t("meter.comp_threshold", { db: compThreshold })}>C</span
       >
     {/if}
     {#if limitThreshold !== null}
@@ -104,7 +105,7 @@
         class="mark"
         style:bottom={`${pos(limitThreshold) * 100}%`}
         style:--c={LIMIT_COLOR}
-        title={`Limiter threshold ${limitThreshold} dBu`}>L</span
+        title={t("meter.limit_threshold", { db: limitThreshold })}>L</span
       >
     {/if}
   </div>

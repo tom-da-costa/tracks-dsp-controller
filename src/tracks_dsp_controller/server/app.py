@@ -168,9 +168,14 @@ def create_app(
                 {"error": "wrong_code", "message": "wrong code"}, status_code=401
             )
         if master.logins_blocked:
-            owner = master.state().owner_name or "the master"
+            name = master.state().owner_name
+            owner = name or "the master"
             return JSONResponse(  # type: ignore[return-value]
-                {"error": "logins_blocked", "message": f"New connections are blocked by {owner}"},
+                {
+                    "error": "logins_blocked",
+                    "message": f"New connections are blocked by {owner}",
+                    "owner": name,  # for the UI's own words
+                },
                 status_code=403,
             )
         client = auth.open_session(body.name, read_only=read_only)

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, type TextKey } from "../lib/i18n/index.svelte";
   // Compressor, limiter or noise gate: a ratio choice plus numeric fields.
   import { app } from "../lib/app.svelte";
   import { inStrip } from "../lib/layout";
@@ -21,23 +22,23 @@
 
   let { kind, path, values, reduction = null, id, title }: Props = $props();
 
-  const TITLES: Record<Kind, string> = {
-    compressor: "Compressor",
-    limiter: "Limiter",
-    gate: "Noise gate",
-  };
+  const TITLES = {
+    compressor: "dyn.compressor",
+    limiter: "dyn.limiter",
+    gate: "dyn.gate",
+  } as const satisfies Record<Kind, TextKey>;
   const FIELDS: Record<Kind, FieldKey[]> = {
     compressor: ["threshold_db", "knee_db", "attack_ms", "release_ms"],
     limiter: ["threshold_db", "attack_ms", "release_ms"],
     gate: ["threshold_db", "attack_ms", "hold_ms", "release_ms"],
   };
-  const LABELS: Record<FieldKey, string> = {
-    threshold_db: "Threshold",
-    knee_db: "Knee",
-    attack_ms: "Attack",
-    hold_ms: "Hold",
-    release_ms: "Release",
-  };
+  const LABELS = {
+    threshold_db: "dyn.threshold",
+    knee_db: "dyn.knee",
+    attack_ms: "dyn.attack",
+    hold_ms: "dyn.hold",
+    release_ms: "dyn.release",
+  } as const satisfies Record<FieldKey, TextKey>;
 
   const vertical = inStrip();
   const limits = $derived(app.hello?.limits);
@@ -57,10 +58,10 @@
   }
 </script>
 
-<Section id={id ?? kind} title={title ?? TITLES[kind]} {kind}>
+<Section id={id ?? kind} title={title ?? t(TITLES[kind])} {kind}>
   {#snippet actions()}
     {#if reduction !== null}
-      <span class="led" class:on={reduction} title="Active (from the meters)"
+      <span class="led" class:on={reduction} title={t("dyn.active")}
         >{kind === "limiter" ? "LIM" : "COMP"}</span
       >
     {/if}
@@ -69,9 +70,9 @@
     {#if kind === "compressor"}
       <div class="bare-ratio">
       <label class="choice">
-        <span>Ratio</span>
+        <span>{t("dyn.ratio")}</span>
         <select
-          aria-label="Ratio"
+          aria-label={t("dyn.ratio")}
           value={values.ratio}
           disabled={!editable}
           onchange={(e) => set("ratio", Number((e.currentTarget as HTMLSelectElement).value))}
@@ -86,7 +87,7 @@
       {@const [min, max] = range(key, limits)}
       {#if key === "threshold_db"}
         <Field
-          label={LABELS[key]}
+          label={t(LABELS[key])}
           value={values[key] ?? 0}
           {min}
           {max}
@@ -98,7 +99,7 @@
         />
       {:else if key === "knee_db"}
         <Field
-          label={LABELS[key]}
+          label={t(LABELS[key])}
           value={values[key] ?? 0}
           {min}
           {max}
@@ -111,7 +112,7 @@
         />
       {:else}
         <Field
-          label={LABELS[key]}
+          label={t(LABELS[key])}
           value={values[key] ?? min}
           {min}
           {max}

@@ -3,6 +3,7 @@
   // and model; the preset row below shows only the preset), and a panel with every DSP of the
   // server at a glance (status, preset) to switch to another. One DSP is just the case n = 1.
   import { app } from "../lib/app.svelte";
+  import { statusText, t, tn } from "../lib/i18n/index.svelte";
   import type { DeviceEntry } from "../lib/types";
 
   interface Props {
@@ -13,23 +14,15 @@
   let { expanded, onpick }: Props = $props();
   let open = $state(false);
 
-  const STATUS_TEXT: Record<string, string> = {
-    online: "online",
-    offline: "offline",
-    connecting: "connecting",
-    initialising: "reading",
-    stopped: "stopped",
-  };
-
   const current = $derived(app.currentDevice);
   const index = $derived(app.devices.findIndex((d) => d.id === app.deviceId) + 1);
   // Under the name: the model when online, else what is wrong.
   const detail = $derived(
     !app.connected
-      ? "no server"
+      ? t("rail.no_server")
       : current?.status === "online"
         ? (app.status?.model ?? current.model)
-        : `DSP ${STATUS_TEXT[current?.status ?? "connecting"] ?? current?.status}`,
+        : `DSP ${statusText(current?.status ?? "connecting")}`,
   );
   // The folded rail has room for a few letters of the name.
   const short = $derived((app.deviceId ?? "?").slice(0, 3));
@@ -53,9 +46,7 @@
     if (open && event.key === "Escape") open = false;
   }
 
-  const title = $derived(
-    `DSP ${app.deviceId ?? ""} (${app.devices.length} DSPs on this server): pick another`,
-  );
+  const title = $derived(tn("rail.dsp_title", app.devices.length, { name: app.deviceId ?? "" }));
 </script>
 
 <svelte:window {onkeydown} />
@@ -82,8 +73,8 @@
 </button>
 
 {#if open}
-  <button class="backdrop" aria-label="Close the DSP list" onclick={() => (open = false)}></button>
-  <div class="panel" role="dialog" aria-label="DSPs on this server">
+  <button class="backdrop" aria-label={t("rail.dsp_close")} onclick={() => (open = false)}></button>
+  <div class="panel" role="dialog" aria-label={t("rail.dsp_list")}>
     <h2>DSPs</h2>
     <ul>
       {#each app.devices as entry (entry.id)}
@@ -104,10 +95,10 @@
               <span class="line small">
                 {#if entry.status === "online"}
                   <span>{slot(entry)} {entry.preset_name}</span>
-                  {#if entry.modified}<span class="unsaved">● unsaved</span>{/if}
+                  {#if entry.modified}<span class="unsaved">{t("rail.unsaved")}</span>{/if}
                 {:else}
                   <span class="muted"
-                    >{STATUS_TEXT[entry.status] ?? entry.status}{entry.error
+                    >{statusText(entry.status)}{entry.error
                       ? `: ${entry.error}`
                       : ""}</span
                   >

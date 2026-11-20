@@ -97,7 +97,10 @@ update these together:
 
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
   (`feat:`, `fix:`, `docs:`, `ci:` …).
-- Code, comments, docs and UI strings are in English.
+- Code, comments and docs are in English. UI strings go in `web/src/lib/i18n/en.ts` (the
+  reference) and in every other catalogue of that folder, with the same `{placeholders}`
+  (`i18n.test.ts` checks it); the in-app help of each language names buttons and tabs as its
+  catalogue does. Say in the pull request which translations need a native speaker's review.
 - Keep a pull request focused on one topic, and update the docs it affects.
 - Code or test vectors copied from another project keep their origin and copyright notice in
   the file itself (its header, or the `.meta.toml` of a fixture); the projects are listed in

@@ -4,6 +4,7 @@
   // the stored preset as it last saw it (after a recall or a store): before that it is not
   // known, and the list cannot be made.
   import { app } from "../lib/app.svelte";
+  import { t, tn } from "../lib/i18n/index.svelte";
   import { channelOf, describe, type UnsavedChange } from "../lib/changes";
   import { links } from "../lib/links.svelte";
 
@@ -52,7 +53,7 @@
 
   function revertAll() {
     const n = changes?.length ?? 0;
-    if (!changes || !confirm(n === 1 ? "Undo the unsaved change?" : `Undo the ${n} unsaved changes?`))
+    if (!changes || !confirm(tn("changes.undo_confirm", n)))
       return;
     for (const change of changes) revert(change);
   }
@@ -64,23 +65,20 @@
       <button class="toggle" aria-expanded={open} onclick={() => (open = !open)}>
         <span aria-hidden="true">{open ? "▾" : "▸"}</span>
         {#if !known}
-          Unsaved changes
+          {t("changes.title")}
         {:else if changes === null}
-          Unsaved changes…
+          {t("changes.loading")}
         {:else}
-          {changes.length} unsaved change{changes.length === 1 ? "" : "s"}
+          {tn("changes.count", changes.length)}
         {/if}
       </button>
       {#if known && changes && changes.some((c) => c.revert)}
-        <button class="small" disabled={app.readOnly} onclick={revertAll}>Undo all</button>
+        <button class="small" disabled={app.readOnly} onclick={revertAll}>{t("changes.undo_all")}</button>
       {/if}
     </div>
     {#if open}
       {#if !known}
-        <p class="muted">
-          The server has not seen this preset recalled or stored since it started, so it cannot
-          tell what changed. Recall or store it to follow the changes from then on.
-        </p>
+        <p class="muted">{t("changes.unknown")}</p>
       {:else if changes !== null}
         {#each groups as [path, list] (path)}
           <div class="channel">
@@ -97,8 +95,8 @@
                     <button
                       class="small"
                       disabled={app.readOnly}
-                      title={`Back to ${text.before}`}
-                      onclick={() => revert(change)}>Undo</button
+                      title={t("changes.back_to", { value: text.before })}
+                      onclick={() => revert(change)}>{t("changes.undo")}</button
                     >
                   {:else}
                     <span></span>

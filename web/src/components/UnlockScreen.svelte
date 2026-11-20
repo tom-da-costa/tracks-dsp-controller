@@ -2,6 +2,7 @@
   // Asks for the access code to unlock the screen (opened from the rail's "Unlock screen").
   // No backdrop: the screen stays readable behind it.
   import { app } from "../lib/app.svelte";
+  import { t } from "../lib/i18n/index.svelte";
 
   interface Props {
     onclose: () => void;
@@ -26,22 +27,22 @@
 <svelte:window onkeydown={(e) => e.key === "Escape" && onclose()} />
 
 <div class="anchor">
-  <form class="card" onsubmit={submit} aria-label="Unlock the screen">
-    <p>Type the access code to unlock the screen.</p>
+  <form class="card" onsubmit={submit} aria-label={t("unlock.label")}>
+    <p>{t("unlock.prompt")}</p>
     <!-- svelte-ignore a11y_autofocus -->
     <input
       type="password"
       inputmode="numeric"
       autocomplete="off"
-      aria-label="Access code"
+      aria-label={t("login.code")}
       bind:value={pin}
       autofocus
       required
     />
     {#if error}<p class="error" role="alert">{error}</p>{/if}
     <div class="buttons">
-      <button type="button" onclick={onclose}>Cancel</button>
-      <button class="primary" type="submit" disabled={busy || !pin || !app.connected}>Unlock</button>
+      <button type="button" onclick={onclose}>{t("common.cancel")}</button>
+      <button class="primary" type="submit" disabled={busy || !pin || !app.connected}>{t("unlock.unlock")}</button>
     </div>
   </form>
 </div>

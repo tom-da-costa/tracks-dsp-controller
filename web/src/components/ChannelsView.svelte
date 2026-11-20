@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // "Channels" tab: one sub-tab per channel (per link group with "Merge linked channels"), each
   // showing all of its settings.
   import { app } from "../lib/app.svelte";
@@ -23,5 +24,5 @@
   const current = $derived(links.lead(nav.channel));
 </script>
 
-<ChipBar {items} selected={current} onselect={(p) => nav.selectChannel(p)} label="Channel" />
+<ChipBar {items} selected={current} onselect={(p) => nav.selectChannel(p)} label={t("channel.channel")} />
 <ChannelDetail path={current} />

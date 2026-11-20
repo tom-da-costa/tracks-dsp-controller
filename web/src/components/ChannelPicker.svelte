@@ -8,6 +8,7 @@
   // it. The parent is the positioning box (position: relative). With `width`, the panel also
   // sets the width of the strips (Live and the Params strips share it).
   import { app } from "../lib/app.svelte";
+  import { t } from "../lib/i18n/index.svelte";
   import { links } from "../lib/links.svelte";
   import type { ChannelSelection } from "../lib/selection.svelte";
   import { WIDTH_PERCENT, type StripWidth } from "../lib/stripwidth.svelte";
@@ -43,18 +44,18 @@
       class:filtered={!allShown}
       aria-expanded={open}
       disabled={locked}
-      title="Channels shown"
+      title={t("picker.shown")}
       onclick={() => (open = !open)}
     >
       {count}/{all.length} {open ? "▴" : "▾"}
     </button>
     {#if open}
-      <button class="scrim" aria-label="Close" tabindex="-1" onclick={() => (open = false)}></button>
+      <button class="scrim" aria-label={t("common.close")} tabindex="-1" onclick={() => (open = false)}></button>
     {/if}
   {/if}
-<div class="picker" role="group" aria-label="Channels shown">
+<div class="picker" role="group" aria-label={t("picker.shown")}>
   <button class="quick" class:on={allShown} disabled={locked} onclick={() => selection.showAll(prefix)}
-    >All</button
+    >{t("picker.all")}</button
   >
   {#if !side}
     <button
@@ -86,31 +87,31 @@
     </button>
   {/each}
   {#if fold && width}
-    <div class="width" role="group" aria-label="Strip width">
-      <span class="label">Width <span class="pct">{width.shown} %</span></span>
+    <div class="width" role="group" aria-label={t("picker.width_group")}>
+      <span class="label">{t("picker.width")} <span class="pct">{width.shown} %</span></span>
       <button
         class="fit"
         class:on={width.fit}
         aria-pressed={width.fit}
-        title="Share the screen's width between the channels shown"
-        onclick={() => width.fitScreen()}>Fit screen</button
+        title={t("picker.fit_title")}
+        onclick={() => width.fitScreen()}>{t("picker.fit")}</button
       >
       <span class="break"></span>
-      <button class="step" aria-label="Narrower" onclick={() => width.nudge(-1)}>−</button>
+      <button class="step" aria-label={t("picker.narrower")} onclick={() => width.nudge(-1)}>−</button>
       <input
         type="range"
         min={WIDTH_PERCENT.min}
         max={WIDTH_PERCENT.max}
         step={WIDTH_PERCENT.step}
         value={width.shown}
-        aria-label="Strip width"
+        aria-label={t("picker.width_group")}
         oninput={(e) => width.set(Number(e.currentTarget.value))}
       />
-      <button class="step" aria-label="Wider" onclick={() => width.nudge(1)}>+</button>
+      <button class="step" aria-label={t("picker.wider")} onclick={() => width.nudge(1)}>+</button>
       <button
         class="step"
-        aria-label="Default width"
-        title="Default width"
+        aria-label={t("picker.default_width")}
+        title={t("picker.default_width")}
         disabled={width.percent === null && !width.fit}
         onclick={() => width.reset()}>↺</button
       >

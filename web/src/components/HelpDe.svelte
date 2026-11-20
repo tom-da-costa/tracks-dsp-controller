@@ -1,6 +1,6 @@
 <script lang="ts">
-  // German user guide, shown by Help.svelte (which holds the styles). The rest of the UI is in
-  // English, so the names of buttons and tabs stay in English here, as they appear on screen.
+  // German user guide, shown by Help.svelte (which holds the styles). Buttons and tabs are named
+  // as the German UI shows them (lib/i18n/de.ts): keep both in step.
 </script>
 
 <section id="help-start">
@@ -32,7 +32,7 @@
     <dd>Klappt die Leiste auf, um die Namen der Tabs zu zeigen; nochmals tippen zum Einklappen.</dd>
     <dt>DSP (Punkt, Name und Modell)</dt>
     <dd>
-      Der DSP, den dieser Tab steuert. Der Punkt ist grün, wenn er online ist, und rot, wenn der DSP oder der Server nicht erreichbar ist: Ein Banner oben zeigt dann, welcher (<em>SERVER</em> oder <em>DSP</em>). Die angezeigten Werte sind die zuletzt bekannten, und die Bedienelemente sind gesperrt, bis die Verbindung von selbst zurückkommt (<em>Retry now</em> versucht es sofort). Antippen öffnet die Liste der DSPs des Servers (etwa ein Hauptsystem und eine Delay-Line): Status, Preset und ungespeicherte Änderungen; einen antippen wechselt zu ihm. Jeder Browser-Tab kann einen anderen DSP zeigen. <em>Take control</em> gilt für alle DSPs des Servers.
+      Der DSP, den dieser Tab steuert. Der Punkt ist grün, wenn er online ist, und rot, wenn der DSP oder der Server nicht erreichbar ist: Ein Banner oben zeigt dann, welcher (<em>SERVER</em> oder <em>DSP</em>). Die angezeigten Werte sind die zuletzt bekannten, und die Bedienelemente sind gesperrt, bis die Verbindung von selbst zurückkommt (<em>Jetzt erneut versuchen</em> versucht es sofort). Antippen öffnet die Liste der DSPs des Servers (etwa ein Hauptsystem und eine Delay-Line): Status, Preset und ungespeicherte Änderungen; einen antippen wechselt zu ihm. Jeder Browser-Tab kann einen anderen DSP zeigen. <em>Kontrolle übernehmen</em> gilt für alle DSPs des Servers.
     </dd>
     <dt>Preset</dt>
     <dd>
@@ -46,16 +46,16 @@
     <dt>👤 Ihr Name</dt>
     <dd>
       Der beim Anmelden angegebene Name, so wie die anderen ihn sehen. Antippen öffnet
-      <em>Settings</em>.
+      <em>Einstellungen</em>.
     </dd>
-    <dt>✋ Take control</dt>
+    <dt>✋ Kontrolle übernehmen</dt>
     <dd>
       Schaltet die anderen Geräte auf „nur lesen“, solange Sie arbeiten (siehe <em>Zu
       mehreren gleichzeitig</em>).
     </dd>
-    <dt>🔒 Lock screen</dt>
+    <dt>🔒 Bildschirm sperren</dt>
     <dd>Schaltet dieses Gerät auf „nur lesen“, bis der Zugangscode eingegeben wird.</dd>
-    <dt>⛶ Full screen</dt>
+    <dt>⛶ Vollbild</dt>
     <dd>Blendet die Leisten des Browsers aus (Handys und Computer, die es erlauben).</dd>
   </dl>
 </section>
@@ -77,34 +77,34 @@
     </dd>
     <dt>🔀 Matrix</dt>
     <dd>Das Routing-Raster: welche Eingänge auf welchen Ausgang gehen.</dd>
-    <dt>🎚 Params</dt>
+    <dt>🎚 Parameter</dt>
     <dd>
-      Eine Einstellung nach der anderen, auf allen gewählten Kanälen: Gain, Delay, EQ, Filters,
-      Comp, Limit, Gate und GEQ. Die meisten erscheinen als ein Kanalzug pro Kanal nebeneinander,
+      Eine Einstellung nach der anderen, auf allen gewählten Kanälen: Gain, Delay, EQ, Filter,
+      Comp, Limiter, Gate und GEQ. Die meisten erscheinen als ein Kanalzug pro Kanal nebeneinander,
       um sie zu vergleichen und gemeinsam einzustellen. EQ zeigt pro Kanal einen Frequenzgang mit
       seiner Bandliste.
     </dd>
-    <dt>🔈 Channels</dt>
+    <dt>🔈 Kanäle</dt>
     <dd>
       Alles zu einem Kanal auf einer Seite: Pegelanzeige mit CLIP / CMP / LIM, Frequenzgang (mit
-      den Kurven anderer Kanäle darüber, wenn Sie sie unter <em>Compare with</em> wählen) und
+      den Kurven anderer Kanäle darüber, wenn Sie sie unter <em>Vergleichen mit</em> wählen) und
       alle Einstellungen. Den Kanal in der oberen Reihe wählen.
     </dd>
-    <dt>▥ All-in-one</dt>
+    <dt>▥ Gesamtansicht</dt>
     <dd>
       Eine Spalte pro Kanal mit den Einstellungen, die oben gewählt sind, in der Reihenfolge, in
-      der man ein System einstellt: Name, Link, Matrix, Filters, Comp, Limit, Gain, EQ, Delay,
+      der man ein System einstellt: Name, Link, Matrix, Filter, Comp, Limiter, Gain, EQ, Delay,
       dann Gate und GEQ (nur Eingänge, anfangs ausgeblendet). <strong>Mute</strong> steht unter
       jeder Pegelanzeige. Praktisch am Computer, um ein ganzes System zu überblicken.
     </dd>
-    <dt>🚨 Too loud</dt>
+    <dt>🚨 Zu laut</dt>
     <dd>
       Eine große Anzeige für die Person, die die Lautstärke regelt. Sie leuchtet, sobald
       mindestens ein Kompressor oder Limiter eines Ausgangs arbeitet, und nennt welche.
       Gelegentliches Aufblinken ist in Ordnung; bleibt sie an, die Lautstärke senken. Die
       Helligkeit wird unten eingestellt.
     </dd>
-    <dt>🧮 Limiter calc</dt>
+    <dt>🧮 Limiter-Rechner</dt>
     <dd>
       Berechnet Kompressor- und Limiter-Schwellen, die Ihre Lautsprecher schützen, aus der
       Verstärkung der Endstufe, Leistung und Impedanz des Lautsprechers und der Gehäuseart, und
@@ -114,12 +114,12 @@
     </dd>
     <dt>☰ Presets</dt>
     <dd>Presets des DSP laden und speichern (siehe <em>Presets</em>).</dd>
-    <dt>⚙ Settings</dt>
+    <dt>⚙ Einstellungen</dt>
     <dd>
       Aktualisierungsrate der Anzeigen, Anzeigeoptionen, wer verbunden ist, das Gerät (siehe
       <em>Einstellungen</em>).
     </dd>
-    <dt>❓ Help</dt>
+    <dt>❓ Hilfe</dt>
     <dd>Diese Seite.</dd>
   </dl>
 </section>
@@ -127,28 +127,28 @@
 <section id="help-channels">
   <h2>Angezeigte Kanäle wählen</h2>
   <p>
-    Live, Params und All-in-one haben über den Kanälen eine Reihe von Tasten:
-    <strong>All</strong> (alle), <strong>In</strong> (nur Eingänge), <strong>Out</strong> (nur
+    Live, Parameter und Gesamtansicht haben über den Kanälen eine Reihe von Tasten:
+    <strong>Alle</strong>, <strong>In</strong> (nur Eingänge), <strong>Out</strong> (nur
     Ausgänge), dann eine Taste pro Kanal (A–D für die Eingänge, 1–8 für die Ausgänge, mit ihren
     Namen). Eine leuchtende Taste bedeutet, dass der Kanal angezeigt wird; einen Kanal antippen
     blendet ihn ein oder aus.
   </p>
   <ul>
     <li>
-      Auf einem Smartphone klappt die Reihe in Live und in den Streifen-Ansichten von Params
+      Auf einem Smartphone klappt die Reihe in Live und in den Streifen-Ansichten von Parameter
       zu einer kleinen Taste oben rechts über den Kanälen zusammen, die zeigt, wie viele
       angezeigt werden (z. B. 12/12), damit die Kanäle oben am Bildschirm beginnen: antippen
       öffnet die Tasten, daneben tippen schließt sie.
     </li>
     <li>
-      In diesem Feld stellt <strong>Width</strong> die Breite der Kanäle ein (Live und die
-      Streifen-Ansichten von Params, in Prozent ihrer üblichen Breite), um mehr davon
-      gleichzeitig zu sehen; <strong>Fit screen</strong> teilt die Bildschirmbreite auf die
+      In diesem Feld stellt <strong>Breite</strong> die Breite der Kanäle ein (Live und die
+      Streifen-Ansichten von Parameter, in Prozent ihrer üblichen Breite), um mehr davon
+      gleichzeitig zu sehen; <strong>An Bildschirm anpassen</strong> teilt die Bildschirmbreite auf die
       angezeigten Kanäle auf (und folgt einer Drehung oder einer anderen Auswahl), ↺ stellt
       die Standardbreite wieder her. Wird auf diesem Gerät gespeichert.
     </li>
     <li>
-      Live und Params teilen eine Auswahl (und eine Breite), All-in-one hat seine eigene; auf
+      Live und Parameter teilen eine Auswahl (und eine Breite), die Gesamtansicht hat seine eigene; auf
       diesem Gerät gespeichert.
     </li>
     <li>
@@ -156,7 +156,7 @@
       ihrer Gruppe.
     </li>
     <li>
-      Mit <em>Merge linked channels</em> (Settings) erscheint eine Gruppe verlinkter Kanäle als
+      Mit <em>Verlinkte Kanäle zusammenfassen</em> (Einstellungen) erscheint eine Gruppe verlinkter Kanäle als
       ein Kanal, z. B. „Out 1+5“.
     </li>
     <li>Das Band mit <em>IN | OUT</em> trennt die Eingänge von den Ausgängen.</li>
@@ -178,7 +178,7 @@
       darunter verstellt ihn schnell; die Zahl antippen, um sie einzugeben. Werte werden immer
       auf das gerundet, was der DSP speichern kann.
     </dd>
-    <dt>On / Off Tasten</dt>
+    <dt>Ein / Aus Tasten</dt>
     <dd>Leuchtend (grün) heißt an. MUTE und Bypass leuchten rot, wenn sie aktiv sind.</dd>
     <dt>Abschnitte</dt>
     <dd>Den Titel eines Abschnitts (mit dem Pfeil ›) antippen, um ihn ein- oder auszuklappen.</dd>
@@ -190,7 +190,7 @@
     </dd>
     <dt>Kennzeichen</dt>
     <dd>
-      Eine als „unverified“ markierte Einstellung wurde noch nicht an einem echten DSP 408
+      Eine als „ungeprüft“ markierte Einstellung wurde noch nicht an einem echten DSP 408
       getestet; an einem echten DSP lässt sie sich nur ändern, wenn der Server mit
       <code>--experimental</code> gestartet wurde.
     </dd>
@@ -203,28 +203,28 @@
     Standardmäßig kann jeder alles ändern; die letzte Änderung gilt, und alle sehen sie sofort.
   </p>
   <dl>
-    <dt>✋ Take control</dt>
+    <dt>✋ Kontrolle übernehmen</dt>
     <dd>
       Solange Sie die Kontrolle haben, sind die anderen Geräte auf „nur lesen“ (sie zeigen, wer
-      sie hat). <em>Release control</em> antippen, wenn Sie fertig sind. Die Kontrolle wird nach
+      sie hat). <em>Kontrolle abgeben</em> antippen, wenn Sie fertig sind. Die Kontrolle wird nach
       einer Weile ohne Aktion von Ihnen automatisch freigegeben (die Leiste zeigt die
       verbleibende Zeit).
     </dd>
-    <dt>🔒 Lock screen</dt>
+    <dt>🔒 Bildschirm sperren</dt>
     <dd>
       Schaltet <strong>dieses</strong> Gerät auf „nur lesen“, für ein unbeaufsichtigtes Handy
       oder einen Computer: Alles bleibt sichtbar (auch die Anzeigen) und die Ansicht bleibt, wo
-      sie ist, aber nichts kann geändert oder gewechselt werden. <em>Unlock screen</em> fragt
+      sie ist, aber nichts kann geändert oder gewechselt werden. <em>Bildschirm entsperren</em> fragt
       nach dem Zugangscode. Die Sperre bleibt auch nach einem Neuladen bestehen.
     </dd>
-    <dt>Master (Settings)</dt>
+    <dt>Master (Einstellungen)</dt>
     <dd>
-      Eine Person kann unter <em>Settings › Connected clients</em> mit <em>Become master</em>
-      Master werden. Der Master kann einen anderen Client mit <em>Disconnect</em> trennen (er
+      Eine Person kann unter <em>Einstellungen › Verbundene Clients</em> mit <em>Master werden</em>
+      Master werden. Der Master kann einen anderen Client mit <em>Trennen</em> hinauswerfen (er
       landet wieder auf der Anmeldeseite und muss den Zugangscode erneut eingeben) und mit
-      <em>Block new connections</em> neue Verbindungen sperren: Niemand kann sich mehr anmelden,
-      bereits verbundene Browser bleiben verbunden. Die Sperre endet, wenn der Master <em>Stop
-      being master</em> antippt, sich abmeldet oder die App seit 5 Minuten geschlossen hat. Um
+      <em>Neue Verbindungen sperren</em> neue Verbindungen sperren: Niemand kann sich mehr anmelden,
+      bereits verbundene Browser bleiben verbunden. Die Sperre endet, wenn der Master <em>Nicht mehr
+      Master sein</em> antippt, sich abmeldet oder die App seit 5 Minuten geschlossen hat. Um
       jemanden auszuschließen: erst trennen, dann sperren.
     </dd>
     <dt>👁 Nur-Lese-Zugang</dt>
@@ -232,9 +232,9 @@
       Die Anmeldung mit dem Ansichtscode öffnet einen Nur-Lese-Zugang: alles wird angezeigt (Pegel, Einstellungen,
       Presets), nichts lässt sich ändern, und der Server lehnt es ab, was auch immer der
       Bildschirm zeigt. Für einen Gast oder ein am FOH liegendes Telefon. Die Seitenleiste
-      zeigt <em>Read-only access</em> statt <em>Take control</em>, und die Client-Liste
+      zeigt <em>Nur-Lese-Zugang</em> statt <em>Kontrolle übernehmen</em>, und die Client-Liste
       kennzeichnet diese Clients. Um etwas zu ändern, abmelden und mit dem Zugangscode
-      anmelden. Der Ansichtscode steht unter Settings › Connected clients (für Sitzungen mit
+      anmelden. Der Ansichtscode steht unter Einstellungen › Verbundene Clients (für Sitzungen mit
       dem Zugangscode); legt ihn der Server nicht fest (<code>--view-pin</code>), ist er bei
       jedem Start ein neuer Zufallscode, und <code>--view-pin off</code> schaltet den
       Nur-Lese-Zugang ab.
@@ -249,13 +249,13 @@
     selbst. Der DSP speichert 20 davon (U01–U20) plus die Werkseinstellung (F00).
   </p>
   <dl>
-    <dt>Recall</dt>
+    <dt>Laden</dt>
     <dd>
       Lädt ein Preset: <strong>alle aktuellen Einstellungen werden ersetzt</strong>. Hat das
       aktuelle Setup ungespeicherte Änderungen, gehen sie verloren (die App fragt vorher). Das
       dauert einige Sekunden.
     </dd>
-    <dt>Store</dt>
+    <dt>Speichern</dt>
     <dd>
       Speichert das aktuelle Setup in einen Preset-Platz, mit einem Namen (höchstens 14 einfache
       Zeichen). Der bisherige Inhalt dieses Platzes wird überschrieben. F00 kann nicht
@@ -263,18 +263,18 @@
     </dd>
     <dt>Ungespeicherte Änderungen</dt>
     <dd>
-      Angezeigt durch einen orangefarbenen Punkt in der Seitenleiste und „● unsaved changes“
-      auf dieser Seite, mit einer Taste <em>Save to Uxx</em>, um sie ins aktuelle Preset zu
+      Angezeigt durch einen orangefarbenen Punkt in der Seitenleiste und „● ungespeicherte Änderungen“
+      auf dieser Seite, mit einer Taste <em>In Uxx speichern</em>, um sie ins aktuelle Preset zu
       speichern. Die Liste darunter zeigt, was sich geändert hat, eine Zeile pro Einstellung
-      (gespeicherter Wert → aktueller Wert), mit <em>Undo</em>, um eine Einstellung
-      zurückzusetzen, oder <em>Undo all</em>; beim Abrufen eines Presets wird aufgelistet, was
+      (gespeicherter Wert → aktueller Wert), mit <em>Rückgängig</em>, um eine Einstellung
+      zurückzusetzen, oder <em>Alle rückgängig</em>; beim Abrufen eines Presets wird aufgelistet, was
       verloren geht. Der Server kennt das gespeicherte Preset, sobald er es abgerufen oder
       gespeichert gesehen hat: vorher lassen sich die Änderungen nicht auflisten.
     </dd>
-    <dt>Export / Import .prs</dt>
+    <dt>.prs exportieren / importieren</dt>
     <dd>
-      Preset-Dateien des offiziellen t.racks-Editors. <em>Export live setup</em> speichert das
-      aktuelle Setup in eine Datei. <em>Import .prs…</em> lädt eine Datei in den DSP (<strong>alle
+      Preset-Dateien des offiziellen t.racks-Editors. <em>Aktuelles Setup exportieren</em> speichert das
+      aktuelle Setup in eine Datei. <em>.prs importieren…</em> lädt eine Datei in den DSP (<strong>alle
       aktuellen Einstellungen werden ersetzt</strong>; die Ausgänge sind während des Ladens stumm)
       und kann sie gleichzeitig in einen Preset-Platz speichern. Matrix-Pegel und der PEQ-Bypass
       sind in diesen Dateien nicht enthalten.
@@ -285,45 +285,51 @@
 <section id="help-settings">
   <h2>Einstellungen</h2>
   <dl>
-    <dt>Meters · Refresh rate</dt>
+    <dt>Pegelanzeigen · Aktualisierungsrate</dt>
     <dd>
       Wie oft die Pegelanzeigen aktualisiert werden (1 bis 10 Mal pro Sekunde). Gilt für alle
       verbundenen Geräte.
     </dd>
-    <dt>Meters · Scale bottom / top</dt>
+    <dt>Pegelanzeigen · Skala unten / oben</dt>
     <dd>
       Der Bereich aller Pegelanzeigen, standardmäßig −40 bis +20 dBu (+20 dBu ist das Maximum des
       DSP). Pegel, CLIP und Farben ändern sich nicht. Nur dieses Gerät.
     </dd>
-    <dt>Meters · Segments</dt>
+    <dt>Pegelanzeigen · Segmente</dt>
     <dd>
       Zeigt die Pegelanzeigen als durchgehenden Balken (Standard) oder in Segmenten von 1, 2, 5
       oder 10 dB wie eine LED-Anzeige: Ein Segment leuchtet, sobald der Pegel es erreicht, in der
       Farbe seiner Oberkante. Nur dieses Gerät.
     </dd>
-    <dt>Display · Merge linked channels</dt>
+    <dt>Anzeige · Sprache</dt>
+    <dd>
+      Die Sprache der App (auch auf dem Anmeldebildschirm und oben in dieser Hilfe). Sie folgt
+      der des Browsers, bis eine gewählt wird. Einheiten und DSP-Begriffe (PEQ, HPF, dBu…)
+      bleiben unverändert. Nur dieses Gerät.
+    </dd>
+    <dt>Anzeige · Verlinkte Kanäle zusammenfassen</dt>
     <dd>
       Zeigt jede Gruppe verlinkter Kanäle als einen Kanal in allen Ansichten (außer Matrix und
       Link). Eine Änderung gilt für die ganze Gruppe; Namen und Routing bleiben pro
       Kanal. Nur dieses Gerät.
     </dd>
-    <dt>Display · Signal indicator (SIG)</dt>
+    <dt>Anzeige · Signalanzeige (SIG)</dt>
     <dd>
       Der Pegel, ab dem SIG leuchtet (Standard −60 dBu). Ein nicht angeschlossener Eingang zeigt
       etwa −86 dBu. Nur dieses Gerät.
     </dd>
-    <dt>Connected clients</dt>
+    <dt>Verbundene Clients</dt>
     <dd>Alle, die die App gerade benutzen, und wer die Kontrolle hat.</dd>
-    <dt>Device</dt>
+    <dt>Gerät</dt>
     <dd>
-      Status, Modell und Firmware des DSP und die Version der App. <em>Refresh from device</em>
-      liest alle Einstellungen neu aus dem DSP. <em>Disconnect from DSP and shutdown</em> beendet
+      Status, Modell und Firmware des DSP und die Version der App. <em>Vom Gerät neu lesen</em>
+      liest alle Einstellungen neu aus dem DSP. <em>Vom DSP trennen und beenden</em> beendet
       den Server sauber: Er gibt den DSP frei (der nur ein Programm gleichzeitig annimmt, z. B.
       für den t.racks-Editor) und beendet dann die App für alle. Der DSP behält seine
       Einstellungen. Nicht möglich, solange jemand anderes die Kontrolle hat oder Master ist.
     </dd>
-    <dt>This browser</dt>
-    <dd><em>Log out</em> meldet nur dieses Gerät ab; der Server läuft weiter.</dd>
+    <dt>Dieser Browser</dt>
+    <dd><em>Abmelden</em> meldet nur dieses Gerät ab; der Server läuft weiter.</dd>
   </dl>
 </section>
 
@@ -342,7 +348,7 @@
       bis 0 dBu, gelb bis +6, orange bis +12, rot darüber. Der Pegel wird orange, wenn ein
       Kompressor arbeitet, dunkelorange, wenn ein Limiter arbeitet, rot bei Clipping.
       <strong>SIG</strong> leuchtet, solange ein Kanal Signal führt (über −60 dBu, einstellbar
-      unter Settings).
+      unter Einstellungen).
     </dd>
     <dt>Gain</dt>
     <dd>Die Lautstärke des Kanals in dB (−60 bis +12). 0 dB lässt den Pegel unverändert.</dd>
@@ -368,7 +374,7 @@
       den Klang auf die Lautsprecher (Frequenzweiche). Die Flankensteilheit (slope) sagt, wie
       steil abgeschnitten wird (6 bis 48 dB pro Oktave), und die Charakteristik: BW
       (Butterworth), BL (Bessel) oder LR (Linkwitz-Riley, die übliche Wahl, um zwei
-      Lautsprecher zu verbinden). <em>Off</em> schaltet den Filter ab.
+      Lautsprecher zu verbinden). <em>Aus</em> schaltet den Filter ab.
     </dd>
     <dt>EQ (parametrischer Equalizer)</dt>
     <dd>
@@ -394,7 +400,7 @@
     <dd>
       Auf den Ausgängen: eine Obergrenze, die der Ausgangspegel nicht überschreitet, zum Schutz
       von Endstufen und Lautsprechern. LIM leuchtet, solange er arbeitet; bleibt es an, wird
-      die Anlage zu stark gefahren. Der Tab <em>Limiter calc</em> berechnet eine sichere
+      die Anlage zu stark gefahren. Der Tab <em>Limiter-Rechner</em> berechnet eine sichere
       Schwelle für Ihre Lautsprecher.
     </dd>
     <dt>Noise Gate</dt>
@@ -415,7 +421,7 @@
       EQ, Filter, Dynamik, Delay…), außer Namen und Routing. Beim Verlinken ist der erste Kanal
       (die kleinste Nummer) der Master: Seine Einstellungen werden auf die anderen kopiert. Für
       Stereopaare (z. B. linker und rechter Subwoofer). Unter den Kanälen lässt sich mit
-      <em>Channel names</em> jeder Kanal gleich umbenennen.
+      <em>Kanalnamen</em> jeder Kanal gleich umbenennen.
     </dd>
   </dl>
 </section>
@@ -429,7 +435,7 @@
     </li>
     <li>Senken Sie die Lautstärke vor größeren Änderungen an Filtern, EQ oder Routing.</li>
     <li>
-      Achten Sie auf den Tab Too loud oder die LIM-Anzeigen: Ein Limiter, der dauerhaft
+      Achten Sie auf den Tab Zu laut oder die LIM-Anzeigen: Ein Limiter, der dauerhaft
       leuchtet, heißt leiser machen.
     </li>
     <li>

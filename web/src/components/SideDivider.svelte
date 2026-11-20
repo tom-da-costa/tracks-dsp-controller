@@ -1,9 +1,10 @@
 <script lang="ts">
   // Between the inputs and the outputs of the views with one strip per channel: a band with
   // "IN" and "OUT" written vertically, so that the two groups are told apart at a glance.
+  import { t } from "../lib/i18n/index.svelte";
 </script>
 
-<div class="side-divider" role="separator" aria-orientation="vertical" aria-label="Inputs | Outputs">
+<div class="side-divider" role="separator" aria-orientation="vertical" aria-label={t("strip.sides")}>
   <span>IN</span>
   <span class="line"></span>
   <span>OUT</span>

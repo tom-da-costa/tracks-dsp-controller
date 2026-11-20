@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // A setting of the Params tab (delay, filters, dynamics) as one strip per channel, like the
   // mixer: the fields stand up as vertical sliders (lib/layout.ts). With a strip width set in
   // the folded picker's panel on a phone (shared with Live), a strip gets that width and its
@@ -78,7 +79,7 @@
         class:muted={channel.mute}
         style:--ch={app.color(path)}
       >
-        <button class="name" onclick={() => nav.open(path)} title="Open this channel">
+        <button class="name" onclick={() => nav.open(path)} title={t("common.open_channel")}>
           <span class="slot">{links.slot(path)}{links.mark(path)}</span>
           <strong>{links.name(path)}</strong>
         </button>
@@ -86,7 +87,7 @@
       </section>
     {/if}
   {:else}
-    <p class="muted">No channel selected: pick some above.</p>
+    <p class="muted">{t("common.no_channel")}</p>
   {/each}
 </div>
 </div>

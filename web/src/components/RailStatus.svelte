@@ -3,6 +3,7 @@
   // the server's other DSPs, if any) and the active preset (unsaved changes, demo).
   // Folded, it shows the preset slot; expanded, the full text.
   import { app } from "../lib/app.svelte";
+  import { t } from "../lib/i18n/index.svelte";
   import { nav } from "../lib/nav.svelte";
   import DevicePicker from "./DevicePicker.svelte";
 
@@ -20,9 +21,9 @@
   const presetTitle = $derived(
     [
       `DSP ${app.deviceId ?? ""}`,
-      device ? `preset ${slot} ${device.preset_name}` : "",
-      device?.modified ? "unsaved changes" : "",
-      app.hello?.demo ? "demo (simulated DSP)" : "",
+      device ? t("rail.preset", { slot, name: device.preset_name }) : "",
+      device?.modified ? t("rail.unsaved_changes") : "",
+      app.hello?.demo ? t("rail.demo") : "",
     ]
       .filter(Boolean)
       .join(" · "),
@@ -44,9 +45,9 @@
     <span class="text">
       <strong>{device?.preset_name || "—"}</strong>
       <small>
-        {#if device?.modified}<span class="unsaved">● unsaved</span>{/if}
+        {#if device?.modified}<span class="unsaved">{t("rail.unsaved")}</span>{/if}
         {#if app.hello?.demo}<span class="demo">DEMO</span>{/if}
-        <span class="muted">Preset {slot}</span>
+        <span class="muted">{t("rail.preset_slot", { slot })}</span>
       </small>
     </span>
   </button>

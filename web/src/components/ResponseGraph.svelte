@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // Frequency response of one channel (filters + PEQ + GEQ), computed from its settings, with
   // the total curves of other channels picked in the "Compare with" row. The PEQ bands are
   // edited on the graph: drag a band's marker (horizontally: frequency, vertically: gain, for
@@ -20,7 +21,7 @@
     title?: string;
   }
 
-  let { path, compact = false, title = "Frequency response" }: Props = $props();
+  let { path, compact = false, title }: Props = $props();
 
   const isOutput = $derived(path.startsWith("outputs."));
   const index = $derived(Number(path.split(".")[1]));
@@ -169,7 +170,7 @@
     const v = valuesOf(active);
     if (!v) return "";
     const gain = usesGain(typeName(active)) ? ` · ${formatDb(v.gain_db)} dB` : "";
-    return `Band ${active + 1} · ${formatHz(v.freq_hz)} Hz${gain} · Q ${formatQ(v.q)}`;
+    return `${t("graph.band", { n: active + 1 })} · ${formatHz(v.freq_hz)} Hz${gain} · Q ${formatQ(v.q)}`;
   });
 
   const response = $derived(
@@ -257,25 +258,25 @@
 
 <section class="card graph" class:compact>
   <header>
-    <h2>{title}</h2>
+    <h2>{title ?? t("graph.title")}</h2>
     <span class="legend">
-      <span class="key total"></span>total
+      <span class="key total"></span>{t("graph.total")}
       <span class="key xo"></span>HPF / LPF
-      <span class="key band"></span>EQ bands
+      <span class="key band"></span>{t("graph.bands")}
       {#if response?.geq}<span class="key geq"></span>GEQ{/if}
       {#each others as o (o.path)}<span class="key" style:background={o.color}></span><span style:color={o.color}>{o.name}</span>{/each}
     </span>
   </header>
   {#if !compact}
   <div class="compare">
-    <span class="muted">Compare with</span>
+    <span class="muted">{t("graph.compare")}</span>
     <ChipBar
       items={allChannels
         .filter(([p]) => p !== path)
         .map(([p]) => ({ key: p, label: links.slot(p), color: app.color(p) }))}
       selected={overlays.paths.filter((p) => p !== path)}
       onselect={(p) => overlays.toggle(p)}
-      label="Channels to overlay"
+      label={t("graph.overlay")}
     />
   </div>
   {/if}
@@ -286,7 +287,7 @@
         {width}
         height={HEIGHT}
         role="img"
-        aria-label="Frequency response of the channel"
+        aria-label={t("graph.aria")}
       >
         <defs>
           <clipPath id={`clip-${path}`}>
@@ -323,7 +324,7 @@
               class:off={m.off}
               role="slider"
               tabindex="-1"
-              aria-label={`EQ band ${m.n}: drag for frequency and gain, mouse wheel for Q`}
+              aria-label={t("graph.band_aria", { n: m.n })}
               aria-valuenow={shown?.peq[m.n - 1]?.freq_hz}
               onpointerdown={(e) => down(e, m.n - 1)}
               onpointermove={move}
@@ -347,11 +348,7 @@
     {/if}
   </div>
   {#if !compact}
-  <p class="note muted">
-    Computed from the settings with textbook filter shapes; the DSP's exact curves may differ
-    slightly. Channel gain, dynamics and delay are not included. Drag a band's marker to set its
-    frequency and gain; turn the mouse wheel over it for its Q.
-  </p>
+  <p class="note muted">{t("graph.note")}</p>
   {/if}
 </section>
 

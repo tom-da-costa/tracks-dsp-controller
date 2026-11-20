@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // "Live" tab: one strip per channel for running a show (meters, gain, mute, indicators).
   // The channels shown are picked in the top row and remembered in this browser, shared with
   // Params (same choice, same strip width).
@@ -31,7 +32,7 @@
       {/if}
       <LiveStrip {path} />
     {:else}
-      <p class="muted">No channel selected: pick some above.</p>
+      <p class="muted">{t("common.no_channel")}</p>
     {/each}
   </div>
 </div>

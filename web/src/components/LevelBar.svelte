@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // Horizontal live level of one channel, graduated every 10 dB (numbers below: every 10 dB,
   // every 20 dB when compact), with its CLIP / LIM / COMP indicators: small, in the bar; or, with
   // `indicators`, as a row under the meter like the Live view's (SIG first, CLIP held 2 s).
@@ -74,7 +75,7 @@
 </script>
 
 <div class="bar" class:compact>
-<div class="meter" class:compact aria-label="Level">
+<div class="meter" class:compact aria-label={t("meter.level")}>
   <div class="zones" style:background={zones} style:opacity={METER_BACKGROUND_OPACITY}></div>
   <div
     class="level"
@@ -101,7 +102,7 @@
 </div>
 {#if indicators}
   <div class="indicators">
-    <span class="big" class:lit={sig.lit} style:--c={SIGNAL_COLOR} title="Signal">SIG</span>
+    <span class="big" class:lit={sig.lit} style:--c={SIGNAL_COLOR} title={t("meter.signal")}>SIG</span>
     <span class="big" class:lit={clipHeld} style:--c="var(--danger)">CLIP</span>
     {#if comp !== null}<span class="big" class:lit={comp} style:--c={COMP_COLOR}>CMP</span>{/if}
     {#if limit !== null}<span class="big" class:lit={limit} style:--c={LIMIT_COLOR}>LIM</span>{/if}

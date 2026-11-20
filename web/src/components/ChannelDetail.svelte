@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, tn } from "../lib/i18n/index.svelte";
   // Every setting of one channel (the "Channels" tab).
   import { app } from "../lib/app.svelte";
   import { links } from "../lib/links.svelte";
@@ -48,7 +49,7 @@
 </script>
 
 {#if !channel}
-  <p class="muted">No such channel.</p>
+  <p class="muted">{t("channel.none")}</p>
 {:else}
   <div class="detail">
     <div class="top">
@@ -59,21 +60,15 @@
     </div>
 
     {#if merged}
-      <p class="linked">
-        🔗 Linked channels, shown as one: every change applies to all of them (the DSP does it),
-        except the name and the routing, set per channel below.
-      </p>
+      <p class="linked">{t("channel.merged")}</p>
     {:else if channel.linked.length}
-      <p class="linked">
-        🔗 Linked with {linkedNames}: the DSP applies every change except the name and the
-        routing to {channel.linked.length > 1 ? "them" : "it"} too.
-      </p>
+      <p class="linked">{tn("channel.linked", channel.linked.length, { names: linkedNames })}</p>
     {/if}
 
     <ResponseGraph {path} />
 
     <div class="sections">
-      <Section id="channel" title="Channel">
+      <Section id="channel" title={t("channel.channel")}>
         <ChannelMain {channel} {path} rename={!merged} />
         {#if merged}
           {#each members as member (member)}
@@ -93,7 +88,7 @@
               channel={memberOutput}
               path={member}
               id={merged ? `routing@${member}` : "routing"}
-              title={merged ? `Routing · ${slotLabel(member)}` : "Routing"}
+              title={merged ? t("routing.title_slot", { slot: slotLabel(member) }) : t("routing.title")}
             />
           {/if}
         {/each}

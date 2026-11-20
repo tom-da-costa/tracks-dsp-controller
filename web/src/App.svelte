@@ -18,6 +18,7 @@
   import RailLock from "./components/RailLock.svelte";
   import RailStatus from "./components/RailStatus.svelte";
   import { app } from "./lib/app.svelte";
+  import { t } from "./lib/i18n/index.svelte";
   import { nav, TABS, type Tab } from "./lib/nav.svelte";
 
   // The tab rail is always on the left; expanded it shows the labels (remembered per browser).
@@ -54,7 +55,7 @@
       if (document.fullscreenElement) await document.exitFullscreen();
       else await document.documentElement.requestFullscreen({ navigationUI: "hide" });
     } catch {
-      app.toast("Full screen is not available here", "error");
+      app.toast(t("app.fullscreen_unavailable"), "error");
     }
   }
 
@@ -93,18 +94,19 @@
   <Login />
 {:else if app.view === "app"}
   <div class="layout" class:expanded>
-    <nav aria-label="Views">
+    <nav aria-label={t("app.views")}>
       <button
         class="fold"
         onclick={toggleRail}
         aria-expanded={expanded}
-        aria-label={expanded ? "Collapse the tab bar" : "Expand the tab bar"}
-        title={expanded ? "Collapse" : "Expand"}
+        aria-label={expanded ? t("app.rail_collapse") : t("app.rail_expand")}
+        title={expanded ? t("app.collapse") : t("app.expand")}
       >
         <span class="icon" aria-hidden="true">{expanded ? "«" : "»"}</span>
       </button>
       <RailStatus {expanded} onpick={foldOnPhone} />
-      {#each TABS as [key, text, icon] (key)}
+      {#each TABS as [key, textKey, icon] (key)}
+        {@const text = t(textKey)}
         <button
           class:selected={nav.tab === key}
           onclick={() => select(key)}
@@ -122,15 +124,15 @@
           class="bottom"
           onclick={toggleFullscreen}
           aria-pressed={fullscreen}
-          title={fullscreen ? "Exit full screen" : "Full screen"}
+          title={fullscreen ? t("app.fullscreen_exit") : t("app.fullscreen")}
         >
           <span class="icon" aria-hidden="true">{fullscreen ? "🗗" : "⛶"}</span>
-          <span class="text">{fullscreen ? "Exit full screen" : "Full screen"}</span>
+          <span class="text">{fullscreen ? t("app.fullscreen_exit") : t("app.fullscreen")}</span>
         </button>
       {/if}
     </nav>
     {#if expanded}
-      <button class="scrim" aria-label="Collapse the tab bar" onclick={toggleRail}></button>
+      <button class="scrim" aria-label={t("app.rail_collapse")} onclick={toggleRail}></button>
     {/if}
     <div class="page">
       {#if app.device}<ConnectionBanner />{/if}
@@ -138,12 +140,13 @@
         {#if !app.device}
           <p class="muted center">
             {#if !app.connected}
-              Connecting to the server{app.deviceId ? ` (DSP ${app.deviceId})` : ""}…
+              {app.deviceId ? t("app.connecting_dsp", { dsp: app.deviceId }) : t("app.connecting")}
             {:else if app.status?.status === "offline"}
-              DSP unreachable{app.status.error ? ` (${app.status.error})` : ""}. The server keeps
-              trying…
+              {app.status.error
+                ? t("app.dsp_unreachable_error", { error: app.status.error })
+                : t("app.dsp_unreachable")}
             {:else}
-              Waiting for the DSP…
+              {t("app.waiting_dsp")}
             {/if}
           </p>
         {:else if nav.tab === "live"}

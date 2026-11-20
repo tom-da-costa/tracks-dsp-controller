@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // Gain, mute (unless `mute` is false) and phase of one channel, plus its name editor when
   // `rename` is set.
   import { app } from "../lib/app.svelte";
@@ -21,7 +22,7 @@
 
 {#if limits}
   <Field
-    label="Gain"
+    label={t("param.gain")}
     value={channel.gain_db}
     min={limits.gain_db[0]}
     max={limits.gain_db[1]}
@@ -41,7 +42,7 @@
       class:on={channel.mute}
       disabled={!app.editable("mute")}
       aria-pressed={channel.mute}
-      onclick={() => app.set(`${path}.mute`, !channel.mute)}>Mute</button
+      onclick={() => app.set(`${path}.mute`, !channel.mute)}>{t("common.mute")}</button
     >
   {/if}
   <button
@@ -49,8 +50,8 @@
     class:on={channel.phase}
     disabled={!app.editable("phase")}
     aria-pressed={channel.phase}
-    title="Phase invert"
-    onclick={() => app.set(`${path}.phase`, !channel.phase)}>Ø Phase</button
+    title={t("strip.phase_title")}
+    onclick={() => app.set(`${path}.phase`, !channel.phase)}>{t("channel.phase")}</button
   >
 </div>
 {#if rename}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, tn } from "../lib/i18n/index.svelte";
   import { app } from "../lib/app.svelte";
   import { usesGain as typeUsesGain } from "../lib/response";
   import { formatDb, formatHz, formatQ, logIndexStep } from "../lib/scale";
@@ -32,7 +33,7 @@
   }
 </script>
 
-<Section {id} title={title ?? `Parametric EQ · ${channel.peq.length} bands`} kind="peq">
+<Section {id} title={title ?? tn("peq.title", channel.peq.length)} kind="peq">
   {#snippet actions()}
     <button
       class="switch danger"
@@ -40,7 +41,7 @@
       disabled={!app.editable("peq_bypass")}
       aria-pressed={channel.peq_bypass}
       onclick={() => app.set(`${path}.peq_bypass`, !channel.peq_bypass)}
-      title="Bypass the whole parametric EQ">Bypass</button
+      title={t("peq.bypass_title")}>{t("peq.bypass")}</button
     >
   {/snippet}
   <ol class="bands" class:bypassed={channel.peq_bypass}>
@@ -51,7 +52,7 @@
         class:off={band.bypass}
         class:neutral
         class:open={expanded === n}
-        title={neutral ? "On, but at 0 dB: no effect" : undefined}
+        title={neutral ? t("peq.neutral") : undefined}
       >
         <div class="row">
           <button
@@ -70,14 +71,15 @@
             class:on={!band.bypass}
             disabled={!editable}
             aria-pressed={!band.bypass}
-            aria-label={`Band ${n + 1} ${band.bypass ? "off" : "on"}`}
-            onclick={() => setBand(n, { bypass: !band.bypass })}>{band.bypass ? "Off" : "On"}</button
+            aria-label={t(band.bypass ? "peq.band_off" : "peq.band_on", { n: n + 1 })}
+            onclick={() => setBand(n, { bypass: !band.bypass })}
+            >{band.bypass ? t("common.off") : t("common.on")}</button
           >
         </div>
         {#if expanded === n && profile && limits}
           <div class="editor">
             <label class="choice">
-              <span>Type</span>
+              <span>{t("peq.type")}</span>
               <select
                 value={band.type}
                 disabled={!editable}
@@ -87,7 +89,7 @@
               </select>
             </label>
             <Field
-              label="Frequency"
+              label={t("field.frequency")}
               value={band.freq_hz}
               min={profile.freq_min_hz}
               max={profile.freq_max_hz}
@@ -100,7 +102,7 @@
               onchange={(v) => setBand(n, { freq_hz: v })}
             />
             <Field
-              label="Gain"
+              label={t("param.gain")}
               value={band.gain_db}
               min={limits.eq_gain_db[0]}
               max={limits.eq_gain_db[1]}

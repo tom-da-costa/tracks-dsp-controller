@@ -5,35 +5,38 @@
 // #params/link and #params/matrix, their old addresses, lead there.
 
 import { app } from "./app.svelte";
+import type { TextKey } from "./i18n/index.svelte";
 
+/** The tabs: key, label (i18n key), icon. */
 export const TABS = [
-  ["live", "Live", "🎛"],
-  ["link", "Link", "🔗"],
-  ["matrix", "Matrix", "🔀"],
-  ["params", "Params", "🎚"],
-  ["channels", "Channels", "🔈"],
-  ["aio", "All-in-one", "▥"],
-  ["loud", "Too loud", "🚨"],
-  ["limiter", "Limiter calc", "🧮"],
-  ["presets", "Presets", "☰"],
-  ["settings", "Settings", "⚙"],
-  ["help", "Help", "❓"],
-] as const;
+  ["live", "tab.live", "🎛"],
+  ["link", "tab.link", "🔗"],
+  ["matrix", "tab.matrix", "🔀"],
+  ["params", "tab.params", "🎚"],
+  ["channels", "tab.channels", "🔈"],
+  ["aio", "tab.aio", "▥"],
+  ["loud", "tab.loud", "🚨"],
+  ["limiter", "tab.limiter", "🧮"],
+  ["presets", "tab.presets", "☰"],
+  ["settings", "tab.settings", "⚙"],
+  ["help", "tab.help", "❓"],
+] as const satisfies readonly (readonly [string, TextKey, string])[];
 export type Tab = (typeof TABS)[number][0];
 
-/** The settings, as the blocks of the all-in-one view (Params shows those of PARAM_TABS). */
+/** The settings, as the blocks of the all-in-one view (Params shows those of PARAM_TABS):
+ * key, label (i18n key). */
 export const PARAMS = [
-  ["gain", "Gain"],
-  ["delay", "Delay"],
-  ["eq", "EQ"],
-  ["filters", "Filters"],
-  ["comp", "Comp"],
-  ["limit", "Limit"],
-  ["gate", "Gate"],
-  ["geq", "GEQ"],
-  ["matrix", "Matrix"],
-  ["link", "Link"],
-] as const;
+  ["gain", "param.gain"],
+  ["delay", "param.delay"],
+  ["eq", "param.eq"],
+  ["filters", "param.filters"],
+  ["comp", "param.comp"],
+  ["limit", "param.limit"],
+  ["gate", "param.gate"],
+  ["geq", "param.geq"],
+  ["matrix", "param.matrix"],
+  ["link", "param.link"],
+] as const satisfies readonly (readonly [string, TextKey])[];
 export type Param = (typeof PARAMS)[number][0];
 
 /** The sub-tabs of "Params": every setting but Matrix and Link, which have their own tabs. */

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, thn } from "../lib/i18n/index.svelte";
   // Channel links: tap channels to select them, then link or unlink them. Linking copies the
   // settings of the first selected channel onto the others (the DSP does it), except names and
   // routing; afterwards every change on one member applies to the whole group. Each channel's
@@ -83,8 +84,12 @@
       {@const chosen = selected[side]}
       {@const linkedChosen = chosen.some((i) => groupOf(side, i) >= 0)}
       <section class="card">
-        <h2>{side === "inputs" ? "Inputs" : "Outputs"}</h2>
-        <div class="chips" role="group" aria-label={`${side} to link`}>
+        <h2>{side === "inputs" ? t("link.inputs") : t("link.outputs")}</h2>
+        <div
+          class="chips"
+          role="group"
+          aria-label={side === "inputs" ? t("link.inputs_aria") : t("link.outputs_aria")}
+        >
           {#each channels(side) as ch, i (i)}
             {@const g = groupOf(side, i)}
             <button
@@ -110,24 +115,27 @@
           {#each groups(side) as group, g (group.join())}
             <li>
               <span class="dot" style:background={app.color(`${side}.${group[0]}`)}></span>
-              Group {g + 1}: {group.map((i) => label(side, i)).join(" + ")}
+              {t("link.group", { n: g + 1, members: group.map((i) => label(side, i)).join(" + ") })}
             </li>
           {:else}
-            <li class="muted">No linked channels.</li>
+            <li class="muted">{t("link.none")}</li>
           {/each}
         </ul>
 
         {#if confirming === side}
           <div class="confirm">
             <p>
-              {chosen.slice(1).map((i) => label(side, i)).join(", ")}
-              {chosen.length > 2 ? "take" : "takes"} every setting of
-              <strong>{label(side, chosen[0] ?? 0)}</strong> (gain, delay, EQ, filters, dynamics…),
-              except the name and the routing. Then any change applies to the whole group.
+              {@html thn("link.confirm", chosen.length - 1, {
+                others: chosen
+                  .slice(1)
+                  .map((i) => label(side, i))
+                  .join(", "),
+                master: label(side, chosen[0] ?? 0),
+              })}
             </p>
             <div class="actions">
-              <button class="primary" disabled={busy} onclick={() => link(side)}>Link</button>
-              <button disabled={busy} onclick={() => (confirming = null)}>Cancel</button>
+              <button class="primary" disabled={busy} onclick={() => link(side)}>{t("link.link")}</button>
+              <button disabled={busy} onclick={() => (confirming = null)}>{t("common.cancel")}</button>
             </div>
           </div>
         {:else}
@@ -135,19 +143,19 @@
             <button
               class="primary"
               disabled={!editable || busy || chosen.length < 2}
-              onclick={() => (confirming = side)}>Link selected</button
+              onclick={() => (confirming = side)}>{t("link.link_selected")}</button
             >
             <button disabled={!editable || busy || !linkedChosen} onclick={() => unlink(side)}
-              >Unlink selected</button
+              >{t("link.unlink_selected")}</button
             >
             {#if chosen.length}
-              <button disabled={busy} onclick={() => (selected[side] = [])}>Clear</button>
+              <button disabled={busy} onclick={() => (selected[side] = [])}>{t("link.clear")}</button>
             {/if}
           </div>
         {/if}
 
         <details class="names" open>
-          <summary>Channel names</summary>
+          <summary>{t("link.names")}</summary>
           <div class="name-list">
             {#each channels(side) as ch, i (i)}
               <div style:--ch={app.color(`${side}.${i}`)}>
@@ -160,18 +168,12 @@
               </div>
             {/each}
           </div>
-          <p class="muted hint">
-            {nameLength} characters max, plain ASCII. Names are not copied by a link: each channel
-            keeps its own.
-          </p>
+          <p class="muted hint">{t("link.names_hint", { n: nameLength })}</p>
         </details>
       </section>
     {/each}
   </div>
-  <p class="muted hint">
-    Tap channels to select them. The first selected channel (lowest number) is the master. Linked
-    channels keep their own name and routing.
-  </p>
+  <p class="muted hint">{t("link.hint")}</p>
 {/if}
 
 <style>
