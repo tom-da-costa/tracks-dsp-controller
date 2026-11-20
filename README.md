@@ -69,6 +69,8 @@ On a phone, in landscape:
   with the role (released, logged out, or the app closed for 5 minutes).
 - **Lock screen**: this browser becomes read-only on its current view until the access code is
   typed, for a computer or phone left unattended; a reload stays locked.
+- **Mute all** (optional, Settings › Display): a button held for half a second mutes every
+  output of every DSP at once, even without control; *Restore* unmutes only what was on before.
 - **Clean shutdown**: *Disconnect from DSP and shutdown* (Settings) frees the DSPs (each accepts
   one program at a time, e.g. before opening the t.racks editor) and stops the server; with
   Docker Compose the container then stays stopped.

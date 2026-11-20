@@ -318,6 +318,18 @@
       Le niveau au-dessus duquel SIG s'allume (−60 dBu par défaut). Une entrée non branchée lit
       environ −86 dBu. Cet appareil uniquement.
     </dd>
+    <dt>Affichage · Afficher le bouton Tout muter</dt>
+    <dd>
+      Désactivé par défaut. Ajoute <em>Tout muter</em> en bas de la barre latérale : maintenez-le
+      une demi-seconde (une barre se remplit ; relâcher avant ne fait rien) et toutes les sorties
+      de tous les DSP sont mutées d'un coup, avant toute modification en attente. Toute personne
+      avec un accès complet peut s'en servir, même sans avoir la main ou derrière le verrouillage
+      d'écran. Un bandeau indique alors à tous qui a muté ; <em>Rétablir…</em> ne démute que les
+      sorties qui étaient actives avant (pas sur un DSP où un autre preset a été chargé depuis),
+      <em>Fermer</em> les laisse mutées. Les deux demandent d'avoir la main. Un DSP hors ligne
+      est muté dès son retour. Rien n'est bloqué ensuite : c'est une action, pas un mode. Cet
+      appareil uniquement.
+    </dd>
     <dt>Clients connectés</dt>
     <dd>Toutes les personnes qui utilisent l'application en ce moment, et qui a le contrôle.</dd>
     <dt>Appareil</dt>

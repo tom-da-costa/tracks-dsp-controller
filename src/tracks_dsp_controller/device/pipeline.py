@@ -6,6 +6,8 @@
 * Writes go before meter polls, but a poll runs as soon as its period has elapsed, so the meter
   rate holds even while writes keep coming. After a poll, a waiting write goes first: on a slow
   link a poll can last longer than the meter period, and polls alone would then starve writes.
+* An ``urgent`` request (the panic mute) jumps ahead of the queued writes and of a due meter
+  poll; urgent requests keep their order among themselves.
 * ``exclusive()`` pauses the worker so a caller can run a multi-request sequence (preset recall,
   config read) directly on the connection.
 * A timeout is retried; after ``max_failures`` consecutive failures, after a timeout with no
@@ -46,6 +48,7 @@ class _Item:
     request: cmd.Request
     on_ack: Callable[[], object] | None
     futures: list[asyncio.Future[rsp.Response]] = field(default_factory=list)
+    urgent: bool = False
 
 
 @dataclass
@@ -115,12 +118,17 @@ class CommandPipeline:
 
     # --- API ------------------------------------------------------------------------------------
     async def submit(
-        self, request: cmd.Request, *, on_ack: Callable[[], object] | None = None
+        self,
+        request: cmd.Request,
+        *,
+        on_ack: Callable[[], object] | None = None,
+        urgent: bool = False,
     ) -> rsp.Response:
         """Queue a request and wait for its response.
 
         ``on_ack`` runs once, when the device acknowledged the request actually sent; for
-        coalesced writes that is the newest one.
+        coalesced writes that is the newest one. ``urgent`` puts it ahead of every queued
+        request that is not urgent (a coalesced write it replaces moves forward with it).
         """
         if self.closed:
             raise PipelineClosedError("pipeline is closed")
@@ -132,13 +140,27 @@ class CommandPipeline:
             existing.on_ack = on_ack
             existing.futures.append(future)
             self.stats.coalesced += 1
+            if urgent and not existing.urgent:
+                self._queue.remove(existing)
+                self._queue_urgent(existing)
         else:
             item = _Item(request, on_ack, [future])
-            self._queue.append(item)
+            if urgent:
+                self._queue_urgent(item)
+            else:
+                self._queue.append(item)
             if key is not None:
                 self._by_key[key] = item
         self._wake.set()
         return await future
+
+    def _queue_urgent(self, item: _Item) -> None:
+        """Insert after the urgent items already queued (they stay in order)."""
+        item.urgent = True
+        position = 0
+        while position < len(self._queue) and self._queue[position].urgent:
+            position += 1
+        self._queue.insert(position, item)
 
     @contextlib.asynccontextmanager
     async def exclusive(self) -> AsyncIterator[Requester]:
@@ -154,7 +176,8 @@ class CommandPipeline:
             while True:
                 async with self._gate:
                     due = self.clock() - self._last_poll >= self.meter_interval
-                    if due and not (self._queue and self._polled_last):
+                    urgent = bool(self._queue) and self._queue[0].urgent
+                    if due and not urgent and not (self._queue and self._polled_last):
                         self._polled_last = True
                         await self._poll()
                         continue

@@ -12,6 +12,7 @@ import type {
   DeviceState,
   Hello,
   MasterMessage,
+  PanicMessage,
   LockMessage,
   Meters,
   ResultMessage,
@@ -33,7 +34,15 @@ const REQUEST_TIMEOUT_MS = 10_000;
 // Preset recall (~3 s) and store (~7.5 s) on a DSP 408, plus re-reading the configuration
 // (~50 requests: 23 s in all behind a link with 300 ms of latency, measured).
 const SLOW_REQUEST_TIMEOUT_MS = 60_000;
-const SLOW_REQUESTS = new Set(["preset.recall", "preset.store", "preset.export", "resync", "link.set"]);
+const SLOW_REQUESTS = new Set([
+  "preset.recall",
+  "preset.store",
+  "preset.export",
+  "resync",
+  "link.set",
+  "panic",
+  "panic.restore",
+]);
 // Loading a preset file: up to a few hundred writes, then maybe a store (~7.5 s).
 const IMPORT_TIMEOUT_MS = 180_000;
 const ACTIVITY_INTERVAL_MS = 10_000;
@@ -83,6 +92,8 @@ class App {
   lockDeadline = $state<number | null>(null);
   /** Master role (the `master` messages). */
   master = $state<MasterMessage | null>(null);
+  /** Mute all (the `panic` messages). */
+  panic = $state<PanicMessage | null>(null);
   /** Why the login screen is shown, e.g. "Disconnected by Alice" (cleared on login). */
   loginNotice = $state("");
   /** Screen lock: this browser is read-only (the screen stays readable) until the access code
@@ -194,6 +205,7 @@ class App {
     this.resetDevice();
     this.devices = [];
     this.master = null;
+    this.panic = null;
     this.screenLocked = false;
     this.connected = false;
     this.retries = 0;
@@ -406,6 +418,9 @@ class App {
         break;
       case "master":
         this.master = msg as unknown as MasterMessage;
+        break;
+      case "panic":
+        this.panic = msg as unknown as PanicMessage;
         break;
       case "screen_lock":
         this.screenLocked = msg.locked as boolean;

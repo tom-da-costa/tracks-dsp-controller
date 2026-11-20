@@ -38,6 +38,7 @@ from tracks_dsp_controller.server.auth import (
 from tracks_dsp_controller.server.devices import Device, DeviceManager
 from tracks_dsp_controller.server.lock import LockManager, LockState
 from tracks_dsp_controller.server.master import MasterManager, MasterState
+from tracks_dsp_controller.server.panic import PanicManager
 from tracks_dsp_controller.server.settings import ServerConfig
 from tracks_dsp_controller.state.registry import HARDWARE_VERIFIED, ParamError, is_verified
 from tracks_dsp_controller.state.store import Patch, Snapshot, StoreEvent
@@ -46,8 +47,8 @@ log = logging.getLogger(__name__)
 
 QUEUE_SIZE = 256
 SHUTDOWN_FLUSH_S = 0.3  # lets the clients get the "shutdown" message before the server stops
-# Accepted while the session's screen is locked.
-SCREEN_LOCK_TYPES = {"screen.lock", "screen.unlock"}
+# Accepted while the session's screen is locked (mute all too: safety first).
+SCREEN_LOCK_TYPES = {"screen.lock", "screen.unlock", "panic"}
 # What a read-only session (opened with the view code) may send: nothing that changes anything,
 # on the DSP or on the server (control, master, settings).
 READ_ONLY_TYPES = {"activity", "changes", "preset.export", "screen.lock", "screen.unlock"}
@@ -70,6 +71,8 @@ BACKGROUND_TYPES = {
     "preset.export",
     "link.set",
     "resync",
+    "panic",
+    "panic.restore",
 }
 PRESET_FILE_MAX_BYTES = 16 * 1024  # a DSP 408 preset file is 1452 bytes
 # State paths shown in the overview of every DSP (the `devices` message).
@@ -135,6 +138,8 @@ class Hub:
         # Stops the server process (set by the CLI: uvicorn's should_exit).
         self.request_exit: Callable[[], None] | None = None
         self._meter_seq: dict[str, int] = {}
+        self.panic = PanicManager(devices)
+        self.panic.on_change(lambda record: self.broadcast(self.panic.message()))
         for device in devices:
             self._watch(device)
         lock.on_change(self._on_lock)
@@ -230,6 +235,7 @@ class Hub:
     def _on_status(self, device: Device) -> None:
         self.broadcast(self.device_message(device), device=device)
         self.broadcast(self.devices_message())
+        self.panic.device_online(device)
 
     def _on_profile(self, device: Device) -> None:
         """Another model was detected: its clients get the new channel counts and ranges."""
@@ -350,6 +356,7 @@ class Hub:
         self._send(client, self.device_message(device))
         self._send(client, self.lock_message())
         self._send(client, self.master_message())
+        self._send(client, self.panic.message())
         self.master.presence(client.id, True)
         self.broadcast(self.clients_message())
         try:
@@ -472,6 +479,7 @@ class Hub:
             case "preset.recall":
                 self._require_lock(client)
                 await session.recall(_int(message, "slot"), client.id)
+                self.panic.forget(device)
             case "preset.store":
                 self._require_lock(client)
                 name = message.get("name")
@@ -488,6 +496,7 @@ class Hub:
                 if name is not None and not isinstance(name, str):
                     raise RequestError("invalid", "name must be a string")
                 loaded = await session.import_preset(data, client.id, slot=slot, name=name)
+                self.panic.forget(device)
                 return {"name": loaded.name, "notes": list(loaded.notes)}
             case "changes":
                 found = session.unsaved_changes()
@@ -510,6 +519,15 @@ class Hub:
                 if not isinstance(side, str) or not _int_groups(groups):
                     raise RequestError("invalid", "side must be a string, groups lists of ints")
                 await session.set_links(side, groups, client.id)
+            case "panic":
+                # Whoever has control: safety first (a read-only session cannot).
+                return {"dsps": await self.panic.trigger(client.id, client.session.name)}
+            case "panic.restore":
+                self._require_lock(client)
+                return {"dsps": await self.panic.restore(client.id, client.session.name)}
+            case "panic.dismiss":
+                self._require_lock(client)
+                self.panic.dismiss()
             case "lock.acquire":
                 if not self.lock.acquire(client.id, client.session.name):
                     raise RequestError("locked", "another client has control")

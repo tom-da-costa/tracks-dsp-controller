@@ -139,6 +139,27 @@ export const fr: Messages = {
   "rail.unlock": "Déverrouiller l'écran",
   "rail.unlock_title": "Déverrouiller l'écran (demande le code d'accès)",
 
+  // --- Mute all ----------------------------------------------------------------------------------
+  "panic.button": "Tout muter",
+  "panic.hold": "maintenir pour muter",
+  "panic.title": "Muter toutes les sorties de tous les DSP : maintenir une demi-seconde",
+  "panic.done": "Toutes les sorties sont mutées",
+  "panic.muted_by": "Toutes les sorties mutées par <strong>{name}</strong> à {time}.",
+  "panic.pending": "hors ligne : muté dès son retour",
+  "panic.failed": "pas de réponse : muté de nouveau à la reconnexion",
+  "panic.restore": "Rétablir…",
+  "panic.restore_title":
+    "Démuter les sorties qui étaient actives avant « Tout muter » (il faut avoir la main)",
+  "panic.restore_confirm":
+    "Démuter les sorties qui étaient actives avant « Tout muter » ? Le son revient.",
+  "panic.restored": "Sorties rétablies",
+  "panic.not_restored": "Non rétabli : {why}",
+  "panic.why_offline": "hors ligne",
+  "panic.why_changed": "un autre preset a été chargé depuis",
+  "panic.why_failed": "pas de réponse",
+  "panic.dismiss": "Fermer",
+  "panic.dismiss_title": "Masquer ce bandeau ; les sorties restent telles quelles",
+
   // --- Settings -----------------------------------------------------------------------------------
   "settings.meters": "Vumètres",
   "settings.refresh_rate": "Fréquence de rafraîchissement",
@@ -158,6 +179,9 @@ export const fr: Messages = {
     "SIG s'allume tant que le niveau d'une voie dépasse ce seuil ({db} dBu par défaut ; une entrée non branchée lit environ −86 dBu). Ce navigateur seulement.",
   "settings.language_help":
     "La langue de l'application dans ce navigateur. Les unités et les termes du DSP (PEQ, HPF, dBu…) restent tels quels.",
+  "settings.panic": "Afficher le bouton Tout muter",
+  "settings.panic_help":
+    "Un bouton en bas de la barre latérale : maintenu une demi-seconde, il mute toutes les sorties de tous les DSP, même sans avoir la main ou derrière le verrouillage d'écran. Rétablir les sorties demande d'avoir la main. Ce navigateur seulement.",
   "settings.clients": "Clients connectés ({n})",
   "settings.you": "(vous)",
   "settings.badge_master": "maître",

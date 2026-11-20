@@ -139,6 +139,27 @@ export const de: Messages = {
   "rail.unlock": "Bildschirm entsperren",
   "rail.unlock_title": "Bildschirm entsperren (fragt nach dem Zugangscode)",
 
+  // --- Mute all ----------------------------------------------------------------------------------
+  "panic.button": "Alles stumm",
+  "panic.hold": "halten zum Stummschalten",
+  "panic.title": "Alle Ausgänge aller DSPs stummschalten: eine halbe Sekunde halten",
+  "panic.done": "Alle Ausgänge stummgeschaltet",
+  "panic.muted_by": "Alle Ausgänge stummgeschaltet von <strong>{name}</strong> um {time}.",
+  "panic.pending": "offline: wird stummgeschaltet, sobald er zurück ist",
+  "panic.failed": "keine Antwort: wird beim Wiederverbinden erneut stummgeschaltet",
+  "panic.restore": "Wiederherstellen…",
+  "panic.restore_title":
+    "Die Ausgänge wieder einschalten, die vor „Alles stumm“ an waren (braucht die Kontrolle)",
+  "panic.restore_confirm":
+    "Die Ausgänge wieder einschalten, die vor „Alles stumm“ an waren? Der Ton kommt zurück.",
+  "panic.restored": "Ausgänge wiederhergestellt",
+  "panic.not_restored": "Nicht wiederhergestellt: {why}",
+  "panic.why_offline": "offline",
+  "panic.why_changed": "seitdem wurde ein anderes Preset geladen",
+  "panic.why_failed": "keine Antwort",
+  "panic.dismiss": "Schließen",
+  "panic.dismiss_title": "Dieses Banner ausblenden; die Ausgänge bleiben, wie sie sind",
+
   // --- Settings -----------------------------------------------------------------------------------
   "settings.meters": "Pegelanzeigen",
   "settings.refresh_rate": "Aktualisierungsrate",
@@ -158,6 +179,9 @@ export const de: Messages = {
     "SIG leuchtet, solange der Pegel eines Kanals darüber liegt (standardmäßig {db} dBu; ein unbelegter Eingang zeigt etwa −86 dBu). Nur dieser Browser.",
   "settings.language_help":
     "Die Sprache der App in diesem Browser. Einheiten und DSP-Begriffe (PEQ, HPF, dBu…) bleiben unverändert.",
+  "settings.panic": "Taste „Alles stumm“ anzeigen",
+  "settings.panic_help":
+    "Eine Taste unten in der Seitenleiste: eine halbe Sekunde gehalten, schaltet sie alle Ausgänge aller DSPs stumm, auch ohne Kontrolle oder hinter der Bildschirmsperre. Zum Wiederherstellen braucht man die Kontrolle. Nur dieser Browser.",
   "settings.clients": "Verbundene Clients ({n})",
   "settings.you": "(Sie)",
   "settings.badge_master": "Master",

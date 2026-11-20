@@ -146,6 +146,7 @@ def create_app(
         finally:
             for task in tasks:
                 task.cancel()
+            await hub.panic.stop()
             await devices.stop()
 
     app = FastAPI(title="tracks-dsp-controller", version=__version__, lifespan=lifespan,

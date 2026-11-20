@@ -287,6 +287,17 @@
       The level above which SIG lights (−60 dBu by default). An unconnected input reads about
       −86 dBu. This device only.
     </dd>
+    <dt>Display · Show the Mute all button</dt>
+    <dd>
+      Off by default. Adds <em>Mute all</em> at the bottom of the side bar: hold it for half a
+      second (a bar fills up; letting go earlier does nothing) and every output of every DSP is
+      muted at once, ahead of any change waiting to be sent. Anyone with full access can use it,
+      even without control or behind the screen lock. A banner then tells everyone who muted;
+      <em>Restore…</em> unmutes only the outputs that were on before (not on a DSP where another
+      preset was loaded since), <em>Close</em> leaves them muted. Both need control. A DSP that
+      is offline is muted as soon as it is back. Nothing is blocked afterwards: it is a single
+      action, not a mode. This device only.
+    </dd>
     <dt>Connected clients</dt>
     <dd>Everyone using the app right now, and who has control.</dd>
     <dt>Device</dt>

@@ -318,6 +318,18 @@
       Der Pegel, ab dem SIG leuchtet (Standard −60 dBu). Ein nicht angeschlossener Eingang zeigt
       etwa −86 dBu. Nur dieses Gerät.
     </dd>
+    <dt>Anzeige · Taste „Alles stumm“ anzeigen</dt>
+    <dd>
+      Standardmäßig aus. Fügt unten in der Seitenleiste <em>Alles stumm</em> hinzu: eine halbe
+      Sekunde halten (ein Balken füllt sich; früher loslassen bewirkt nichts), und alle Ausgänge
+      aller DSPs werden sofort stummgeschaltet, vor allen noch wartenden Änderungen. Jeder mit
+      vollem Zugang kann sie benutzen, auch ohne Kontrolle oder hinter der Bildschirmsperre. Ein
+      Banner zeigt dann allen, wer stummgeschaltet hat; <em>Wiederherstellen…</em> schaltet nur
+      die Ausgänge wieder ein, die vorher an waren (nicht auf einem DSP, auf dem seitdem ein
+      anderes Preset geladen wurde), <em>Schließen</em> lässt sie stumm. Beides braucht die
+      Kontrolle. Ein DSP, der offline ist, wird stummgeschaltet, sobald er zurück ist. Danach
+      wird nichts gesperrt: es ist eine einzelne Aktion, kein Modus. Nur dieses Gerät.
+    </dd>
     <dt>Verbundene Clients</dt>
     <dd>Alle, die die App gerade benutzen, und wer die Kontrolle hat.</dd>
     <dt>Gerät</dt>

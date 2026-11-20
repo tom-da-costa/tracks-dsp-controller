@@ -431,8 +431,10 @@ class DeviceSession:
         """Validate a write without sending it (raises ``ParamError``)."""
         return resolve(path, value, self.store.state, self.profile)
 
-    async def write(self, path: str, value: Any, origin: str) -> Write:
-        """Send a parameter change; the store is updated after the device's ACK."""
+    async def write(self, path: str, value: Any, origin: str, *, urgent: bool = False) -> Write:
+        """Send a parameter change; the store is updated after the device's ACK.
+
+        ``urgent``: ahead of the queued writes (the panic mute)."""
         pipeline = self._require_pipeline()
         pending = self._inflight.get(path)
         if pending is not None and isinstance(value, dict):
@@ -444,6 +446,7 @@ class DeviceSession:
             await pipeline.submit(
                 write.request,
                 on_ack=lambda: self._apply_write(write.changes, origin),
+                urgent=urgent,
             )
         except CommandTimeoutError:
             self._resync_soon()
@@ -453,6 +456,25 @@ class DeviceSession:
                 if self._inflight.get(p) is v:
                     del self._inflight[p]
         return write
+
+    async def mute_outputs(self, origin: str) -> list[bool]:
+        """Panic: mute every output, ahead of the queued writes.
+
+        Returns whether each output was muted before. Raises like ``write`` if one of them
+        fails (the others are still sent)."""
+        self._require_pipeline()
+        before = [channel.mute for channel in self.store.state.outputs]
+        results = await asyncio.gather(
+            *(
+                self.write(f"outputs.{i}.mute", True, origin, urgent=True)
+                for i in range(len(before))
+            ),
+            return_exceptions=True,
+        )
+        for result in results:
+            if isinstance(result, BaseException):
+                raise result
+        return before
 
     async def recall(self, slot: int, origin: str) -> None:
         if not 0 <= slot <= self.profile.preset_count:
