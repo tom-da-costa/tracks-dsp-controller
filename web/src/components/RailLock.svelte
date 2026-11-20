@@ -3,6 +3,7 @@
   // clients become read-only) and the screen lock (lock / unlock: this browser becomes
   // read-only, the screen stays readable; unlocking asks for the access code).
   import { app } from "../lib/app.svelte";
+  import { t } from "../lib/i18n/index.svelte";
   import { nav } from "../lib/nav.svelte";
   import UnlockScreen from "./UnlockScreen.svelte";
 
@@ -46,20 +47,23 @@
 </script>
 
 <div class="block" class:expanded>
-  <button class="me" onclick={openSettings} disabled={app.screenLocked} title={`You are "${me}"`}>
+  <button class="me" onclick={openSettings} disabled={app.screenLocked} title={t("rail.you_are", { name: me })}>
     <span class="icon" aria-hidden="true">👤</span>
     <span class="name">{me}</span>
   </button>
 
   {#if app.viewOnly}
-    <div class="control other" title="Read-only access: logged in with the view code">
+    <div class="control other" title={t("rail.read_only_title")}>
       <span class="icon">👁</span>
-      <span class="text">Read-only access</span>
+      <span class="text">{t("rail.read_only")}</span>
     </div>
   {:else if app.lockedByOther}
-    <div class="control other" title={`Read-only: ${app.lock?.owner_name ?? "someone"} has control`}>
+    <div
+      class="control other"
+      title={t("rail.other_title", { name: app.lock?.owner_name ?? t("rail.someone") })}
+    >
       <span class="icon">✋</span>
-      <span class="text">{app.lock?.owner_name} has control</span>
+      <span class="text">{t("rail.has_control", { name: app.lock?.owner_name ?? "" })}</span>
     </div>
   {:else}
     <button
@@ -67,18 +71,16 @@
       class:mine={app.iOwnLock}
       onclick={toggleControl}
       disabled={!app.connected || app.screenLocked}
-      title={app.iOwnLock
-        ? "Release control: the other clients can change settings again"
-        : "Take control: the other clients become read-only"}
+      title={app.iOwnLock ? t("rail.release_title") : t("rail.take_title")}
     >
       <span class="icon">
         ✋
         {#if app.iOwnLock && remaining !== null && !expanded}<small>{mmss(remaining)}</small>{/if}
       </span>
       <span class="text two"
-        >{#if app.iOwnLock}Release control{#if remaining !== null}<small
-              >idle release in {mmss(remaining)}</small
-            >{/if}{:else}Take control{/if}</span
+        >{#if app.iOwnLock}{t("rail.release")}{#if remaining !== null}<small
+              >{t("rail.idle_release", { time: mmss(remaining) })}</small
+            >{/if}{:else}{t("rail.take")}{/if}</span
       >
     </button>
   {/if}
@@ -87,12 +89,10 @@
     class:locked={app.screenLocked}
     onclick={toggleScreen}
     disabled={!app.connected}
-    title={app.screenLocked
-      ? "Unlock the screen (asks for the access code)"
-      : "Lock the screen: nothing can be changed here until the access code is typed"}
+    title={app.screenLocked ? t("rail.unlock_title") : t("rail.lock_title")}
   >
     <span class="icon">🔒</span>
-    <span class="text">{app.screenLocked ? "Unlock screen" : "Lock screen"}</span>
+    <span class="text">{app.screenLocked ? t("rail.unlock") : t("rail.lock")}</span>
   </button>
   {#if unlocking && app.screenLocked}<UnlockScreen onclose={() => (unlocking = false)} />{/if}
 </div>

@@ -3,6 +3,7 @@
   // DSP. Values on screen are then the last known ones and every control is disabled. A short
   // grace delay keeps a quick reconnection (a missed update, one lost reply) from flashing it.
   import { app } from "../lib/app.svelte";
+  import { t } from "../lib/i18n/index.svelte";
 
   const GRACE_MS = 1_500;
 
@@ -33,34 +34,34 @@
   const dspText = $derived.by(() => {
     switch (app.status?.status) {
       case "connecting":
-        return "Connecting to the DSP…";
+        return t("banner.dsp_connecting");
       case "initialising":
-        return "Reading the DSP configuration…";
+        return t("banner.dsp_reading");
       case "stopped":
-        return "DSP connection stopped";
+        return t("banner.dsp_stopped");
       default:
-        return "DSP unreachable, the server is reconnecting…";
+        return t("banner.dsp_unreachable");
     }
   });
 </script>
 
 {#if showServer}
   <div class="banner server" role="alert">
-    <span class="tag">SERVER</span>
+    <span class="tag">{t("banner.server_tag")}</span>
     <span class="text">
       <strong>
-        Server unreachable, reconnecting{app.retries > 1 ? ` (attempt ${app.retries})` : ""}…
+        {app.retries > 1 ? t("banner.server_attempt", { n: app.retries }) : t("banner.server")}
       </strong>
-      <span class="muted">Last known values; controls disabled.</span>
+      <span class="muted">{t("banner.stale")}</span>
     </span>
-    <button onclick={() => app.reconnectNow()}>Retry now</button>
+    <button onclick={() => app.reconnectNow()}>{t("banner.retry")}</button>
   </div>
 {:else if showDsp}
   <div class="banner dsp" role="alert" title={app.status?.error ?? undefined}>
     <span class="tag">DSP</span>
     <span class="text">
       <strong>{dspText}</strong>
-      <span class="muted">Last known values; controls disabled.</span>
+      <span class="muted">{t("banner.stale")}</span>
     </span>
   </div>
 {/if}

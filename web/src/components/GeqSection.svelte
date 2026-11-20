@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import { app } from "../lib/app.svelte";
   import { formatDb, formatGeqFreq, GEQ_FREQS, snap } from "../lib/scale";
   import type { InputChannel } from "../lib/types";
@@ -13,7 +14,7 @@
     title?: string;
   }
 
-  let { channel, path, id = "geq", title = "Graphic EQ · 31 bands" }: Props = $props();
+  let { channel, path, id = "geq", title }: Props = $props();
 
   let selected = $state(17); // 1 kHz
   let confirmFlat = $state(false);
@@ -36,23 +37,23 @@
   }
 </script>
 
-<Section {id} {title} kind="geq">
+<Section {id} title={title ?? t("geq.title")} kind="geq">
   {#snippet actions()}
     {#if confirmFlat}
-      <button class="small danger" onclick={resetFlat}>Reset all?</button>
-      <button class="small" onclick={() => (confirmFlat = false)}>Cancel</button>
+      <button class="small danger" onclick={resetFlat}>{t("geq.reset")}</button>
+      <button class="small" onclick={() => (confirmFlat = false)}>{t("common.cancel")}</button>
     {:else}
       <button class="small" disabled={!editable || flat} onclick={() => (confirmFlat = true)}
-        >Flat</button
+        >{t("geq.flat")}</button
       >
     {/if}
   {/snippet}
   {#if limits}
     {@const [min, max] = limits.eq_gain_db}
-    <div class="bands" role="group" aria-label="Graphic EQ bands">
+    <div class="bands" role="group" aria-label={t("geq.bands")}>
       {#each channel.geq as gain, n (n)}
         <div class="band" class:selected={selected === n}>
-          <button class="val" onclick={() => (selected = n)} aria-label={`Select ${label(n)}`}
+          <button class="val" onclick={() => (selected = n)} aria-label={t("geq.select", { band: label(n) })}
             >{formatDb(gain)}</button
           >
           <div class="slot">

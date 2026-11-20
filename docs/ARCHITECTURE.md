@@ -195,6 +195,16 @@ varies and can exceed the 0.5 s that a DSP on the LAN needs.
 - **Channel colours** (`web/src/lib/colors.ts`): fixed by position (inputs and outputs have
   their own palettes), shown on strips, chips, headers, the response graph's overlays and the
   link groups. Linked channels take the colour of the lowest-numbered channel of their group.
+- **Languages** (`web/src/lib/i18n/`): one catalogue of strings per language (`en.ts` is the
+  reference; `fr`, `de`, `ru`, `zh` have the same keys, enforced by their type and by
+  `i18n.test.ts`), bundled with the app. `t()` fills `{placeholders}`, `tn()` picks the plural
+  form of the language (`Intl.PluralRules`), `th()` keeps the catalogue's `<strong>` / `<em>`
+  markup and escapes the values. The language follows `navigator.languages` until one is picked
+  (Settings, login screen, Help), then `localStorage`; the page's `lang` attribute follows it.
+  The server's messages stay in English: the UI words its `result` error codes itself
+  (`App.errorText`), and shows the English `message` only as the detail of `invalid`. Units, DSP
+  terms (PEQ, HPF, dBu, CLIP, U01) and user data (channel and preset names) are not translated.
+  The in-app help (`HelpXx.svelte`) names buttons and tabs as that language's UI does.
 - **Merge linked channels** (Settings, per browser; `web/src/lib/links.svelte.ts`): every view
   except the Matrix and Link tabs shows a link group as its lowest-numbered member, labelled with
   all members ("Out 1+5", "SubL / SubR"). Writes go to that member and the DSP applies them to
@@ -268,7 +278,7 @@ HTTP (JSON):
 
 | Method | Path | Body / result |
 |---|---|---|
-| `POST` | `/api/login` | `{pin, name?}` → sets the `session` cookie (HttpOnly, SameSite=Strict); 401 on a wrong code |
+| `POST` | `/api/login` | `{pin, name?}` → sets the `session` cookie (HttpOnly, SameSite=Strict); errors `{error, message}`: 401 `wrong_code`, 429 `rate_limited`, 403 `logins_blocked` (with `owner`, the master's name) |
 | `POST` | `/api/logout` | Clears the session and releases the control it held |
 | `GET` | `/api/session` | `{authenticated, client_id, name}`; 401 when not logged in |
 | `GET` | `/api/health` | `{status, device_status, devices, version, demo}`, no auth (Docker healthcheck); `device_status` is the first DSP's, `devices` lists `{id, status, demo}` of each, `demo` is true when every DSP is simulated |

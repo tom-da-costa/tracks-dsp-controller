@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, type TextKey } from "../lib/i18n/index.svelte";
   // "All-in-one" tab: one column per channel with the settings picked in the chip row, for the
   // channels picked in the row below (as in the Live tab). Both are remembered in this browser.
   // The blocks follow the order a system is set up in (name, link, routing, crossover, dynamics,
@@ -30,7 +31,7 @@
     "gate",
     "geq",
   ];
-  const LABELS = Object.fromEntries([["name", "Name"], ...PARAMS]) as Record<Item, string>;
+  const LABELS = Object.fromEntries([["name", "param.name"], ...PARAMS]) as Record<Item, TextKey>;
   const ITEMS = ORDER.map((key) => [key, LABELS[key]] as const);
 
   const STORAGE_KEY = "dsp408.aio.params";
@@ -87,10 +88,10 @@
 </script>
 
 <ChipBar
-  items={ITEMS.map(([key, label]) => ({ key, label }))}
+  items={ITEMS.map(([key, label]) => ({ key, label: t(label) }))}
   selected={shown}
   onselect={toggle}
-  label="Settings shown"
+  label={t("aio.shown")}
 />
 <ChannelPicker {selection} />
 
@@ -100,7 +101,7 @@
       <SideDivider />
     {/if}
     <section class="strip" class:muted={channel.mute} style:--ch={app.color(path)}>
-      <button class="head" onclick={() => nav.open(path)} title="Open this channel">
+      <button class="head" onclick={() => nav.open(path)} title={t("common.open_channel")}>
         <span class="slot">{links.slot(path)}{links.mark(path)}</span>
         <strong>{links.name(path)}</strong>
       </button>
@@ -110,13 +111,13 @@
         class:on={channel.mute}
         disabled={!app.editable("mute")}
         aria-pressed={channel.mute}
-        onclick={() => app.set(`${path}.mute`, !channel.mute)}>Mute</button
+        onclick={() => app.set(`${path}.mute`, !channel.mute)}>{t("common.mute")}</button
       >
       {#each shown.filter((item) => applies(item, path)) as item (item)}
         {@const members = links.members(path)}
         {#if item === "name"}
           <!-- Names stay per channel: one field per member of a merged group. -->
-          <Section id={`name@${path}`} title="Name" kind="name">
+          <Section id={`name@${path}`} title={t("param.name")} kind="name">
             {#each members as member (member)}
               {@const memberChannel = channelAt(member)}
               {#if memberChannel}
@@ -130,18 +131,20 @@
           </Section>
         {:else if item === "link"}
           <!-- Links are edited for a whole side at once, in the Link tab. -->
-          <Section id={`link@${path}`} title="Link" kind="link">
+          <Section id={`link@${path}`} title={t("param.link")} kind="link">
             <div class="link">
               <span class:muted={!channel.linked.length}>
-                {channel.linked.length ? `🔗 Linked with ${linkedWith(path)}` : "Not linked"}
+                {channel.linked.length
+                  ? t("aio.linked_with", { names: linkedWith(path) })
+                  : t("aio.not_linked")}
               </span>
-              <button onclick={() => nav.select("link")}>Edit links</button>
+              <button onclick={() => nav.select("link")}>{t("aio.edit_links")}</button>
             </div>
           </Section>
         {:else if item === "matrix" && members.length > 1}
           <!-- So does the routing: one block per member. -->
           {#each members as member (member)}
-            <ParamBlock param="matrix" path={member} title={`Matrix · ${slotLabel(member)}`} />
+            <ParamBlock param="matrix" path={member} title={t("aio.matrix_slot", { slot: slotLabel(member) })} />
           {/each}
         {:else}
           <ParamBlock param={item} {path} mute={false} />
@@ -149,10 +152,10 @@
       {/each}
     </section>
   {:else}
-    <p class="muted">No channel selected: pick some above.</p>
+    <p class="muted">{t("common.no_channel")}</p>
   {/each}
   {#if shown.length === 0 && channels.length > 0}
-    <p class="muted">Pick the settings to show above.</p>
+    <p class="muted">{t("aio.pick")}</p>
   {/if}
 </div>
 

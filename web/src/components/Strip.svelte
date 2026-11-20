@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import { app } from "../lib/app.svelte";
   import { links } from "../lib/links.svelte";
   import { nav } from "../lib/nav.svelte";
@@ -25,13 +26,13 @@
 <section class="strip" class:muted={channel.mute} style:--ch={app.color(path)}>
   <button
     class="name"
-    title={`${links.slot(path)} ${links.name(path)}: open the channel settings`}
+    title={t("strip.open_title", { slot: links.slot(path), name: links.name(path) })}
     onclick={() => nav.open(path)}
   >
     <span class="slot"
       >{links.slot(path)}{#if links.mark(path)}<span
           class="link"
-          title="Linked: changes also apply to the other channels of the group">🔗</span
+          title={t("strip.linked_title")}>🔗</span
         >{/if}</span
     >
     <span class="label">{links.name(path)}</span>
@@ -58,7 +59,7 @@
       class:on={channel.phase}
       disabled={app.readOnly}
       aria-pressed={channel.phase}
-      title="Phase invert"
+      title={t("strip.phase_title")}
       onclick={() => app.set(`${path}.phase`, !channel.phase)}>Ø</button
     >
   </div>

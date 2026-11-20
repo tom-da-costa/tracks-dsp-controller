@@ -1,5 +1,6 @@
 <script lang="ts">
   import { app } from "../lib/app.svelte";
+  import { i18n, LANG_NAMES, LANGS, statusText, t, th, type Lang } from "../lib/i18n/index.svelte";
   import { links } from "../lib/links.svelte";
   import {
     METER_MAX_RANGE,
@@ -39,8 +40,9 @@
   }
 
   async function kick(id: string, name: string) {
-    if (!confirm(`Disconnect ${name}? They go back to the login screen.`)) return;
-    if (await app.run({ type: "client.kick", client_id: id })) app.toast(`${name} disconnected`);
+    if (!confirm(t("settings.kick_confirm", { name }))) return;
+    if (await app.run({ type: "client.kick", client_id: id }))
+      app.toast(t("settings.kicked", { name }));
   }
 
   // Same rule as the server: refused while another client has Control or is the master.
@@ -49,25 +51,21 @@
   );
 
   async function shutdown() {
-    const question =
-      "Disconnect from the DSP and shut the server down?\n\n" +
-      "Every connected client loses the app until the server is started again. " +
-      "The DSP keeps its current settings.";
-    if (!confirm(question)) return;
+    if (!confirm(t("settings.shutdown_confirm"))) return;
     await app.run({ type: "server.shutdown" });
   }
 
   async function refresh() {
-    if (await app.run({ type: "resync" })) app.toast("Configuration re-read from the DSP");
+    if (await app.run({ type: "resync" })) app.toast(t("settings.refreshed"));
   }
 </script>
 
 <div class="grid">
   <section class="card">
-    <h2>Meters</h2>
+    <h2>{t("settings.meters")}</h2>
     <Stepper
       id="meter-rate"
-      label="Refresh rate"
+      label={t("settings.refresh_rate")}
       value={rate}
       min={RATE_RANGE[0]}
       max={RATE_RANGE[1]}
@@ -75,10 +73,10 @@
       disabled={rateLocked}
       onchange={saveRate}
     />
-    <p class="muted">Applies to every connected client.</p>
+    <p class="muted">{t("settings.rate_all")}</p>
     <Stepper
       id="meter-min"
-      label="Scale bottom"
+      label={t("settings.scale_bottom")}
       value={meterRange.min}
       min={METER_MIN_RANGE[0]}
       max={METER_MIN_RANGE[1]}
@@ -90,7 +88,7 @@
     />
     <Stepper
       id="meter-max"
-      label="Scale top"
+      label={t("settings.scale_top")}
       value={meterRange.max}
       min={METER_MAX_RANGE[0]}
       max={METER_MAX_RANGE[1]}
@@ -101,7 +99,7 @@
       onchange={(db) => meterRange.setMax(db)}
     />
     <div class="setting-row">
-      <label for="meter-segments">Segments:</label>
+      <label for="meter-segments">{t("settings.segments")}</label>
       <select
         id="meter-segments"
         value={meterRange.segment}
@@ -109,24 +107,34 @@
         onchange={(e) => meterRange.setSegment(Number(e.currentTarget.value))}
       >
         {#each METER_SEGMENTS as step (step)}
-          <option value={step}>{step ? `${step} dB` : "Continuous"}</option>
+          <option value={step}>{step ? `${step} dB` : t("settings.continuous")}</option>
         {/each}
       </select>
     </div>
     <p class="muted">
-      The range every meter shows (−40 to +20 dBu by default; the DSP's full scale is +20 dBu),
-      as a continuous bar or as segments (LED style; a segment takes the colour of its top).
-      Levels, CLIP and the colour zones do not change. This browser only.
+      {t("settings.meters_help")}
       {#if !meterRange.isDefault}
         <button class="link" disabled={app.screenLocked} onclick={() => meterRange.reset()}
-          >Reset</button
+          >{t("common.reset")}</button
         >
       {/if}
     </p>
   </section>
 
   <section class="card">
-    <h2>Display</h2>
+    <h2>{t("settings.display")}</h2>
+    <div class="setting-row">
+      <label for="language">{t("common.language")}:</label>
+      <select
+        id="language"
+        value={i18n.lang}
+        disabled={app.screenLocked}
+        onchange={(e) => i18n.set(e.currentTarget.value as Lang)}
+      >
+        {#each LANGS as code (code)}<option value={code}>{LANG_NAMES[code]}</option>{/each}
+      </select>
+    </div>
+    <p class="muted">{t("settings.language_help")}</p>
     <label class="check">
       <input
         type="checkbox"
@@ -134,16 +142,12 @@
         disabled={app.screenLocked}
         onchange={(e) => links.setMerge(e.currentTarget.checked)}
       />
-      Merge linked channels
+      {t("settings.merge")}
     </label>
-    <p class="muted">
-      Linked channels show as one (e.g. "Out 1+5") in every view except the Matrix and Link
-      tabs: a change applies to all of them, as the DSP does. Names and routing stay per channel;
-      meters show the loudest. This browser only.
-    </p>
+    <p class="muted">{t("settings.merge_help")}</p>
     <Stepper
       id="signal-threshold"
-      label="Signal indicator (SIG) above"
+      label={t("settings.signal")}
       value={signal.threshold}
       min={SIGNAL_RANGE_DB[0]}
       max={SIGNAL_RANGE_DB[1]}
@@ -152,24 +156,21 @@
       live
       onchange={(db) => signal.setThreshold(db)}
     />
-    <p class="muted">
-      SIG lights while a channel's level is above this ({SIGNAL_DEFAULT_DB} dBu by default; an
-      unconnected input reads about −86 dBu). This browser only.
-    </p>
+    <p class="muted">{t("settings.signal_help", { db: SIGNAL_DEFAULT_DB })}</p>
   </section>
 
   <section class="card">
-    <h2>Connected clients ({app.clients.length})</h2>
+    <h2>{t("settings.clients", { n: app.clients.length })}</h2>
     <ul class="clients">
       {#each app.clients as client (client.id)}
         <li>
           <span class="who">
             {client.name}
-            {#if client.id === app.hello?.client_id}<span class="muted">(you)</span>{/if}
-            {#if client.id === app.master?.owner_id}<span class="badge master">master</span>{/if}
-            {#if client.id === app.lock?.owner_id}<span class="badge">control</span>{/if}
-            {#if client.read_only}<span class="badge" title="Logged in with the view code"
-                >read-only</span
+            {#if client.id === app.hello?.client_id}<span class="muted">{t("settings.you")}</span>{/if}
+            {#if client.id === app.master?.owner_id}<span class="badge master">{t("settings.badge_master")}</span>{/if}
+            {#if client.id === app.lock?.owner_id}<span class="badge">{t("settings.badge_control")}</span>{/if}
+            {#if client.read_only}<span class="badge" title={t("settings.badge_read_only_title")}
+                >{t("settings.badge_read_only")}</span
               >{/if}
             {#if client.devices.length}
               <span class="muted">· {client.devices.join(", ")}</span>
@@ -179,29 +180,27 @@
             <button
               class="danger small"
               onclick={() => kick(client.id, client.name)}
-              disabled={app.screenLocked}>Disconnect</button
+              disabled={app.screenLocked}>{t("settings.disconnect")}</button
             >
           {/if}
         </li>
       {/each}
     </ul>
     {#if app.hello?.view_pin}
-      <p class="muted">
-        View code, for read-only access: <strong class="code">{app.hello.view_pin}</strong>. Who
-        logs in with it sees everything and can change nothing.
+      <p class="muted view-code">
+        {@html th("settings.view_code", { code: app.hello.view_pin })}
       </p>
     {/if}
-    <h3>Master</h3>
+    <h3>{t("settings.master")}</h3>
     <p class="muted">
       {#if app.iAmMaster}
-        You are the master: you can disconnect the other clients and block new connections.
+        {t("settings.master_me")}
       {:else if otherMaster}
-        {app.master?.owner_name} is the master{app.master?.logins_blocked
-          ? " and has blocked new connections"
-          : ""}.
+        {t(app.master?.logins_blocked ? "settings.master_other_blocked" : "settings.master_other", {
+          name: app.master?.owner_name ?? "",
+        })}
       {:else}
-        Nobody is the master. The master can disconnect the other clients and block new
-        connections.
+        {t("settings.master_none")}
       {/if}
     </p>
     {#if app.iAmMaster}
@@ -212,80 +211,72 @@
           disabled={app.screenLocked}
           onchange={(e) => blockLogins(e.currentTarget.checked)}
         />
-        Block new connections
+        {t("settings.block")}
       </label>
-      <p class="muted">
-        Browsers already connected stay connected (a reload or a Wi-Fi drop is fine). The
-        block ends with your master role, also when you have had the app closed for 5 minutes.
-      </p>
+      <p class="muted">{t("settings.block_help")}</p>
     {/if}
     <div class="actions">
       <button
         onclick={toggleMaster}
         disabled={app.viewOnly || otherMaster || app.screenLocked || !app.connected}
       >
-        {app.iAmMaster ? "Stop being master" : "Become master"}
+        {app.iAmMaster ? t("settings.master_stop") : t("settings.master_become")}
       </button>
     </div>
   </section>
 
   <section class="card">
-    <h2>Device</h2>
+    <h2>{t("settings.device")}</h2>
     <dl>
       <dt>DSP</dt>
       <dd>
         {app.deviceId ?? "—"}
         <span class="muted"
-          >({app.hello?.demo ? "demo: simulated in the server" : (app.currentDevice?.target ?? "—")})</span
+          >({app.hello?.demo ? t("settings.demo") : (app.currentDevice?.target ?? "—")})</span
         >
       </dd>
-      <dt>Status</dt>
-      <dd>{app.status?.status ?? "—"}{app.status?.error ? ` (${app.status.error})` : ""}</dd>
-      <dt>Model</dt>
+      <dt>{t("settings.status")}</dt>
+      <dd>{statusText(app.status?.status)}{app.status?.error ? ` (${app.status.error})` : ""}</dd>
+      <dt>{t("settings.model")}</dt>
       <dd>
         {app.status?.model || "—"}
         {#if app.status?.model && app.status.model_tested === false}
-          <span class="muted">(not tested by this project yet: reports welcome)</span>
+          <span class="muted">{t("settings.untested")}</span>
         {/if}
       </dd>
-      <dt>Firmware</dt>
+      <dt>{t("settings.firmware")}</dt>
       <dd>{app.status?.firmware || "—"}</dd>
-      <dt>Server</dt>
+      <dt>{t("settings.server")}</dt>
       <dd>{app.hello?.server_version ?? "—"}</dd>
     </dl>
     <div class="actions">
-      <button onclick={refresh} disabled={app.readOnly}>Refresh from device</button>
+      <button onclick={refresh} disabled={app.readOnly}>{t("settings.refresh")}</button>
       <button class="danger" onclick={shutdown} disabled={!canShutdown}>
-        Disconnect from DSP and shutdown
+        {t("settings.shutdown")}
       </button>
     </div>
     <p class="muted">
-      Shut the server down cleanly: it frees its DSPs (each one accepts one program at a time)
-      and stops the app for every client.
-      {#if app.lockedByOther}Only {app.lock?.owner_name}, who has control, can do it now.
-
-      {:else if otherMaster}Only {app.master?.owner_name}, the master, can do it now.{/if}
+      {t("settings.shutdown_help")}
+      {#if app.lockedByOther}{t("settings.shutdown_control", { name: app.lock?.owner_name ?? "" })}
+      {:else if otherMaster}{t("settings.shutdown_master", { name: app.master?.owner_name ?? "" })}{/if}
     </p>
   </section>
 
   <section class="card">
-    <h2>This browser</h2>
-    <p>Connected as <strong>{app.hello?.name ?? app.me?.name ?? "—"}</strong>.</p>
+    <h2>{t("settings.browser")}</h2>
+    <p>{@html th("settings.connected_as", { name: app.hello?.name ?? app.me?.name ?? "—" })}</p>
     {#if app.viewOnly}
-      <p class="muted">
-        <strong>Read-only access</strong>: you logged in with the view code. Everything is shown,
-        nothing can be changed. Log out and log in with the access code to make changes.
-      </p>
+      <p class="muted">{@html th("settings.read_only_note")}</p>
     {/if}
     <div class="actions">
-      <button class="danger" onclick={() => app.logout()}>Log out</button>
+      <button class="danger" onclick={() => app.logout()}>{t("settings.logout")}</button>
     </div>
-    <p class="muted">Leaves the app on this browser only; the server and the DSP keep running.</p>
+    <p class="muted">{t("settings.logout_help")}</p>
   </section>
 </div>
 
 <style>
-  .code {
+  .view-code :global(strong) {
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.1em;
     color: var(--text);

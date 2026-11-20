@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // One numeric parameter: label, value (tap to type), − / + steppers and a knob-drag slider.
   // A row with a horizontal slider, or a column with a vertical one (lib/layout.ts).
   import type { Snippet } from "svelte";
@@ -111,7 +112,7 @@
     class="step minus"
     use:holdRepeat={{ step: () => stepBy(-1), end: () => sender.flush(), disabled }}
     {disabled}
-    aria-label={`${label} down (hold to repeat)`}>−</button
+    aria-label={t("field.down", { label })}>−</button
   >
 {/snippet}
 
@@ -120,7 +121,7 @@
     class="step plus"
     use:holdRepeat={{ step: () => stepBy(1), end: () => sender.flush(), disabled }}
     {disabled}
-    aria-label={`${label} up (hold to repeat)`}>+</button
+    aria-label={t("field.up", { label })}>+</button
   >
 {/snippet}
 
@@ -136,11 +137,11 @@
         onblur={() => (editing = false)}
         onfocus={(e) => e.currentTarget.select()}
         autofocus
-        aria-label={`${label}${unit ? ` in ${unit}` : ""}`}
+        aria-label={unit ? t("field.in_unit", { label, unit }) : label}
       />
     </form>
   {:else}
-    <button class="value" onclick={startEdit} {disabled} aria-label={`${label}: ${text} ${unit}, tap to type`}>
+    <button class="value" onclick={startEdit} {disabled} aria-label={t("field.tap", { label, value: unit ? `${text} ${unit}` : text })}>
       <span class="num">{text}</span>{#if unit}<span class="unit">{unit}</span>{/if}
     </button>
   {/if}

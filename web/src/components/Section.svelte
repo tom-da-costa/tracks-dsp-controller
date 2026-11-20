@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // A collapsible card of the channel detail, with the "not hardware-verified" badge. In a
   // strip (lib/layout.ts) only the badge, the actions and the content are shown.
   import type { Snippet } from "svelte";
@@ -28,9 +29,8 @@
     <span
       class="badge"
       class:blocked
-      title={blocked
-        ? "Not verified on a real DSP 408 yet: start the server with --experimental to edit it"
-        : "Not verified on a real DSP 408 yet"}>{blocked ? "locked: experimental" : "unverified"}</span
+      title={blocked ? t("section.blocked_title") : t("section.unverified_title")}
+      >{blocked ? t("section.blocked") : t("section.unverified")}</span
     >
   {/if}
 {/snippet}

@@ -2,6 +2,8 @@
 // the preset name (14 bytes) and the config. The server checks everything; this only reads
 // what the import dialog shows (docs/PROTOCOL.md §7.1).
 
+import { t } from "./i18n/index.svelte";
+
 export const PRESET_FILE_MAX_BYTES = 16 * 1024;
 
 export interface PresetFileInfo {
@@ -11,10 +13,10 @@ export interface PresetFileInfo {
 
 /** Model and preset name of a preset file, or an error message. */
 export function readPresetFile(bytes: Uint8Array): PresetFileInfo | string {
-  if (bytes.length > PRESET_FILE_MAX_BYTES) return "this file is too large for a preset file";
+  if (bytes.length > PRESET_FILE_MAX_BYTES) return t("presets.file_too_large");
   const header = latin1(bytes.subarray(0, 16));
   const match = /^\*\*\*DSP(\d{3})\S*\s*\*\*\*$/.exec(header);
-  if (bytes.length < 30 || !match) return "this is not a t.racks preset file (.prs)";
+  if (bytes.length < 30 || !match) return t("presets.file_not_prs");
   return {
     model: match[1] ?? "",
     name: latin1(bytes.subarray(16, 30)).replace(/\0.*$/s, "").trimEnd(),

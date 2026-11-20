@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // One channel of the Live view: big CLIP / CMP / LIM indicators, a graduated meter with the
   // dynamics thresholds, the gain fader with − / +, SIG (signal present) and MUTE.
   import { app } from "../lib/app.svelte";
@@ -52,20 +53,20 @@
 
 {#if channel}
   <section class="strip" class:muted={channel.mute} style:--ch={app.color(path)}>
-    <button class="name" onclick={() => nav.open(path)} title="Open this channel">
+    <button class="name" onclick={() => nav.open(path)} title={t("common.open_channel")}>
       <span class="slot">{links.slot(path)}{links.mark(path)}</span>
       <strong>{links.name(path)}</strong>
     </button>
 
     <div class="leds">
-      <span class="led" class:on={clip} style:--c="var(--danger)" title="Clip"
+      <span class="led" class:on={clip} style:--c="var(--danger)" title={t("meter.clip")}
         ><span class="full">CLIP</span><span class="short">CL</span></span
       >
       {#if output}
-        <span class="led" class:on={comp} style:--c={COMP_COLOR} title="Compressor"
+        <span class="led" class:on={comp} style:--c={COMP_COLOR} title={t("meter.compressor")}
           ><span class="full">CMP</span><span class="short">CP</span></span
         >
-        <span class="led" class:on={limit} style:--c={LIMIT_COLOR} title="Limiter"
+        <span class="led" class:on={limit} style:--c={LIMIT_COLOR} title={t("meter.limiter")}
           ><span class="full">LIM</span><span class="short">LM</span></span
         >
       {/if}
@@ -89,7 +90,7 @@
     </div>
 
     <!-- SIG between the meter and MUTE: is anything coming in / going out? -->
-    <span class="led sig" class:on={sig.lit} style:--c={SIGNAL_COLOR} title="Signal">SIG</span>
+    <span class="led sig" class:on={sig.lit} style:--c={SIGNAL_COLOR} title={t("meter.signal")}>SIG</span>
 
     <button
       class="mute"

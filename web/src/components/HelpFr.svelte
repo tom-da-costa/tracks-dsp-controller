@@ -1,6 +1,6 @@
 <script lang="ts">
-  // French user guide, shown by Help.svelte (which holds the styles). The rest of the UI is in
-  // English, so the names of buttons and tabs stay in English here, as they appear on screen.
+  // French user guide, shown by Help.svelte (which holds the styles). Buttons and tabs are named
+  // as the French UI shows them (lib/i18n/fr.ts): keep both in step.
 </script>
 
 <section id="help-start">
@@ -32,7 +32,7 @@
     <dd>Déplie la barre pour afficher le nom des onglets ; touchez à nouveau pour la replier.</dd>
     <dt>DSP (point, nom et modèle)</dt>
     <dd>
-      Le DSP que pilote cet onglet. Le point est vert quand il est en ligne, rouge quand le DSP ou le serveur est injoignable : un bandeau en haut indique lequel (<em>SERVER</em> ou <em>DSP</em>). Les valeurs affichées sont les dernières connues et les commandes sont désactivées jusqu'au retour de la liaison, qui se rétablit toute seule (<em>Retry now</em> réessaie tout de suite). Touchez-le pour la liste des DSP du serveur (un système principal et une ligne de délai, par exemple) : leur état, leur preset et les modifications non enregistrées ; touchez-en un pour y passer. Chaque onglet du navigateur peut afficher un DSP différent. <em>Take control</em> vaut pour tous les DSP du serveur.
+      Le DSP que pilote cet onglet. Le point est vert quand il est en ligne, rouge quand le DSP ou le serveur est injoignable : un bandeau en haut indique lequel (<em>SERVEUR</em> ou <em>DSP</em>). Les valeurs affichées sont les dernières connues et les commandes sont désactivées jusqu'au retour de la liaison, qui se rétablit toute seule (<em>Réessayer</em> réessaie tout de suite). Touchez-le pour la liste des DSP du serveur (un système principal et une ligne de délai, par exemple) : leur état, leur preset et les modifications non enregistrées ; touchez-en un pour y passer. Chaque onglet du navigateur peut afficher un DSP différent. <em>Prendre la main</em> vaut pour tous les DSP du serveur.
     </dd>
     <dt>Preset</dt>
     <dd>
@@ -46,16 +46,16 @@
     <dt>👤 Votre nom</dt>
     <dd>
       Le nom donné à la connexion, tel que les autres le voient. Touchez-le pour ouvrir
-      <em>Settings</em>.
+      <em>Réglages</em>.
     </dd>
-    <dt>✋ Take control</dt>
+    <dt>✋ Prendre la main</dt>
     <dd>
       Passe les autres appareils en lecture seule pendant que vous travaillez (voir
       <em>À plusieurs en même temps</em>).
     </dd>
-    <dt>🔒 Lock screen</dt>
+    <dt>🔒 Verrouiller l'écran</dt>
     <dd>Passe cet appareil en lecture seule jusqu'à ce que le code d'accès soit saisi.</dd>
-    <dt>⛶ Full screen</dt>
+    <dt>⛶ Plein écran</dt>
     <dd>Masque les barres du navigateur (téléphones et ordinateurs qui le permettent).</dd>
   </dl>
 </section>
@@ -70,41 +70,41 @@
       <em>L</em>, et un trait blanc de crête), le fader de gain et MUTE. Touchez le nom d'une
       voie pour ouvrir sa page.
     </dd>
-    <dt>🔗 Link</dt>
+    <dt>🔗 Liens</dt>
     <dd>
       Regroupe des voies pour qu'elles bougent ensemble, et permet de les renommer (voir
-      <em>Link</em> plus bas).
+      <em>Liens</em> plus bas).
     </dd>
-    <dt>🔀 Matrix</dt>
+    <dt>🔀 Matrice</dt>
     <dd>La grille de routage : quelles entrées vont vers chaque sortie.</dd>
-    <dt>🎚 Params</dt>
+    <dt>🎚 Paramètres</dt>
     <dd>
-      Un réglage à la fois, sur toutes les voies choisies : Gain, Delay, EQ, Filters, Comp,
-      Limit, Gate et GEQ. La plupart s'affichent en une tranche par voie, côte à côte, pour les
+      Un réglage à la fois, sur toutes les voies choisies : Gain, Délai, EQ, Filtres, Comp,
+      Limiteur, Gate et GEQ. La plupart s'affichent en une tranche par voie, côte à côte, pour les
       comparer et les régler ensemble. EQ affiche un graphique de fréquence par voie avec la
       liste de ses bandes.
     </dd>
-    <dt>🔈 Channels</dt>
+    <dt>🔈 Voies</dt>
     <dd>
       Tout ce qui concerne une voie sur une seule page : son vumètre avec CLIP / CMP / LIM, sa
       courbe de réponse en fréquence (avec les courbes d'autres voies par-dessus si vous les
-      choisissez sous <em>Compare with</em>), et tous ses réglages. Choisissez la voie dans la
+      choisissez sous <em>Comparer avec</em>), et tous ses réglages. Choisissez la voie dans la
       rangée du haut.
     </dd>
-    <dt>▥ All-in-one</dt>
+    <dt>▥ Tout-en-un</dt>
     <dd>
       Une colonne par voie avec les réglages choisis dans la rangée du haut, dans l'ordre où l'on
-      règle un système : Name, Link, Matrix, Filters, Comp, Limit, Gain, EQ, Delay, puis Gate et
-      GEQ (entrées seulement, masqués au départ). <strong>Mute</strong> est sous chaque
+      règle un système : Nom, Lien, Matrice, Filtres, Comp, Limiteur, Gain, EQ, Délai, puis Gate
+      et GEQ (entrées seulement, masqués au départ). <strong>Mute</strong> est sous chaque
       vu-mètre. Pratique sur un ordinateur pour voir tout un système.
     </dd>
-    <dt>🚨 Too loud</dt>
+    <dt>🚨 Trop fort</dt>
     <dd>
       Un grand voyant pour la personne qui règle le volume. Il s'allume dès qu'au moins un
       compresseur ou un limiteur de sortie agit, et indique lesquels. Qu'il clignote de temps
       en temps, ça va ; s'il reste allumé, baissez le volume. Sa luminosité se règle en bas.
     </dd>
-    <dt>🧮 Limiter calc</dt>
+    <dt>🧮 Calcul limiteur</dt>
     <dd>
       Calcule des seuils de compresseur et de limiteur qui protègent vos enceintes, à partir du
       gain de l'ampli, de la puissance et de l'impédance de l'enceinte et du type de caisson,
@@ -114,12 +114,12 @@
     </dd>
     <dt>☰ Presets</dt>
     <dd>Rappeler et enregistrer les presets du DSP (voir <em>Presets</em>).</dd>
-    <dt>⚙ Settings</dt>
+    <dt>⚙ Réglages</dt>
     <dd>
       Fréquence des vumètres, options d'affichage, qui est connecté, l'appareil (voir
       <em>Réglages</em>).
     </dd>
-    <dt>❓ Help</dt>
+    <dt>❓ Aide</dt>
     <dd>Cette page.</dd>
   </dl>
 </section>
@@ -127,28 +127,28 @@
 <section id="help-channels">
   <h2>Choisir les voies affichées</h2>
   <p>
-    Live, Params et All-in-one ont une rangée de boutons au-dessus des voies :
-    <strong>All</strong> (toutes), <strong>In</strong> (entrées seules), <strong>Out</strong>
+    Live, Paramètres et Tout-en-un ont une rangée de boutons au-dessus des voies :
+    <strong>Toutes</strong>, <strong>In</strong> (entrées seules), <strong>Out</strong>
     (sorties seules), puis un bouton par voie (A–D pour les entrées, 1–8 pour les sorties, avec
     leurs noms). Un bouton allumé signifie que la voie est affichée ; touchez une voie pour
     l'afficher ou la masquer.
   </p>
   <ul>
     <li>
-      Sur un téléphone, dans Live et dans les vues en tranches de Params, la rangée se replie
+      Sur un téléphone, dans Live et dans les vues en tranches de Paramètres, la rangée se replie
       en un petit bouton en haut à droite des voies, qui indique combien sont affichées (par
       exemple 12/12), pour que les voies commencent en haut de l'écran : touchez-le pour
       ouvrir les boutons, touchez à côté pour refermer.
     </li>
     <li>
-      Dans ce panneau, <strong>Width</strong> règle la largeur des voies (Live et les vues en
-      tranches de Params, en pourcentage de leur largeur habituelle), pour en voir plus à la
-      fois ; <strong>Fit screen</strong> partage la largeur de l'écran entre les voies
+      Dans ce panneau, <strong>Largeur</strong> règle la largeur des voies (Live et les vues en
+      tranches de Paramètres, en pourcentage de leur largeur habituelle), pour en voir plus à la
+      fois ; <strong>Ajuster à l'écran</strong> partage la largeur de l'écran entre les voies
       affichées (et suit une rotation ou un autre choix de voies), ↺ revient à la largeur par
       défaut. Mémorisé sur cet appareil.
     </li>
     <li>
-      Live et Params partagent le même choix (et la même largeur), All-in-one a le sien ;
+      Live et Paramètres partagent le même choix (et la même largeur), Tout-en-un a le sien ;
       mémorisé sur cet appareil.
     </li>
     <li>
@@ -156,7 +156,7 @@
       groupe.
     </li>
     <li>
-      Avec <em>Merge linked channels</em> (Settings), un groupe de voies liées s'affiche comme
+      Avec <em>Fusionner les voies liées</em> (Réglages), un groupe de voies liées s'affiche comme
       une seule voie, par exemple « Out 1+5 ».
     </li>
     <li>La bande marquée <em>IN | OUT</em> sépare les entrées des sorties.</li>
@@ -191,7 +191,7 @@
     </dd>
     <dt>Badges</dt>
     <dd>
-      Un réglage marqué « unverified » n'a pas encore été testé sur un vrai DSP 408 ; sur un
+      Un réglage marqué « non vérifié » n'a pas encore été testé sur un vrai DSP 408 ; sur un
       vrai DSP, il ne peut être modifié que si le serveur a été lancé avec
       <code>--experimental</code>.
     </dd>
@@ -205,27 +205,27 @@
     monde le voit aussitôt.
   </p>
   <dl>
-    <dt>✋ Take control</dt>
+    <dt>✋ Prendre la main</dt>
     <dd>
       Tant que vous avez le contrôle, les autres appareils sont en lecture seule (ils indiquent
-      qui l'a). Touchez <em>Release control</em> quand vous avez fini. Le contrôle est rendu tout
+      qui l'a). Touchez <em>Rendre la main</em> quand vous avez fini. Le contrôle est rendu tout
       seul après un moment sans aucune action de votre part (la barre affiche le temps restant).
     </dd>
-    <dt>🔒 Lock screen</dt>
+    <dt>🔒 Verrouiller l'écran</dt>
     <dd>
       Passe <strong>cet</strong> appareil en lecture seule, pour un téléphone ou un ordinateur
       laissé sans surveillance : tout reste visible (vumètres compris) et la vue ne bouge pas,
-      mais on ne peut rien modifier ni changer de vue. <em>Unlock screen</em> demande le code
+      mais on ne peut rien modifier ni changer de vue. <em>Déverrouiller l'écran</em> demande le code
       d'accès. Le verrouillage résiste au rechargement de la page.
     </dd>
-    <dt>Master (Settings)</dt>
+    <dt>Maître (Réglages)</dt>
     <dd>
-      Une personne peut devenir master avec <em>Become master</em> dans <em>Settings › Connected
-      clients</em>. Le master peut déconnecter un autre client avec <em>Disconnect</em> (il
+      Une personne peut devenir maître avec <em>Devenir maître</em> dans <em>Réglages › Clients
+      connectés</em>. Le maître peut déconnecter un autre client avec <em>Déconnecter</em> (il
       revient à l'écran de connexion et doit retaper le code d'accès) et bloquer les nouvelles
-      connexions avec <em>Block new connections</em> : plus personne ne peut se connecter, mais
-      les navigateurs déjà connectés le restent. Le blocage prend fin quand le master touche
-      <em>Stop being master</em>, se déconnecte, ou a fermé l'appli depuis 5 minutes. Pour
+      connexions avec <em>Bloquer les nouvelles connexions</em> : plus personne ne peut se connecter, mais
+      les navigateurs déjà connectés le restent. Le blocage prend fin quand le maître touche
+      <em>Ne plus être maître</em>, se déconnecte, ou a fermé l'appli depuis 5 minutes. Pour
       exclure quelqu'un : le déconnecter, puis bloquer.
     </dd>
     <dt>👁 Accès en lecture seule</dt>
@@ -233,9 +233,9 @@
       Se connecter avec le code de consultation ouvre un accès en lecture seule : tout est affiché (niveaux,
       réglages, presets), rien ne peut être modifié, et le serveur le refuse quoi qu'affiche
       l'écran. Pour un invité, ou un téléphone laissé à la régie. La barre latérale affiche
-      <em>Read-only access</em> au lieu de <em>Take control</em>, et la liste des clients les
+      <em>Accès en lecture seule</em> au lieu de <em>Prendre la main</em>, et la liste des clients les
       signale. Pour modifier, déconnectez-vous et reconnectez-vous avec le code d'accès. Le code de consultation est affiché dans
-      Settings › Connected clients (aux sessions ouvertes avec le code d'accès) ; sauf si le
+      Réglages › Clients connectés (aux sessions ouvertes avec le code d'accès) ; sauf si le
       serveur le fixe (<code>--view-pin</code>), c'est un nouveau code aléatoire à chaque
       démarrage, et <code>--view-pin off</code> désactive l'accès en lecture seule.
     </dd>
@@ -249,13 +249,13 @@
     dans le DSP lui-même. Le DSP en garde 20 (U01–U20), plus le réglage d'usine (F00).
   </p>
   <dl>
-    <dt>Recall</dt>
+    <dt>Rappeler</dt>
     <dd>
       Charge un preset : <strong>tous les réglages actuels sont remplacés</strong>. Si la
       configuration actuelle a des modifications non enregistrées, elles sont perdues
       (l'application demande d'abord). Cela prend quelques secondes.
     </dd>
-    <dt>Store</dt>
+    <dt>Enregistrer</dt>
     <dd>
       Enregistre la configuration actuelle dans un emplacement de preset, avec un nom (14
       caractères simples au plus). Cela écrase le contenu de cet emplacement. F00 ne peut pas
@@ -263,17 +263,18 @@
     </dd>
     <dt>Modifications non enregistrées</dt>
     <dd>
-      Signalées par un point orange dans la barre latérale et « ● unsaved changes » sur cette
-      page, avec un bouton <em>Save to Uxx</em> pour les enregistrer dans le preset en cours.
+      Signalées par un point orange dans la barre latérale et « ● modifications non enregistrées » sur cette
+      page, avec un bouton <em>Enregistrer dans Uxx</em> pour les enregistrer dans le preset en cours.
       La liste en dessous montre ce qui a changé, une ligne par réglage (valeur enregistrée →
-      valeur actuelle), avec <em>Undo</em> pour revenir sur un réglage, ou <em>Undo all</em> ;
+      valeur actuelle), avec <em>Annuler</em> pour revenir sur un réglage, ou <em>Tout annuler</em> ;
       rappeler un preset liste ce qui sera perdu. Le serveur connaît le preset enregistré dès
       qu'il l'a vu rappelé ou enregistré : avant, les changements ne peuvent pas être listés.
     </dd>
-    <dt>Export / Import .prs</dt>
+    <dt>Exporter / importer un .prs</dt>
     <dd>
-      Fichiers de preset de l'éditeur officiel t.racks. <em>Export live setup</em> enregistre la
-      configuration actuelle dans un fichier. <em>Import .prs…</em> charge un fichier dans le DSP
+      Fichiers de preset de l'éditeur officiel t.racks. <em>Exporter la config. en cours</em>
+      enregistre la configuration actuelle dans un fichier. <em>Importer un .prs…</em> charge un
+      fichier dans le DSP
       (<strong>tous les réglages actuels sont remplacés</strong> ; les sorties sont coupées pendant
       le chargement) et peut l'enregistrer dans un emplacement en même temps. Les niveaux de matrice
       et le bypass du PEQ ne sont pas transportés par ces fichiers.
@@ -284,47 +285,53 @@
 <section id="help-settings">
   <h2>Réglages</h2>
   <dl>
-    <dt>Meters · Refresh rate</dt>
+    <dt>Vumètres · Fréquence de rafraîchissement</dt>
     <dd>
       La fréquence de mise à jour des vumètres (1 à 10 fois par seconde). Elle s'applique à tous
       les appareils connectés.
     </dd>
-    <dt>Meters · Scale bottom / top</dt>
+    <dt>Vumètres · Bas / haut de l'échelle</dt>
     <dd>
       La plage affichée par tous les vumètres, de −40 à +20 dBu par défaut (+20 dBu est le
       maximum du DSP). Les niveaux, CLIP et les couleurs ne changent pas. Cet appareil uniquement.
     </dd>
-    <dt>Meters · Segments</dt>
+    <dt>Vumètres · Segments</dt>
     <dd>
       Affiche les vumètres en barre continue (par défaut) ou en segments de 1, 2, 5 ou 10 dB,
       comme un vumètre à LED : un segment s'allume quand le niveau l'atteint et prend la couleur
       de son haut. Cet appareil uniquement.
     </dd>
-    <dt>Display · Merge linked channels</dt>
+    <dt>Affichage · Langue</dt>
+    <dd>
+      La langue de l'application (aussi sur l'écran de connexion et en haut de cette aide). Elle
+      suit celle du navigateur jusqu'à ce qu'on en choisisse une. Les unités et les termes du DSP
+      (PEQ, HPF, dBu…) restent tels quels. Cet appareil uniquement.
+    </dd>
+    <dt>Affichage · Fusionner les voies liées</dt>
     <dd>
       Affiche chaque groupe de voies liées comme une seule voie dans toutes les vues (sauf
-      Matrix et Link). Un changement s'applique à tout le groupe ; les noms et le
+      Matrice et Liens). Un changement s'applique à tout le groupe ; les noms et le
       routage restent par voie. Cet appareil uniquement.
     </dd>
-    <dt>Display · Signal indicator (SIG)</dt>
+    <dt>Affichage · Voyant de signal (SIG)</dt>
     <dd>
       Le niveau au-dessus duquel SIG s'allume (−60 dBu par défaut). Une entrée non branchée lit
       environ −86 dBu. Cet appareil uniquement.
     </dd>
-    <dt>Connected clients</dt>
+    <dt>Clients connectés</dt>
     <dd>Toutes les personnes qui utilisent l'application en ce moment, et qui a le contrôle.</dd>
-    <dt>Device</dt>
+    <dt>Appareil</dt>
     <dd>
       L'état, le modèle et le firmware du DSP, et la version de l'application.
-      <em>Refresh from device</em> relit tous les réglages depuis le DSP. <em>Disconnect from DSP
-      and shutdown</em> arrête proprement le serveur : il libère le DSP (qui n'accepte qu'un
+      <em>Relire l'appareil</em> relit tous les réglages depuis le DSP. <em>Déconnecter du DSP et
+      arrêter</em> arrête proprement le serveur : il libère le DSP (qui n'accepte qu'un
       programme à la fois, par exemple pour utiliser l'éditeur t.racks), puis arrête
       l'application pour tout le monde. Le DSP garde ses réglages. Impossible tant que quelqu'un
-      d'autre a le contrôle ou est master.
+      d'autre a le contrôle ou est maître.
     </dd>
-    <dt>This browser</dt>
+    <dt>Ce navigateur</dt>
     <dd>
-      <em>Log out</em> quitte l'application sur cet appareil seulement ; le serveur continue de
+      <em>Se déconnecter</em> quitte l'application sur cet appareil seulement ; le serveur continue de
       tourner.
     </dd>
   </dl>
@@ -345,7 +352,7 @@
       vert jusqu'à 0 dBu, jaune jusqu'à +6, orange jusqu'à +12, rouge au-delà. Le niveau passe
       en orange quand un compresseur agit, en orange foncé quand un limiteur agit, en rouge en
       cas de clip. <strong>SIG</strong> s'allume tant qu'une voie porte du signal (au-dessus de
-      −60 dBu, réglable dans Settings).
+      −60 dBu, réglable dans Réglages).
     </dd>
     <dt>Gain</dt>
     <dd>Le volume de la voie, en dB (−60 à +12). 0 dB laisse le niveau tel quel.</dd>
@@ -357,7 +364,7 @@
       satellite) s'annulent autour de leur fréquence de coupure : essayez, et gardez ce qui sonne
       le plus plein.
     </dd>
-    <dt>Delay (retard)</dt>
+    <dt>Délai (retard)</dt>
     <dd>
       Retarde le signal, réglé en millisecondes ou en mètres (la distance parcourue par le son
       pendant ce temps). Sert à aligner des enceintes placées à des distances différentes du
@@ -397,7 +404,7 @@
     <dd>
       Sur les sorties : un plafond que le niveau de sortie ne dépasse pas, pour protéger amplis
       et enceintes. LIM s'allume pendant qu'il agit ; s'il reste allumé, le système est trop
-      poussé. L'onglet <em>Limiter calc</em> calcule un seuil sûr pour vos enceintes.
+      poussé. L'onglet <em>Calcul limiteur</em> calcule un seuil sûr pour vos enceintes.
     </dd>
     <dt>Noise gate</dt>
     <dd>
@@ -405,18 +412,18 @@
       pour supprimer le bruit de fond d'un micro entre deux phrases. Attack, hold et release
       règlent la vitesse d'ouverture, la durée d'ouverture minimale et la vitesse de fermeture.
     </dd>
-    <dt>Matrix (routage)</dt>
+    <dt>Matrice (routage)</dt>
     <dd>
       Quelles entrées alimentent chaque sortie. Touchez une case pour connecter ou déconnecter
       une entrée d'une sortie.
     </dd>
-    <dt>Link (liens)</dt>
+    <dt>Liens</dt>
     <dd>
       Les voies liées bougent ensemble : un changement sur l'une s'applique à toutes (gain,
       mute, EQ, filtres, dynamiques, delay…), sauf leurs noms et leur routage. Au moment du lien,
       la première voie (le plus petit numéro) est la maîtresse : ses réglages sont copiés sur
       les autres. Sert aux paires stéréo (par exemple les subs gauche et droit). Sous les voies,
-      <em>Channel names</em> permet de renommer chacune en même temps.
+      <em>Noms des voies</em> permet de renommer chacune en même temps.
     </dd>
   </dl>
 </section>
@@ -430,7 +437,7 @@
     </li>
     <li>Baissez le volume avant de gros changements de filtres, d'EQ ou de routage.</li>
     <li>
-      Surveillez l'onglet Too loud ou les voyants LIM : un limiteur qui reste allumé veut dire
+      Surveillez l'onglet Trop fort ou les voyants LIM : un limiteur qui reste allumé veut dire
       qu'il faut baisser.
     </li>
     <li>

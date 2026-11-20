@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // One setting of one channel, as a collapsible section. Renders nothing when the setting
   // does not exist on that channel (a gate on an output, a compressor on an input…).
   import { app } from "../lib/app.svelte";
@@ -37,7 +38,7 @@
 
 {#if channel}
   {#if param === "gain"}
-    <Section {id} title={title ?? "Gain"}><ChannelMain {channel} {path} {mute} /></Section>
+    <Section {id} title={title ?? t("param.gain")}><ChannelMain {channel} {path} {mute} /></Section>
   {:else if param === "delay"}
     <DelaySection {channel} {path} {id} {title} />
   {:else if param === "eq"}

@@ -14,6 +14,8 @@
 // that value on the DSP's 0.5 dB step, rounded down by default (never above the computed limit)
 // or up on request (up to 0.5 dB above it); the limiter goes 6 dB above it.
 
+import { t } from "./i18n/index.svelte";
+
 export type Load = "open" | "closed";
 export type Mode = "hard" | "soft";
 /** How the threshold goes onto the DSP's 0.5 dB step: down is the safe side. */
@@ -70,10 +72,10 @@ function clamp(value: number): number {
 }
 
 export function validate(input: LimiterInput): string | null {
-  if (!(input.speakerAesW > 0)) return "Speaker power must be > 0";
-  if (!(input.impedanceOhm > 0)) return "Impedance must be > 0";
-  if (!Number.isFinite(input.ampGainDb)) return "Amplifier gain is required";
-  if (input.ampPowerW !== null && !(input.ampPowerW > 0)) return "Amplifier power must be > 0";
+  if (!(input.speakerAesW > 0)) return t("lim.err_speaker");
+  if (!(input.impedanceOhm > 0)) return t("lim.err_impedance");
+  if (!Number.isFinite(input.ampGainDb)) return t("lim.err_amp_gain");
+  if (input.ampPowerW !== null && !(input.ampPowerW > 0)) return t("lim.err_amp_power");
   return null;
 }
 

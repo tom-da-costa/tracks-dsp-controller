@@ -2,18 +2,15 @@
   // Shown to every client once the server was shut down from Settings ("Disconnect from DSP
   // and shutdown"): the app stops trying to reconnect until the page is reloaded.
   import { app } from "../lib/app.svelte";
+  import { t } from "../lib/i18n/index.svelte";
 </script>
 
 <main>
   <section class="card" role="status">
-    <h1>Server shut down</h1>
-    <p>
-      {app.shutdownBy || "Someone"} disconnected the server from the DSP and shut it down. The
-      DSP keeps its current settings and is free for another program (such as the t.racks
-      editor).
-    </p>
-    <p class="muted">Start the server again, then reload this page.</p>
-    <button class="primary" onclick={() => location.reload()}>Reload</button>
+    <h1>{t("shutdown.title")}</h1>
+    <p>{t("shutdown.text", { name: app.shutdownBy || t("shutdown.someone") })}</p>
+    <p class="muted">{t("shutdown.restart")}</p>
+    <button class="primary" onclick={() => location.reload()}>{t("shutdown.reload")}</button>
   </section>
 </main>
 

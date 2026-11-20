@@ -1,6 +1,7 @@
 // Unsaved changes: what differs between the stored preset and the live setup, as the server
 // lists them (state/changes.py), put in words and physical units for the Presets page.
 
+import { t, tn, type TextKey } from "./i18n/index.svelte";
 import { formatDb, formatGeqFreq, formatHz, formatQ, GEQ_FREQS } from "./scale";
 import type { Profile } from "./types";
 
@@ -23,46 +24,48 @@ export function channelOf(path: string): string {
   return path.split(".").slice(0, 2).join(".");
 }
 
-const FIELDS: Record<string, string> = {
-  gain_db: "Gain",
-  mute: "Mute",
-  phase: "Phase",
-  delay_ms: "Delay",
-  name: "Name",
-  peq_bypass: "PEQ bypass",
-  matrix: "Matrix",
-  linked: "Link",
-  crosspoints_db: "Matrix levels",
-};
-const PARTS: Record<string, string> = {
-  gate: "Gate",
-  compressor: "Compressor",
-  limiter: "Limiter",
-  hpf: "High-pass",
-  lpf: "Low-pass",
-};
-const KEYS: Record<string, string> = {
-  threshold_db: "threshold",
-  attack_ms: "attack",
-  release_ms: "release",
-  hold_ms: "hold",
-  knee_db: "knee",
-  ratio: "ratio",
-  freq_hz: "frequency",
-  slope: "slope",
-  enabled: "on",
-  gain_db: "gain",
-  q: "Q",
-  type: "type",
-  bypass: "bypass",
-};
+const FIELDS = [
+  "gain_db",
+  "mute",
+  "phase",
+  "delay_ms",
+  "name",
+  "peq_bypass",
+  "matrix",
+  "linked",
+  "crosspoints_db",
+] as const;
+const PARTS = ["gate", "compressor", "limiter", "hpf", "lpf"] as const;
+const KEYS = [
+  "threshold_db",
+  "attack_ms",
+  "release_ms",
+  "hold_ms",
+  "knee_db",
+  "ratio",
+  "freq_hz",
+  "slope",
+  "enabled",
+  "gain_db",
+  "q",
+  "type",
+  "bypass",
+] as const;
+
+/** The words for `name` in the group `prefix` ("change.key"), or undefined if there are none. */
+function words(prefix: string, names: readonly string[], name: string): string | undefined {
+  return names.includes(name) ? t(`${prefix}.${name}` as TextKey) : undefined;
+}
+const fieldName = (name: string) => words("change.field", FIELDS, name);
+const partName = (name: string) => words("change.part", PARTS, name);
+const keyName = (name: string) => words("change.key", KEYS, name) ?? name;
 
 function inputName(i: number): string {
   return `In ${String.fromCharCode(65 + i)}`;
 }
 
 function onOff(v: unknown): string {
-  return v ? "on" : "off";
+  return v ? t("change.on") : t("change.off");
 }
 
 function number(v: unknown, digits: number, unit: string): string {
@@ -96,10 +99,12 @@ function value(key: string, v: unknown, profile: Profile | undefined, part = "")
       return profile?.peq_types[v as number] ?? String(v);
     case "matrix":
       return Array.isArray(v)
-        ? v.map((on, i) => (on ? inputName(i) : "")).filter(Boolean).join(" + ") || "none"
+        ? v.map((on, i) => (on ? inputName(i) : "")).filter(Boolean).join(" + ") || t("change.none")
         : "—";
     case "linked":
-      return Array.isArray(v) && v.length > 0 ? `with ${v.length} other` : "not linked";
+      return Array.isArray(v) && v.length > 0
+        ? tn("change.linked_with", v.length)
+        : t("change.not_linked");
     case "crosspoints_db":
       return Array.isArray(v) ? v.map((db) => formatDb(db as number)).join(" / ") : "—";
     case "name":
@@ -119,7 +124,7 @@ export function describe(change: UnsavedChange, profile?: Profile): ChangeText {
   });
   if (field === "peq" && rest.length === 2) {
     const [band = "0", key = ""] = rest;
-    return say(`PEQ band ${Number(band) + 1} · ${KEYS[key] ?? key}`, key);
+    return say(t("change.peq_band", { n: Number(band) + 1, key: keyName(key) }), key);
   }
   if (field === "geq" && rest.length === 1) {
     const hz = GEQ_FREQS[Number(rest[0])];
@@ -127,11 +132,12 @@ export function describe(change: UnsavedChange, profile?: Profile): ChangeText {
   }
   if (field === "crossover" && rest.length === 2) {
     const [which = "", key = ""] = rest;
-    return say(`${PARTS[which] ?? which} · ${KEYS[key] ?? key}`, key);
+    return say(`${partName(which) ?? which} · ${keyName(key)}`, key);
   }
-  if (field in PARTS && rest.length === 1) {
+  const part = partName(field);
+  if (part !== undefined && rest.length === 1) {
     const key = rest[0] ?? "";
-    return say(`${PARTS[field]} · ${KEYS[key] ?? key}`, key);
+    return say(`${part} · ${keyName(key)}`, key);
   }
-  return say(FIELDS[field] ?? change.path, field);
+  return say(fieldName(field) ?? change.path, field);
 }

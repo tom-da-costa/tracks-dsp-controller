@@ -22,7 +22,9 @@ credentials). Release notes come from the merged PRs (`gh release create --gener
 
 ## Language
 
-- Code, comments, docs, commit messages and UI strings: **English**.
+- Code, comments, docs and commit messages: **English**.
+- UI strings: English in `web/src/lib/i18n/en.ts` (the reference), translated in the other
+  catalogues of that folder (fr, de, ru, zh) and in each language's in-app help.
 - Talk to the owner in **French**.
 
 ## Hard constraints

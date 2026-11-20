@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // Params › Gain: one strip per channel picked in the row above (meter, fader, mute, phase).
   import { app } from "../lib/app.svelte";
   import type { ChannelSelection } from "../lib/selection.svelte";
@@ -43,7 +44,7 @@
         <Strip {channel} {path} />
       {/if}
     {:else}
-      <p class="muted">No channel selected: pick some above.</p>
+      <p class="muted">{t("common.no_channel")}</p>
     {/each}
   </div>
 </div>

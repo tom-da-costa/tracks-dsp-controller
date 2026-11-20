@@ -7,6 +7,8 @@ export class LoginError extends Error {
   constructor(
     message: string,
     readonly code: string,
+    /** logins_blocked: the master's name. */
+    readonly owner: string | null = null,
   ) {
     super(message);
   }
@@ -37,8 +39,12 @@ export async function login(pin: string, name: string): Promise<Me> {
     body: JSON.stringify({ pin, name: name || null }),
   });
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { error?: string; message?: string };
-    throw new LoginError(body.message ?? "login failed", body.error ?? "error");
+    const body = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      message?: string;
+      owner?: string | null;
+    };
+    throw new LoginError(body.message ?? "login failed", body.error ?? "error", body.owner ?? null);
   }
   return (await response.json()) as Me;
 }

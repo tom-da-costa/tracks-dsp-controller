@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // Name editor of one channel. Saves on Enter, on Save and on blur; Escape gives the device's
   // name back. `label` is shown before the field ("Name"; a slot such as "Out 5" in a merged
   // link group); empty, the field has none (it sits in a "Name" section). `hint: false` leaves
@@ -13,7 +14,8 @@
     hint?: boolean;
   }
 
-  let { channel, path, label = "Name", hint = true }: Props = $props();
+  let { channel, path, label: given, hint = true }: Props = $props();
+  const label = $derived(given ?? t("param.name"));
 
   let draft = $state("");
   let focused = $state(false);
@@ -62,7 +64,7 @@
     maxlength={maxLength}
     autocomplete="off"
     enterkeyhint="done"
-    aria-label={label ? undefined : "Channel name"}
+    aria-label={label ? undefined : t("name.aria")}
     bind:value={draft}
     class:invalid={!valid}
     disabled={!app.editable("name")}
@@ -74,10 +76,10 @@
     {onkeydown}
   />
   <button type="submit" disabled={!app.editable("name") || !valid || draft === channel.name}
-    >Save</button
+    >{t("common.save")}</button
   >
 </form>
-{#if hint}<p class="hint muted">{maxLength} characters max, plain ASCII.</p>{/if}
+{#if hint}<p class="hint muted">{t("name.hint", { n: maxLength })}</p>{/if}
 
 <style>
   .rename {

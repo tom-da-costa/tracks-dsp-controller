@@ -81,6 +81,9 @@ On a phone, in landscape:
   everything is shown, nothing can be changed (a guest, a phone left at front of house); optional
   HTTPS with your certificate or a self-signed one, on the
   same port.
+- **Five languages**: the whole UI and its help in English, French, German, Russian or Chinese,
+  following the browser's language until one is picked (Settings, the login screen or the Help
+  page); units and DSP terms (PEQ, HPF, dBu, U01) stay as they are.
 - **Offline**: no database, no internet access, no external assets.
 - **Simulator**: `tracks-dsp-controller sim` runs a simulated DSP 408, 206 or 204 on the network,
   to test without a device (presets kept across restarts, fault injection, live console).
@@ -246,8 +249,8 @@ Other commands, for diagnostics (`tracks-dsp-controller <command> --help` for th
   in the compressor's colour when at least one output's compressor or limiter acts (and names
   those outputs), and stays grey otherwise; its brightness is adjustable (per browser). Flashing
   now and then is fine; if it stays lit, turn the volume down.
-- **Help** view (English, French, German, Russian or Chinese): how to use the app (tabs, buttons, control, screen lock, presets, settings,
-  channel choice) and what each audio setting does (gain, delay, filters, EQ, dynamics, routing,
+- **Help** view (in the app's language): how to use the app (tabs, buttons, control, screen
+  lock, presets, settings, channel choice) and what each audio setting does (gain, delay, filters, EQ, dynamics, routing,
   links).
 - **Full screen:** the ⛶ button at the bottom of the tab bar (Android, desktop browsers).
 - **Install on the home screen:** iPhone: Safari › Share › *Add to Home Screen*; it then opens

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   // "Params" tab: one sub-tab per setting, each showing that setting on the channels picked in
   // the row below (one choice for every setting, the same as Live's, remembered in this
   // browser). Link and Matrix have tabs of their own.
@@ -30,10 +31,10 @@
 </script>
 
 <ChipBar
-  items={PARAM_TABS.map(([key, label]) => ({ key, label }))}
+  items={PARAM_TABS.map(([key, label]) => ({ key, label: t(label) }))}
   selected={nav.param}
   onselect={(k) => nav.selectParam(k as typeof nav.param)}
-  label="Setting"
+  label={t("params.setting")}
 />
 
 {#if nav.param === "gain"}
@@ -47,7 +48,7 @@
         <ParamBlock param="eq" {path} />
       </div>
     {:else}
-      <p class="muted">No channel selected: pick some above.</p>
+      <p class="muted">{t("common.no_channel")}</p>
     {/each}
   </div>
 {:else}
@@ -61,7 +62,7 @@
           <ParamBlock param={nav.param} {path} title={title(path)} />
         </div>
       {:else}
-        <p class="muted">No channel selected: pick some above.</p>
+        <p class="muted">{t("common.no_channel")}</p>
       {/each}
     </div>
   {/if}

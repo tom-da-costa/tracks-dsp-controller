@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import {
     meterRange,
     segmentGaps,
@@ -54,12 +55,12 @@
   });
 </script>
 
-<div class="meter" class:nodata={level === null} aria-label="level meter">
+<div class="meter" class:nodata={level === null} aria-label={t("meter.level")}>
   <div class="leds">
-    <span class="led sig" class:on={sig.lit} title="Signal">SIG</span>
-    <span class="led clip" class:on={clipLit} title="Clip">CLIP</span>
-    {#if limit !== null}<span class="led lim" class:on={limit} title="Limiter">LIM</span>{/if}
-    {#if comp !== null}<span class="led comp" class:on={comp} title="Compressor">CMP</span>{/if}
+    <span class="led sig" class:on={sig.lit} title={t("meter.signal")}>SIG</span>
+    <span class="led clip" class:on={clipLit} title={t("meter.clip")}>CLIP</span>
+    {#if limit !== null}<span class="led lim" class:on={limit} title={t("meter.limiter")}>LIM</span>{/if}
+    {#if comp !== null}<span class="led comp" class:on={comp} title={t("meter.compressor")}>CMP</span>{/if}
   </div>
   <div class="bar">
     <div class="zones" style:background={ZONES} style:opacity={METER_BACKGROUND_OPACITY}></div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, th } from "../lib/i18n/index.svelte";
   // "Limiter" tab: compute the compressor / limiter thresholds that protect a speaker, from the
   // amp gain, the speaker power, the load and impedance (Hornplans method), then apply them.
   import { app } from "../lib/app.svelte";
@@ -103,7 +104,9 @@
     busy = false;
     confirming = false;
     if (ok) {
-      app.toast(`Applied to ${selected.map((i) => links.slot(`outputs.${i}`)).join(", ")}`);
+      app.toast(
+        t("lim.applied", { slots: selected.map((i) => links.slot(`outputs.${i}`)).join(", ") }),
+      );
       selected = [];
     }
   }
@@ -113,110 +116,105 @@
 
 <div class="calc">
   <section class="card">
-    <h2>Limiter calculator</h2>
+    <h2>{t("lim.title")}</h2>
     <div class="fields">
       <label>
-        <span>Amplifier gain</span>
+        <span>{t("lim.amp_gain")}</span>
         <input type="text" inputmode="decimal" bind:value={form.ampGainDb} placeholder="32" />
         <small>dB</small>
       </label>
       <label>
-        <span>Speaker power</span>
+        <span>{t("lim.speaker_power")}</span>
         <input type="text" inputmode="decimal" bind:value={form.speakerAesW} placeholder="1600" />
         <small>W AES</small>
       </label>
       <label>
-        <span>Impedance</span>
+        <span>{t("lim.impedance")}</span>
         <input type="text" inputmode="decimal" bind:value={form.impedanceOhm} placeholder="8" />
         <small>Ω</small>
       </label>
       <label>
-        <span>Amplifier power <em>(optional)</em></span>
+        <span>{t("lim.amp_power")} <em>{t("common.optional")}</em></span>
         <input type="text" inputmode="decimal" bind:value={form.ampPowerW} placeholder="—" />
         <small>W RMS</small>
       </label>
     </div>
-    <p class="hint muted">
-      Totals for one amplifier channel: all the speakers wired to it (power and impedance), and the
-      amplifier's power at that impedance. With the amplifier power, the threshold also keeps the
-      amplifier below half its power (−3 dB) so that it does not clip.
-    </p>
+    <p class="hint muted">{t("lim.totals")}</p>
 
     <fieldset>
-      <legend>Load</legend>
+      <legend>{t("lim.load")}</legend>
       <label class="choice"
-        ><input type="radio" bind:group={form.load} value="open" /> Open
-        <small>horn, vented box: speaker at AES / 1.56 (−1.9 dB)</small></label
+        ><input type="radio" bind:group={form.load} value="open" /> {t("lim.open")}
+        <small>{t("lim.open_help")}</small></label
       >
       <label class="choice"
-        ><input type="radio" bind:group={form.load} value="closed" /> Closed
-        <small>sealed box: AES / 2.34 (−3.7 dB)</small></label
-      >
-    </fieldset>
-    <fieldset>
-      <legend>Limiter</legend>
-      <label class="choice"
-        ><input type="radio" bind:group={form.mode} value="hard" /> Hard
-        <small>Hornplans' threshold (the load factor keeps the speaker under its AES power)</small
-        ></label
-      >
-      <label class="choice"
-        ><input type="radio" bind:group={form.mode} value="soft" /> Soft
-        <small>2 dB higher</small></label
+        ><input type="radio" bind:group={form.load} value="closed" /> {t("lim.closed")}
+        <small>{t("lim.closed_help")}</small></label
       >
     </fieldset>
     <fieldset>
-      <legend>Rounding to the DSP step (0.5 dB)</legend>
+      <legend>{t("lim.limiter")}</legend>
       <label class="choice"
-        ><input type="radio" bind:group={form.rounding} value="down" /> Down
-        <small>never above the computed threshold (safe side)</small></label
+        ><input type="radio" bind:group={form.mode} value="hard" /> {t("lim.hard")}
+        <small>{t("lim.hard_help")}</small></label
       >
       <label class="choice"
-        ><input type="radio" bind:group={form.rounding} value="up" /> Up
-        <small>up to 0.5 dB above the computed threshold</small></label
+        ><input type="radio" bind:group={form.mode} value="soft" /> {t("lim.soft")}
+        <small>{t("lim.soft_help")}</small></label
+      >
+    </fieldset>
+    <fieldset>
+      <legend>{t("lim.rounding")}</legend>
+      <label class="choice"
+        ><input type="radio" bind:group={form.rounding} value="down" /> {t("lim.down")}
+        <small>{t("lim.down_help")}</small></label
+      >
+      <label class="choice"
+        ><input type="radio" bind:group={form.rounding} value="up" /> {t("lim.up")}
+        <small>{t("lim.up_help")}</small></label
       >
     </fieldset>
   </section>
 
   <section class="card result">
-    <h2>Result</h2>
+    <h2>{t("lim.result")}</h2>
     {#if error || !result}
       <p class="muted">{error}</p>
     {:else}
       <dl>
-        <dt>Speaker limit</dt>
+        <dt>{t("lim.speaker_limit")}</dt>
         <dd class:lowest={result.limitedBy === "speaker"}>{dbu(result.speakerDbu)}</dd>
         {#if result.ampDbu !== null}
-          <dt>Amplifier limit</dt>
+          <dt>{t("lim.amp_limit")}</dt>
           <dd class:lowest={result.limitedBy === "amp"}>{dbu(result.ampDbu)}</dd>
         {/if}
-        <dt>Hard threshold (Hornplans)</dt>
+        <dt>{t("lim.hard_threshold")}</dt>
         <dd>{dbu(result.hornplansDbu)}</dd>
         {#if form.mode === "soft"}
-          <dt>Soft threshold (+{result.extraDb} dB)</dt>
+          <dt>{t("lim.soft_threshold", { db: result.extraDb })}</dt>
           <dd>{dbu(result.thresholdDbu)}</dd>
         {/if}
-        <dt>DSP step (0.5 dB, rounded {result.rounding})</dt>
+        <dt>{result.rounding === "up" ? t("lim.step_up") : t("lim.step_down")}</dt>
         <dd>{dbu(result.compThresholdDbu)}</dd>
       </dl>
       <div class="big">
         <div>
-          <span>Compressor</span>
+          <span>{t("lim.compressor")}</span>
           <strong>{dbu(result.compThresholdDbu)}</strong>
-          <small>ratio Limit · attack 1 ms · release 1000 ms · knee 0</small>
+          <small>{t("lim.comp_settings")}</small>
         </div>
         <div>
-          <span>Limiter</span>
+          <span>{t("lim.limiter")}</span>
           <strong>{dbu(result.limitThresholdDbu)}</strong>
-          <small>compressor +{LIMITER_ABOVE_COMP_DB} dB · attack 1 ms · release 1000 ms</small>
+          <small>{t("lim.limiter_settings", { db: LIMITER_ABOVE_COMP_DB })}</small>
         </div>
       </div>
       {#if result.clamped}
-        <p class="warn">Outside the DSP's threshold range (−90 … +20 dBu): clamped.</p>
+        <p class="warn">{t("lim.clamped")}</p>
       {/if}
 
-      <h3>Apply to</h3>
-      <div class="chips" role="group" aria-label="Outputs">
+      <h3>{t("lim.apply_to")}</h3>
+      <div class="chips" role="group" aria-label={t("lim.outputs")}>
         {#each outputs as ch, i (i)}
           <!-- One chip per link group when merging: the DSP applies the change to the group. -->
           {#if links.isShown(`outputs.${i}`)}
@@ -240,14 +238,15 @@
       {#if confirming}
         <div class="confirm">
           <p>
-            {selected.map((i) => links.slot(`outputs.${i}`)).join(", ")}: compressor
-            <strong>{dbu(result.compThresholdDbu)}</strong>, ratio Limit, attack 1 ms, release
-            1000 ms, knee 0; limiter <strong>{dbu(result.limitThresholdDbu)}</strong>, attack 1 ms,
-            release 1000 ms. Linked outputs follow (the DSP copies the change).
+            {@html th("lim.confirm", {
+              slots: selected.map((i) => links.slot(`outputs.${i}`)).join(", "),
+              comp: dbu(result.compThresholdDbu),
+              limit: dbu(result.limitThresholdDbu),
+            })}
           </p>
           <div class="actions">
-            <button class="primary" disabled={busy} onclick={apply}>Apply</button>
-            <button disabled={busy} onclick={() => (confirming = false)}>Cancel</button>
+            <button class="primary" disabled={busy} onclick={apply}>{t("lim.apply")}</button>
+            <button disabled={busy} onclick={() => (confirming = false)}>{t("common.cancel")}</button>
           </div>
         </div>
       {:else}
@@ -255,18 +254,14 @@
           <button
             class="primary"
             disabled={!editable || busy || selected.length === 0}
-            onclick={() => (confirming = true)}>Apply to selected</button
+            onclick={() => (confirming = true)}>{t("lim.apply_selected")}</button
           >
         </div>
       {/if}
     {/if}
   </section>
 
-  <p class="muted hint source">
-    Method: Marc.O's limiter calculator (hornplans.free.fr), dBu mode, for an RMS limiter. A
-    limiter with a long attack lets more peaks through: lower the threshold then. Any audible
-    distortion means something is wrong.
-  </p>
+  <p class="muted hint source">{t("lim.source")}</p>
 </div>
 
 <style>

@@ -1,18 +1,15 @@
 <script lang="ts">
   // "Help" tab: how to use the app (tabs, buttons, control, presets, settings) and what the
-  // audio settings do, in English, French, German, Russian or Simplified Chinese (only this page
-  // is translated: the rest of the UI is in English). The language follows the browser's until
-  // one is picked, then it is remembered here. The contents jump to a section by scrolling (the
-  // URL hash is the app's navigation, so no #anchors).
+  // audio settings do, in the app's language (lib/i18n: the buttons at the top change it for the
+  // whole app). The contents jump to a section by scrolling (the URL hash is the app's
+  // navigation, so no #anchors).
   import type { Component } from "svelte";
+  import { i18n, LANG_SHORT, LANGS, t, type Lang } from "../lib/i18n/index.svelte";
   import HelpDe from "./HelpDe.svelte";
   import HelpEn from "./HelpEn.svelte";
   import HelpFr from "./HelpFr.svelte";
   import HelpRu from "./HelpRu.svelte";
   import HelpZh from "./HelpZh.svelte";
-
-  type Lang = "en" | "fr" | "de" | "ru" | "zh";
-  const STORAGE_KEY = "dsp408.help.lang";
 
   /** Section ids, in order; each language's HelpXx.svelte has a section `help-<id>` per id. */
   const IDS = [
@@ -29,18 +26,14 @@
   ] as const;
 
   interface LangInfo {
-    button: string; // label of the switch button
-    html: string; // lang attribute of the page
     title: string;
     contents: string; // accessible name of the contents row
     content: Component;
     toc: string[]; // section titles, in the order of IDS
   }
 
-  const LANGS: Record<Lang, LangInfo> = {
+  const LANGS_INFO: Record<Lang, LangInfo> = {
     en: {
-      button: "EN",
-      html: "en",
       title: "Help",
       contents: "Contents",
       content: HelpEn,
@@ -58,8 +51,6 @@
       ],
     },
     fr: {
-      button: "FR",
-      html: "fr",
       title: "Aide",
       contents: "Sommaire",
       content: HelpFr,
@@ -77,8 +68,6 @@
       ],
     },
     de: {
-      button: "DE",
-      html: "de",
       title: "Hilfe",
       contents: "Inhalt",
       content: HelpDe,
@@ -96,8 +85,6 @@
       ],
     },
     ru: {
-      button: "RU",
-      html: "ru",
       title: "Справка",
       contents: "Содержание",
       content: HelpRu,
@@ -115,8 +102,6 @@
       ],
     },
     zh: {
-      button: "中文",
-      html: "zh-Hans",
       title: "帮助",
       contents: "目录",
       content: HelpZh,
@@ -134,47 +119,22 @@
       ],
     },
   };
-  const ORDER: Lang[] = ["en", "fr", "de", "ru", "zh"];
-
-  function isLang(value: string | null): value is Lang {
-    return value !== null && (ORDER as string[]).includes(value);
-  }
-
-  function loadLang(): Lang {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (isLang(saved)) return saved;
-    } catch {
-      // storage unavailable: the browser's language
-    }
-    const browser = navigator.language.toLowerCase().slice(0, 2);
-    return isLang(browser) ? browser : "en";
-  }
-
-  let lang = $state<Lang>(loadLang());
-  const current = $derived(LANGS[lang]);
-
-  function pick(next: Lang) {
-    lang = next;
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      // not persisted: fine
-    }
-  }
+  const current = $derived(LANGS_INFO[i18n.lang]);
 
   function go(id: string) {
     document.getElementById(`help-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 </script>
 
-<article class="help" lang={current.html}>
+<article class="help">
   <div class="top">
     <h1>{current.title}</h1>
-    <div class="lang" role="group" aria-label="Language">
-      {#each ORDER as code (code)}
-        <button class:on={lang === code} aria-pressed={lang === code} onclick={() => pick(code)}
-          >{LANGS[code].button}</button
+    <div class="lang" role="group" aria-label={t("common.language")}>
+      {#each LANGS as code (code)}
+        <button
+          class:on={i18n.lang === code}
+          aria-pressed={i18n.lang === code}
+          onclick={() => i18n.set(code)}>{LANG_SHORT[code]}</button
         >
       {/each}
     </div>
