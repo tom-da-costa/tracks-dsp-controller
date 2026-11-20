@@ -196,6 +196,16 @@ export interface MasterMessage {
   logins_blocked: boolean;
 }
 
+/** Mute all: who muted every output, and how far it reached each DSP (`active` false: none). */
+export interface PanicMessage {
+  active: boolean;
+  by_id?: string;
+  by?: string;
+  /** Unix time, in seconds. */
+  at?: number;
+  dsps?: { id: string; status: "muted" | "pending" | "failed"; restorable: boolean }[];
+}
+
 export interface LockMessage {
   owner_id: string | null;
   owner_name: string | null;
@@ -223,4 +233,6 @@ export interface ResultMessage {
   // changes: whether the stored preset is known, and what differs from it
   known?: boolean;
   changes?: import("./changes").UnsavedChange[];
+  // panic / panic.restore: the outcome on each DSP
+  dsps?: Record<string, string>;
 }

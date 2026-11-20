@@ -15,11 +15,14 @@
   import Settings from "./components/Settings.svelte";
   import Toasts from "./components/Toasts.svelte";
   import TooLoud from "./components/TooLoud.svelte";
+  import PanicBanner from "./components/PanicBanner.svelte";
+  import PanicButton from "./components/PanicButton.svelte";
   import RailLock from "./components/RailLock.svelte";
   import RailStatus from "./components/RailStatus.svelte";
   import { app } from "./lib/app.svelte";
   import { t } from "./lib/i18n/index.svelte";
   import { nav, TABS, type Tab } from "./lib/nav.svelte";
+  import { panicButton } from "./lib/panic.svelte";
 
   // The tab rail is always on the left; expanded it shows the labels (remembered per browser).
   const RAIL_KEY = "dsp408.rail.expanded";
@@ -130,11 +133,14 @@
           <span class="text">{fullscreen ? t("app.fullscreen_exit") : t("app.fullscreen")}</span>
         </button>
       {/if}
+      <!-- Last, and sticky: always in sight, even when the rail scrolls. -->
+      {#if panicButton.enabled && !app.viewOnly}<PanicButton {expanded} />{/if}
     </nav>
     {#if expanded}
       <button class="scrim" aria-label={t("app.rail_collapse")} onclick={toggleRail}></button>
     {/if}
     <div class="page">
+      <PanicBanner />
       {#if app.device}<ConnectionBanner />{/if}
       <main>
         {#if !app.device}

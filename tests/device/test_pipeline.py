@@ -165,3 +165,39 @@ async def test_on_ack_errors_are_contained() -> None:
     assert await pipe.submit(c.SetMute(0, True), on_ack=boom) == r.Ack()
     assert pipe.queue_depth == 0
     await pipe.stop()
+
+
+async def test_urgent_requests_jump_the_queue() -> None:
+    conn = FakeConn(delay=0.01)
+    pipe = CommandPipeline(conn, meter_interval=100, on_meters=lambda d: None)
+    pipe.start()
+    await asyncio.sleep(0.015)  # first poll done
+    queued = [asyncio.create_task(pipe.submit(c.SetGain(i, 10))) for i in range(4)]
+    stale = asyncio.create_task(pipe.submit(c.SetMute(5, False)))
+    await asyncio.sleep(0)  # all queued; SetGain(0) in flight
+    urgent = [asyncio.create_task(pipe.submit(c.SetMute(i, True), urgent=True)) for i in (4, 5, 6)]
+    await asyncio.gather(*queued, stale, *urgent)
+    sent = writes(conn)
+    # the queued unmute of output 5 coalesces into the urgent mute and moves with it
+    assert sent == [
+        c.SetGain(0, 10),
+        c.SetMute(4, True),
+        c.SetMute(5, True),
+        c.SetMute(6, True),
+        c.SetGain(1, 10),
+        c.SetGain(2, 10),
+        c.SetGain(3, 10),
+    ]
+    await pipe.stop()
+
+
+async def test_urgent_requests_go_before_a_due_meter_poll() -> None:
+    conn = FakeConn(delay=0.01)
+    pipe = CommandPipeline(conn, meter_interval=0.001, on_meters=lambda d: None)
+    pipe.start()
+    await asyncio.sleep(0.015)
+    await asyncio.gather(*(pipe.submit(c.SetMute(i, True), urgent=True) for i in range(4)))
+    kinds = [type(q).__name__ for q in conn.sent]
+    first = kinds.index("SetMute")
+    assert kinds[first : first + 4] == ["SetMute"] * 4  # no poll between them
+    await pipe.stop()

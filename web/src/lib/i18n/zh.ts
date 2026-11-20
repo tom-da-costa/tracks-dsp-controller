@@ -136,6 +136,25 @@ export const zh: Messages = {
   "rail.unlock": "解锁屏幕",
   "rail.unlock_title": "解锁屏幕（需要访问码）",
 
+  // --- Mute all ----------------------------------------------------------------------------------
+  "panic.button": "全部静音",
+  "panic.hold": "按住以静音",
+  "panic.title": "将所有 DSP 的所有输出静音：按住半秒",
+  "panic.done": "所有输出已静音",
+  "panic.muted_by": "所有输出已由 <strong>{name}</strong> 于 {time} 静音。",
+  "panic.pending": "离线：恢复连接后立即静音",
+  "panic.failed": "无应答：重新连接时再次静音",
+  "panic.restore": "恢复…",
+  "panic.restore_title": "取消静音“全部静音”之前开启的输出（需要控制权）",
+  "panic.restore_confirm": "取消静音“全部静音”之前开启的输出？声音将恢复。",
+  "panic.restored": "输出已恢复",
+  "panic.not_restored": "未恢复：{why}",
+  "panic.why_offline": "离线",
+  "panic.why_changed": "此后已加载其他预设",
+  "panic.why_failed": "无应答",
+  "panic.dismiss": "关闭",
+  "panic.dismiss_title": "隐藏此横幅；输出保持现状",
+
   // --- Settings -----------------------------------------------------------------------------------
   "settings.meters": "电平表",
   "settings.refresh_rate": "刷新率",
@@ -154,6 +173,8 @@ export const zh: Messages = {
   "settings.signal_help":
     "通道电平高于此值时 SIG 亮起（默认 {db} dBu；未连接的输入约为 −86 dBu）。仅限此浏览器。",
   "settings.language_help": "此浏览器中应用的语言。单位和 DSP 术语（PEQ、HPF、dBu…）保持不变。",
+  "settings.panic": "显示“全部静音”按钮",
+  "settings.panic_help": "侧边栏底部的按钮：按住半秒，即可将所有 DSP 的所有输出静音，即使没有控制权或屏幕已锁定。恢复输出需要控制权。仅限此浏览器。",
   "settings.clients": "已连接的客户端（{n}）",
   "settings.you": "（您）",
   "settings.badge_master": "主控",

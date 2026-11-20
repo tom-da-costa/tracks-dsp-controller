@@ -118,7 +118,9 @@ through a single queue (`device/pipeline.py`):
 2. **Priorities.** Writes come before meter polls, but when the meter period has elapsed the next
    free slot goes to a poll, which guarantees the configured rate (and at least 1 Hz). After a
    poll, a waiting write goes first: on a slow link a poll can outlast the meter period, and
-   back-to-back polls would starve the writes.
+   back-to-back polls would starve the writes. An **urgent** request (the Mute all) goes ahead
+   of every queued write and of a due poll; a queued write with the same key (an unmute of that
+   output) is replaced by it and moves forward with it.
 3. **Barriers.** Preset recall/store, link changes and resync are exclusive sequences with long
    timeouts. Writes received in the meantime wait in the queue. A sequence that fails half-way
    (no answer, a wrong answer) leaves the DSP in an unknown state: the session drops the
@@ -226,8 +228,8 @@ varies and can exceed the 0.5 s that a DSP on the LAN needs.
   unattended. The UI also freezes the view: tabs, sub-tabs, the channels shown and the browser's
   back button do nothing (`nav`, `ChipBar`, `ChannelSelection`). The server keeps it on
   the session (`ClientSession.screen_locked`), so a reload stays locked, and refuses every
-  request of that session except `screen.unlock` meanwhile (`screen_locked` error); the code is
-  checked with the login's rate limit. Interactions on a locked screen are not activity, so
+  request of that session except `screen.unlock` and `panic` meanwhile (`screen_locked`
+  error); the code is checked with the login's rate limit. Interactions on a locked screen are not activity, so
   a control held by that client still expires.
 - A client can take the **master** role (`master.*` messages, `server/master.py`), one at a time. The
   master can disconnect another client (`client.kick`: its session ends, its sockets close with
@@ -237,6 +239,15 @@ varies and can exceed the 0.5 s that a DSP on the LAN needs.
   the master: it ends with the role, which ends on release, on logout, or after the master has had
   no connection open for 5 minutes (`MASTER_ABSENT_S`), so the server is never left blocked with
   nobody to unblock it (a restart also clears it: everything is in memory).
+- **Mute all** (`panic`, `server/panic.py`): any full session, with or without control and even
+  behind its screen lock, mutes every output of every DSP with urgent writes (§4). It is an
+  action, not a mode: nothing is refused afterwards. The server keeps, per DSP, each output's
+  mute from before and the active preset, and tells every client (`panic`) until someone with
+  control restores (`panic.restore`: unmutes only the outputs that were on, skipped on a DSP
+  where another preset is active or was recalled or imported since) or dismisses it
+  (`panic.dismiss`). A DSP the mute did not reach (offline, no answer) is muted when it comes
+  back online. The UI shows the button only when Settings › Display enables it (off by
+  default, per browser); the banner is shown to everyone.
 
 ## 5. Simulator
 
@@ -299,9 +310,10 @@ JSON messages `{type, ...}`:
 | S→C | `shutdown` | `by`: the server was shut down from Settings; the UI stops reconnecting and shows it |
 | S→C | `master` | master role: `owner_id?`, `owner_name?`, `logins_blocked` |
 | S→C | `screen_lock` | `locked` (to every tab of the session) |
+| S→C | `panic` | Mute all: `active`; while active, `by_id`, `by` (the name), `at` (Unix time) and `dsps`: `[{id, status, restorable}]`, `status` being `muted`, `pending` (offline: muted when it is back) or `failed` (no answer: muted again at the next reconnection). Sent on connect and on every change |
 | S→C | `settings` | `meter_rate_hz` (of this DSP), `lock_idle_timeout_s` (sent on change) |
 | S→C | `clients` | list of `{id, name, read_only, devices}` (the DSPs it has open) |
-| S→C | `result` | `req`, `ok`, extra fields of some requests (`preset.import`: `name`, `notes`; `preset.export`: `filename`, `data`, `notes`; `changes`: `known`, `changes`), `error?` (`locked`: another client has control, `screen_locked`, `read_only`: a read-only access (view code), `master_taken`, `not_master`, `wrong_code`, `rate_limited`, `invalid`, `experimental`, `device_offline`, `device_timeout`), `message?` |
+| S→C | `result` | `req`, `ok`, extra fields of some requests (`preset.import`: `name`, `notes`; `preset.export`: `filename`, `data`, `notes`; `changes`: `known`, `changes`; `panic` / `panic.restore`: `dsps`, the outcome per DSP), `error?` (`locked`: another client has control, `screen_locked`, `read_only`: a read-only access (view code), `master_taken`, `not_master`, `wrong_code`, `rate_limited`, `invalid`, `experimental`, `device_offline`, `device_timeout`), `message?` |
 | S→C | `pong` | `req` |
 | C→S | `set` | `req`, `path`, `value` |
 | C→S | `preset.recall` | `req`, `slot` |
@@ -315,6 +327,8 @@ JSON messages `{type, ...}`:
 | C→S | `logins.block` | `req`, `blocked` (bool); master only |
 | C→S | `server.shutdown` | `req`; refused (`locked` / `not_master`) while another client has control or is the master. Every client gets `shutdown`, the connection to every DSP is closed, then the process exits (code 0) |
 | C→S | `screen.lock` / `screen.unlock` | `req`; `pin` (the access code; the view code unlocks a read-only session only) to unlock |
+| C→S | `panic` | `req`; mute every output of every DSP (§4 urgent writes). Allowed without control and on a locked screen, refused to a read-only session. `dsps`: `{id: muted / pending / failed}` |
+| C→S | `panic.restore` / `panic.dismiss` | `req`; needs control. Restore unmutes the outputs that were on before (`dsps`: `{id: restored / offline / changed / failed}`); dismiss forgets the Mute all and leaves the outputs as they are |
 | C→S | `activity` | no payload; user interaction, throttled to one every 10 s |
 | C→S | `settings.set` | `req`, `meter_rate_hz` (clamped to 1–10; this DSP's) |
 | C→S | `resync` | `req` |

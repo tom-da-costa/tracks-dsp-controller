@@ -147,6 +147,25 @@ export const en = {
   "rail.unlock": "Unlock screen",
   "rail.unlock_title": "Unlock the screen (asks for the access code)",
 
+  // --- Mute all ----------------------------------------------------------------------------------
+  "panic.button": "Mute all",
+  "panic.hold": "hold to mute",
+  "panic.title": "Mute every output of every DSP: hold for half a second",
+  "panic.done": "All outputs muted",
+  "panic.muted_by": "All outputs muted by <strong>{name}</strong> at {time}.",
+  "panic.pending": "offline: muted as soon as it is back",
+  "panic.failed": "no answer: muted again when it reconnects",
+  "panic.restore": "Restore…",
+  "panic.restore_title": "Unmute the outputs that were on before the Mute all (needs control)",
+  "panic.restore_confirm": "Unmute the outputs that were on before the Mute all? Sound comes back.",
+  "panic.restored": "Outputs restored",
+  "panic.not_restored": "Not restored: {why}",
+  "panic.why_offline": "offline",
+  "panic.why_changed": "another preset was loaded since",
+  "panic.why_failed": "no answer",
+  "panic.dismiss": "Close",
+  "panic.dismiss_title": "Hide this banner; the outputs stay as they are",
+
   // --- Settings -----------------------------------------------------------------------------------
   "settings.meters": "Meters",
   "settings.refresh_rate": "Refresh rate",
@@ -166,6 +185,9 @@ export const en = {
     "SIG lights while a channel's level is above this ({db} dBu by default; an unconnected input reads about −86 dBu). This browser only.",
   "settings.language_help":
     "The app's language in this browser. Units and DSP terms (PEQ, HPF, dBu…) stay as they are.",
+  "settings.panic": "Show the Mute all button",
+  "settings.panic_help":
+    "A button at the bottom of the side bar: held for half a second, it mutes every output of every DSP, even without control or behind the screen lock. Restoring the outputs needs control. This browser only.",
   "settings.clients": "Connected clients ({n})",
   "settings.you": "(you)",
   "settings.badge_master": "master",

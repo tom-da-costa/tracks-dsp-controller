@@ -9,6 +9,7 @@
     METER_SEGMENTS,
     meterRange,
   } from "../lib/meterrange.svelte";
+  import { panicButton } from "../lib/panic.svelte";
   import { SIGNAL_DEFAULT_DB, SIGNAL_RANGE_DB, signal } from "../lib/signal.svelte";
   import Stepper from "./Stepper.svelte";
 
@@ -157,6 +158,19 @@
       onchange={(db) => signal.setThreshold(db)}
     />
     <p class="muted">{t("settings.signal_help", { db: SIGNAL_DEFAULT_DB })}</p>
+    {#if !app.viewOnly}
+      <label class="check">
+        <input
+          id="panic-button"
+          type="checkbox"
+          checked={panicButton.enabled}
+          disabled={app.screenLocked}
+          onchange={(e) => panicButton.setEnabled(e.currentTarget.checked)}
+        />
+        {t("settings.panic")}
+      </label>
+      <p class="muted">{t("settings.panic_help")}</p>
+    {/if}
   </section>
 
   <section class="card">
