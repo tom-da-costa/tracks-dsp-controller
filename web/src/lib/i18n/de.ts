@@ -49,6 +49,7 @@ export const de: Messages = {
   "app.fullscreen": "Vollbild",
   "app.fullscreen_exit": "Vollbild beenden",
   "app.fullscreen_unavailable": "Vollbild ist hier nicht verfügbar",
+  "app.fullscreen_ios": "Auf dem iPhone kann Safari seine Leisten nicht ausblenden: Teilen › Zum Home-Bildschirm tippen und die App dann über ihr Symbol öffnen.",
   "app.connecting": "Verbindung zum Server…",
   "app.connecting_dsp": "Verbindung zum Server (DSP {dsp})…",
   "app.dsp_unreachable": "DSP nicht erreichbar. Der Server versucht es weiter…",

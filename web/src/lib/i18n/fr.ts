@@ -49,6 +49,7 @@ export const fr: Messages = {
   "app.fullscreen": "Plein écran",
   "app.fullscreen_exit": "Quitter le plein écran",
   "app.fullscreen_unavailable": "Le plein écran n'est pas disponible ici",
+  "app.fullscreen_ios": "Sur iPhone, Safari ne peut pas masquer ses barres : touchez Partager › Sur l'écran d'accueil, puis ouvrez l'appli depuis son icône.",
   "app.connecting": "Connexion au serveur…",
   "app.connecting_dsp": "Connexion au serveur (DSP {dsp})…",
   "app.dsp_unreachable": "DSP injoignable. Le serveur continue d'essayer…",

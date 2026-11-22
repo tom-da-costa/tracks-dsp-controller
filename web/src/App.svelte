@@ -18,6 +18,7 @@
   import RailLock from "./components/RailLock.svelte";
   import RailStatus from "./components/RailStatus.svelte";
   import { app } from "./lib/app.svelte";
+  import { browserFullscreenMode } from "./lib/fullscreen";
   import { t } from "./lib/i18n/index.svelte";
   import { nav, TABS, type Tab } from "./lib/nav.svelte";
 
@@ -42,15 +43,16 @@
     }
   }
 
-  // Full screen (Android, desktop): hidden where unsupported (iPhone: install it instead, from
-  // Safari's Share › Add to Home Screen) and when already running as an installed app.
+  // Full screen (Android, desktop, iPad). On an iPhone the button says how to add the app to the
+  // home screen instead; hidden in an installed app (lib/fullscreen.ts).
   let fullscreen = $state(false);
-  const canFullscreen =
-    typeof document !== "undefined" &&
-    document.fullscreenEnabled &&
-    !window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches;
+  const fullscreenMode = browserFullscreenMode();
 
   async function toggleFullscreen() {
+    if (fullscreenMode === "install") {
+      app.toast(t("app.fullscreen_ios"), "info", 12000);
+      return;
+    }
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
       else await document.documentElement.requestFullscreen({ navigationUI: "hide" });
@@ -119,11 +121,11 @@
         </button>
       {/each}
       <RailLock {expanded} onpick={foldOnPhone} />
-      {#if canFullscreen}
+      {#if fullscreenMode !== "none"}
         <button
           class="bottom"
           onclick={toggleFullscreen}
-          aria-pressed={fullscreen}
+          aria-pressed={fullscreenMode === "api" ? fullscreen : undefined}
           title={fullscreen ? t("app.fullscreen_exit") : t("app.fullscreen")}
         >
           <span class="icon" aria-hidden="true">{fullscreen ? "🗗" : "⛶"}</span>

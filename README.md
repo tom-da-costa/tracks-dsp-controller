@@ -117,7 +117,8 @@ Browsers: current Safari (iOS), Chrome (Android), Firefox and Chrome (desktop), 
 ## Usage
 
 Pick one way to run the server, then open `http://<server-ip>:8080` from any device on the LAN
-and enter the access code (`--pin`, default `0000`: change it).
+(the server prints its addresses when it starts) and enter the access code (`--pin`, default
+`0000`: change it).
 
 ### Standalone executable (nothing to install)
 
@@ -252,7 +253,9 @@ Other commands, for diagnostics (`tracks-dsp-controller <command> --help` for th
 - **Help** view (in the app's language): how to use the app (tabs, buttons, control, screen
   lock, presets, settings, channel choice) and what each audio setting does (gain, delay, filters, EQ, dynamics, routing,
   links).
-- **Full screen:** the ⛶ button at the bottom of the tab bar (Android, desktop browsers).
+- **Full screen:** the ⛶ button at the bottom of the tab bar (Android, desktop browsers, iPad).
+  Safari on an iPhone has no full screen for pages: there the button explains how to add the
+  app to the home screen.
 - **Install on the home screen:** iPhone: Safari › Share › *Add to Home Screen*; it then opens
   full screen without the browser bars. Android: Chrome installs web apps only over HTTPS (or
   on localhost); over plain `http://` on the LAN, use the full-screen button, or put the app

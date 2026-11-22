@@ -47,7 +47,7 @@
     <dt>🔒 Lock screen</dt>
     <dd>Makes this device read-only until the access code is typed.</dd>
     <dt>⛶ Full screen</dt>
-    <dd>Hides the browser's bars (phones and computers that allow it).</dd>
+    <dd>Hides the browser's bars (phones and computers that allow it). An iPhone does not: add the app to the home screen (Safari › Share › Add to Home Screen) and open it from its icon.</dd>
   </dl>
 </section>
 

@@ -56,7 +56,7 @@
     <dt>🔒 Verrouiller l'écran</dt>
     <dd>Passe cet appareil en lecture seule jusqu'à ce que le code d'accès soit saisi.</dd>
     <dt>⛶ Plein écran</dt>
-    <dd>Masque les barres du navigateur (téléphones et ordinateurs qui le permettent).</dd>
+    <dd>Masque les barres du navigateur (téléphones et ordinateurs qui le permettent). Un iPhone ne le permet pas : ajoutez l'appli à l'écran d'accueil (Safari › Partager › Sur l'écran d'accueil) et ouvrez-la depuis son icône.</dd>
   </dl>
 </section>
 

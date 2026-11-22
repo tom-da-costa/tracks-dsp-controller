@@ -56,7 +56,7 @@
     <dt>🔒 Bildschirm sperren</dt>
     <dd>Schaltet dieses Gerät auf „nur lesen“, bis der Zugangscode eingegeben wird.</dd>
     <dt>⛶ Vollbild</dt>
-    <dd>Blendet die Leisten des Browsers aus (Handys und Computer, die es erlauben).</dd>
+    <dd>Blendet die Leisten des Browsers aus (Handys und Computer, die es erlauben). Das iPhone erlaubt es nicht: die App zum Home-Bildschirm hinzufügen (Safari › Teilen › Zum Home-Bildschirm) und über ihr Symbol öffnen.</dd>
   </dl>
 </section>
 
