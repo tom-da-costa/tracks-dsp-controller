@@ -1,8 +1,9 @@
 <script lang="ts">
   // Asks for the access code to unlock the screen (opened from the rail's "Unlock screen").
-  // No backdrop: the screen stays readable behind it.
+  // No backdrop: the screen stays readable behind it. Moved to <body> (see portal.ts).
   import { app } from "../lib/app.svelte";
   import { t } from "../lib/i18n/index.svelte";
+  import { portal } from "../lib/portal";
 
   interface Props {
     onclose: () => void;
@@ -26,7 +27,7 @@
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && onclose()} />
 
-<div class="anchor">
+<div class="anchor" use:portal>
   <form class="card" onsubmit={submit} aria-label={t("unlock.label")}>
     <p>{t("unlock.prompt")}</p>
     <!-- svelte-ignore a11y_autofocus -->
@@ -51,7 +52,7 @@
   .anchor {
     position: fixed;
     left: 50%;
-    top: 16px;
+    top: calc(16px + env(safe-area-inset-top));
     transform: translateX(-50%);
     z-index: 100;
     width: min(320px, calc(100vw - 32px));

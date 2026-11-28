@@ -49,6 +49,7 @@ export const ru: Messages = {
   "app.fullscreen": "Во весь экран",
   "app.fullscreen_exit": "Выйти из полноэкранного режима",
   "app.fullscreen_unavailable": "Полноэкранный режим здесь недоступен",
+  "app.fullscreen_ios": "На iPhone Safari не может скрыть свои панели: нажмите «Поделиться» › «На экран „Домой“», затем откройте приложение с его значка.",
   "app.connecting": "Подключение к серверу…",
   "app.connecting_dsp": "Подключение к серверу (DSP {dsp})…",
   "app.dsp_unreachable": "DSP недоступен. Сервер продолжает попытки…",

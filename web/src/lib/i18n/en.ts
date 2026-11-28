@@ -60,6 +60,7 @@ export const en = {
   "app.fullscreen": "Full screen",
   "app.fullscreen_exit": "Exit full screen",
   "app.fullscreen_unavailable": "Full screen is not available here",
+  "app.fullscreen_ios": "On an iPhone, Safari cannot hide its bars: tap Share › Add to Home Screen, then open the app from its icon.",
   "app.connecting": "Connecting to the server…",
   "app.connecting_dsp": "Connecting to the server (DSP {dsp})…",
   "app.dsp_unreachable": "DSP unreachable. The server keeps trying…",

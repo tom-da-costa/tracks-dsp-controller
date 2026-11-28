@@ -561,12 +561,12 @@ class App {
     if (!force) this.send({ type: "activity" });
   }
 
-  toast(text: string, kind: Toast["kind"] = "info"): void {
+  toast(text: string, kind: Toast["kind"] = "info", durationMs = 4000): void {
     const id = ++this.toastId;
     this.toasts.push({ id, text, kind });
     setTimeout(() => {
       this.toasts = this.toasts.filter((t) => t.id !== id);
-    }, 4000);
+    }, durationMs);
   }
 }
 

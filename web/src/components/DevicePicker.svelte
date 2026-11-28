@@ -4,6 +4,7 @@
   // server at a glance (status, preset) to switch to another. One DSP is just the case n = 1.
   import { app } from "../lib/app.svelte";
   import { statusText, t, tn } from "../lib/i18n/index.svelte";
+  import { portal } from "../lib/portal";
   import type { DeviceEntry } from "../lib/types";
 
   interface Props {
@@ -72,43 +73,46 @@
   <span class="caret big" aria-hidden="true">▾</span>
 </button>
 
+<!-- Moved to <body>: out of the rail, which clips it on iOS (see portal.ts). -->
 {#if open}
-  <button class="backdrop" aria-label={t("rail.dsp_close")} onclick={() => (open = false)}></button>
-  <div class="panel" role="dialog" aria-label={t("rail.dsp_list")}>
-    <h2>DSPs</h2>
-    <ul>
-      {#each app.devices as entry (entry.id)}
-        <li>
-          <button
-            class="row"
-            class:selected={entry.id === app.deviceId}
-            aria-current={entry.id === app.deviceId}
-            onclick={() => pick(entry.id)}
-          >
-            <span class="dot {dotClass(entry)}"></span>
-            <span class="main">
-              <span class="line">
-                <strong>{entry.id}</strong>
-                <span class="muted">{entry.model || entry.target}</span>
-                {#if entry.demo}<span class="demo">DEMO</span>{/if}
+  <div use:portal>
+    <button class="backdrop" aria-label={t("rail.dsp_close")} onclick={() => (open = false)}></button>
+    <div class="panel" role="dialog" aria-label={t("rail.dsp_list")}>
+      <h2>DSPs</h2>
+      <ul>
+        {#each app.devices as entry (entry.id)}
+          <li>
+            <button
+              class="row"
+              class:selected={entry.id === app.deviceId}
+              aria-current={entry.id === app.deviceId}
+              onclick={() => pick(entry.id)}
+            >
+              <span class="dot {dotClass(entry)}"></span>
+              <span class="main">
+                <span class="line">
+                  <strong>{entry.id}</strong>
+                  <span class="muted">{entry.model || entry.target}</span>
+                  {#if entry.demo}<span class="demo">DEMO</span>{/if}
+                </span>
+                <span class="line small">
+                  {#if entry.status === "online"}
+                    <span>{slot(entry)} {entry.preset_name}</span>
+                    {#if entry.modified}<span class="unsaved">{t("rail.unsaved")}</span>{/if}
+                  {:else}
+                    <span class="muted"
+                      >{statusText(entry.status)}{entry.error
+                        ? `: ${entry.error}`
+                        : ""}</span
+                    >
+                  {/if}
+                </span>
               </span>
-              <span class="line small">
-                {#if entry.status === "online"}
-                  <span>{slot(entry)} {entry.preset_name}</span>
-                  {#if entry.modified}<span class="unsaved">{t("rail.unsaved")}</span>{/if}
-                {:else}
-                  <span class="muted"
-                    >{statusText(entry.status)}{entry.error
-                      ? `: ${entry.error}`
-                      : ""}</span
-                  >
-                {/if}
-              </span>
-            </span>
-          </button>
-        </li>
-      {/each}
-    </ul>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </div>
   </div>
 {/if}
 

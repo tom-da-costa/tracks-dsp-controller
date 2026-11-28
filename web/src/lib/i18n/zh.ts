@@ -49,6 +49,7 @@ export const zh: Messages = {
   "app.fullscreen": "全屏",
   "app.fullscreen_exit": "退出全屏",
   "app.fullscreen_unavailable": "此处无法使用全屏",
+  "app.fullscreen_ios": "在 iPhone 上，Safari 无法隐藏其工具栏：请点按“共享”›“添加到主屏幕”，然后从图标打开应用。",
   "app.connecting": "正在连接服务器…",
   "app.connecting_dsp": "正在连接服务器（DSP {dsp}）…",
   "app.dsp_unreachable": "无法连接 DSP。服务器会继续尝试…",

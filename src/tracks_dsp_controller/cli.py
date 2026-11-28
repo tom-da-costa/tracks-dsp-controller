@@ -221,7 +221,7 @@ def build_parser() -> argparse.ArgumentParser:
 async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
     import uvicorn
 
-    from tracks_dsp_controller.server import tls
+    from tracks_dsp_controller.server import addresses, tls
     from tracks_dsp_controller.server.app import create_app
     from tracks_dsp_controller.server.listener import HttpsServer
     from tracks_dsp_controller.server.settings import ServerConfig, parse_dsps, view_pin_for
@@ -267,6 +267,7 @@ async def _serve(args: argparse.Namespace, profile: ProtocolProfile) -> int:
         f"tracks-dsp-controller {__version__}: {scheme}://{config.host}:{config.port} -> {target}",
         flush=True,
     )
+    print(addresses.open_line(scheme, config.host, config.port), flush=True)
     if config.view_pin is None:
         print("read-only access: off", flush=True)
     else:
