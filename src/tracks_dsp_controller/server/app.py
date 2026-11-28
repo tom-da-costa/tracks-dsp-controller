@@ -15,6 +15,7 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, Request, Response, WebSocket
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
+from starlette.middleware.cors import CORSMiddleware
 
 from tracks_dsp_controller import __version__
 from tracks_dsp_controller.device.session import DeviceSession, ProfileFactory
@@ -90,8 +91,35 @@ class AppContext:
         return self.devices.default.simulator
 
 
+# A frontend served elsewhere (an app embedding the UI, another server) authenticates with the
+# token of the login answer instead of the cookie: "Authorization: Bearer" over HTTP, and on the
+# WebSocket (a browser cannot set its headers) the subprotocol "tdsp.token.<token>" offered with
+# "tdsp", which the server selects. Not in the URL: uvicorn logs WebSocket paths.
+WS_PROTOCOL = "tdsp"
+WS_TOKEN_PREFIX = "tdsp.token."
+
+
+def request_token(request: Request) -> str | None:
+    """The session token: "Authorization: Bearer" (a frontend on another origin), else the
+    cookie (this server's own pages)."""
+    scheme, _, value = request.headers.get("authorization", "").partition(" ")
+    if scheme.lower() == "bearer" and value.strip():
+        return value.strip()
+    return request.cookies.get(SESSION_COOKIE)
+
+
+def websocket_token(websocket: WebSocket) -> str | None:
+    """The token offered as a ``tdsp.token.<token>`` subprotocol, if any."""
+    for item in websocket.headers.get("sec-websocket-protocol", "").split(","):
+        item = item.strip()
+        if item.startswith(WS_TOKEN_PREFIX):
+            return item.removeprefix(WS_TOKEN_PREFIX) or None
+    return None
+
+
 def _origin_allowed(websocket: WebSocket) -> bool:
-    """Reject cross-site WebSocket connections (the Origin host must match the Host header)."""
+    """Reject cross-site WebSocket connections that rely on the cookie (the Origin host must
+    match the Host header)."""
     origin = websocket.headers.get("origin")
     if origin is None:  # non-browser client
         return True
@@ -151,6 +179,16 @@ def create_app(
     app = FastAPI(title="tracks-dsp-controller", version=__version__, lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)  # fmt: skip
     app.state.ctx = ctx
+    # CORS for any origin, without credentials: the token is sent explicitly, never a cookie.
+    # Private Network Access: a page from a public origin may call this server on the LAN.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_private_network=True,
+        allow_methods=["GET", "POST"],
+        allow_headers=["authorization", "content-type"],
+        max_age=600,
+    )
 
     @app.post("/api/login")
     async def login(body: LoginBody, request: Request, response: Response) -> dict[str, Any]:
@@ -187,11 +225,16 @@ def create_app(
             path="/",
             secure=config.tls,
         )
-        return {"client_id": client.client_id, "name": client.name, "read_only": client.read_only}
+        return {
+            "client_id": client.client_id,
+            "name": client.name,
+            "read_only": client.read_only,
+            "token": client.token,  # for a frontend on another origin (no cookie there)
+        }
 
     @app.post("/api/logout")
     async def logout(request: Request, response: Response) -> dict[str, bool]:
-        client = auth.logout(request.cookies.get(SESSION_COOKIE))
+        client = auth.logout(request_token(request))
         if client is not None:
             lock.release(client.client_id)
             master.release(client.client_id)
@@ -201,7 +244,7 @@ def create_app(
 
     @app.get("/api/session")
     async def current_session(request: Request) -> JSONResponse:
-        client = auth.get(request.cookies.get(SESSION_COOKIE))
+        client = auth.get(request_token(request))
         if client is None:
             return JSONResponse({"authenticated": False}, status_code=401)
         return JSONResponse(
@@ -227,18 +270,24 @@ def create_app(
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket) -> None:
-        client = auth.get(websocket.cookies.get(SESSION_COOKIE))
-        if not _origin_allowed(websocket):
-            await websocket.close(code=4403)
-            return
+        token = websocket_token(websocket)
+        if token is None:  # the cookie: only from this server's own pages
+            if not _origin_allowed(websocket):
+                await websocket.close(code=4403)
+                return
+            client = auth.get(websocket.cookies.get(SESSION_COOKIE))
+        else:  # the login's token, sent explicitly: from any origin
+            client = auth.get(token)
+        # The browser fails the handshake unless one of the offered subprotocols is selected.
+        subprotocol = WS_PROTOCOL if token is not None else None
         if client is None:
             # Accept first: a close before the handshake reaches the browser as a bare HTTP 403
             # (close code 1006), and it would keep reconnecting instead of showing the login
             # (a restarted server has forgotten every session).
-            await websocket.accept()
+            await websocket.accept(subprotocol=subprotocol)
             await websocket.close(code=4401)
             return
-        await websocket.accept()
+        await websocket.accept(subprotocol=subprotocol)
         # ?device=NAME: the DSP this socket controls (the first one when unknown or missing:
         # the hello says which one it got).
         device = devices.get(websocket.query_params.get("device")) or devices.default

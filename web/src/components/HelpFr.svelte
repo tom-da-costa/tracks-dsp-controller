@@ -21,6 +21,9 @@
       <em>Presets</em>).
     </li>
     <li>Aucune connexion internet n'est nécessaire.</li>
+    <li>
+      <strong>Serveur :</strong> l'écran de connexion se connecte au serveur qui a servi cette page. Pour en piloter un autre (une appli, ou un autre ordinateur où tourne le serveur), tapez-y son adresse, par ex. <code>192.168.1.20:8080</code> ; les serveurs déjà utilisés sont proposés.
+    </li>
   </ul>
 </section>
 

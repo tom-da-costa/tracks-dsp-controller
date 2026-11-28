@@ -278,6 +278,61 @@ def test_websocket_requires_login_and_same_origin(client: TestClient) -> None:
     assert info.value.code == 4403
 
 
+def token_login(client: TestClient, name: str = "app") -> str:
+    """Log in like a frontend on another origin: keep the token, drop the cookie."""
+    response = client.post("/api/login", json={"pin": "4321", "name": name})
+    assert response.status_code == 200, response.text
+    client.cookies.clear()
+    token: str = response.json()["token"]
+    return token
+
+
+def test_a_frontend_on_another_origin_uses_the_token(client: TestClient) -> None:
+    token = token_login(client)
+    assert client.get("/api/session").status_code == 401  # no cookie
+    bearer = {"authorization": f"Bearer {token}", "origin": "http://localhost"}
+    session = client.get("/api/session", headers=bearer)
+    assert session.status_code == 200
+    assert session.json()["name"] == "app"
+    assert session.headers["access-control-allow-origin"] == "*"
+    assert "access-control-allow-credentials" not in session.headers
+    assert client.post("/api/logout", headers=bearer).json() == {"ok": True}
+    assert client.get("/api/session", headers=bearer).status_code == 401
+
+
+def test_cors_preflight_allows_the_token_header_and_the_lan(client: TestClient) -> None:
+    response = client.options(
+        "/api/login",
+        headers={
+            "origin": "https://app.example",
+            "access-control-request-method": "POST",
+            "access-control-request-headers": "authorization, content-type",
+            "access-control-request-private-network": "true",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "*"
+    assert "authorization" in response.headers["access-control-allow-headers"].lower()
+    assert response.headers["access-control-allow-private-network"] == "true"
+
+
+def test_websocket_with_the_token_from_another_origin(client: TestClient) -> None:
+    token = token_login(client, "Phone")
+    protocols = ["tdsp", f"tdsp.token.{token}"]
+    with client.websocket_connect(
+        "/ws", subprotocols=protocols, headers={"origin": "http://localhost"}
+    ) as ws:
+        assert ws.accepted_subprotocol == "tdsp"
+        assert receive_until(ws, "hello")["name"] == "Phone"
+    # A token the server does not know: the login is shown (4401), not a refused handshake.
+    with (
+        pytest.raises(WebSocketDisconnect) as info,
+        client.websocket_connect("/ws", subprotocols=["tdsp", "tdsp.token.nope"]) as ws,
+    ):
+        ws.receive_json()
+    assert info.value.code == 4401
+
+
 def test_hello_snapshot_and_write(client: TestClient) -> None:
     login(client, "Alice")
     with client.websocket_connect("/ws") as ws:

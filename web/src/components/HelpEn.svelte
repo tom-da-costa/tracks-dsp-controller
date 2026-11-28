@@ -19,6 +19,9 @@
       or another preset is recalled, store it in a preset (see <em>Presets</em>).
     </li>
     <li>No internet connection is needed.</li>
+    <li>
+      <strong>Server:</strong> the login screen connects to the server that served this page. To control another one (an app, or another computer running the server), type its address there, e.g. <code>192.168.1.20:8080</code>; the servers used before are suggested.
+    </li>
   </ul>
 </section>
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { app } from "../lib/app.svelte";
+  import { backend, isRemote, label } from "../lib/backend";
   import { i18n, LANG_NAMES, LANGS, statusText, t, th, type Lang } from "../lib/i18n/index.svelte";
   import { links } from "../lib/links.svelte";
   import {
@@ -247,7 +248,10 @@
       <dt>{t("settings.firmware")}</dt>
       <dd>{app.status?.firmware || "—"}</dd>
       <dt>{t("settings.server")}</dt>
-      <dd>{app.hello?.server_version ?? "—"}</dd>
+      <dd>
+        {app.hello?.server_version ?? "—"}
+        {#if isRemote()}<span class="muted">· {label(backend())}</span>{/if}
+      </dd>
     </dl>
     <div class="actions">
       <button onclick={refresh} disabled={app.readOnly}>{t("settings.refresh")}</button>
