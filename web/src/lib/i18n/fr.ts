@@ -50,6 +50,7 @@ export const fr: Messages = {
   "app.fullscreen_exit": "Quitter le plein écran",
   "app.fullscreen_unavailable": "Le plein écran n'est pas disponible ici",
   "app.fullscreen_ios": "Sur iPhone, Safari ne peut pas masquer ses barres : touchez Partager › Sur l'écran d'accueil, puis ouvrez l'appli depuis son icône.",
+  "app.version_mismatch": "Cette appli est en version {app}, le serveur en {server} : certaines choses peuvent ne pas marcher. Mettez-les à la même version.",
   "app.connecting": "Connexion au serveur…",
   "app.connecting_dsp": "Connexion au serveur (DSP {dsp})…",
   "app.dsp_unreachable": "DSP injoignable. Le serveur continue d'essayer…",
@@ -81,6 +82,9 @@ export const fr: Messages = {
   "error.other": "Erreur : {message}",
 
   // --- login, shutdown, screen lock -------------------------------------------------------------
+  "login.server": "Serveur",
+  "login.server_invalid": "Ce n'est pas une adresse de serveur (ex. 192.168.1.20:8080)",
+  "login.server_mixed": "Cette page est servie en HTTPS : elle ne peut pas joindre un serveur en http://. Utilisez https://, ou ouvrez la page en http://.",
   "login.code": "Code d'accès",
   "login.name": "Votre nom",
   "login.name_placeholder": "ex. téléphone régie",

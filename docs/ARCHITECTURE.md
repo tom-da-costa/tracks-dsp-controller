@@ -278,13 +278,25 @@ HTTP (JSON):
 
 | Method | Path | Body / result |
 |---|---|---|
-| `POST` | `/api/login` | `{pin, name?}` → sets the `session` cookie (HttpOnly, SameSite=Strict); errors `{error, message}`: 401 `wrong_code`, 429 `rate_limited`, 403 `logins_blocked` (with `owner`, the master's name) |
-| `POST` | `/api/logout` | Clears the session and releases the control it held |
-| `GET` | `/api/session` | `{authenticated, client_id, name}`; 401 when not logged in |
+| `POST` | `/api/login` | `{pin, name?}` → sets the `session` cookie (HttpOnly, SameSite=Strict) and returns `{client_id, name, read_only, token}` (the token, for a frontend on another origin); errors `{error, message}`: 401 `wrong_code`, 429 `rate_limited`, 403 `logins_blocked` (with `owner`, the master's name) |
+| `POST` | `/api/logout` | Clears the session and releases the control it held (cookie or bearer token) |
+| `GET` | `/api/session` | `{authenticated, client_id, name}` (cookie or bearer token); 401 when not logged in |
 | `GET` | `/api/health` | `{status, device_status, devices, version, demo}`, no auth (Docker healthcheck); `device_status` is the first DSP's, `devices` lists `{id, status, demo}` of each, `demo` is true when every DSP is simulated |
 | `GET` | `/` and assets | The single-page app; static files need no auth, all data goes through the authenticated WebSocket |
 
-WebSocket `/ws?device=NAME` (cookie auth plus an `Origin` check; `device` picks the DSP, §2).
+WebSocket `/ws?device=NAME` (`device` picks the DSP, §2). Authenticated by the cookie, with an
+`Origin` check, or by the token offered as the subprotocol `tdsp.token.<token>` next to `tdsp`,
+which the server selects (from any origin; not in the URL, which uvicorn logs).
+
+**Another backend.** The login screen has a *Server* field: by default the server that served
+the page, else the last one chosen (`web/src/lib/backend.ts`, remembered in the browser with the
+recent ones). On the page's own origin the cookie is used; on another one (a frontend embedded
+in an app, or served by another server) the login's token, kept per server in `localStorage`,
+goes in `Authorization: Bearer` and in the WebSocket subprotocol. The server answers CORS for
+any origin, without credentials, Private Network Access included. When the frontend's version
+(the build's `VITE_APP_VERSION`, else the page's own server) and the server's differ in their
+minor number, a toast says so; the login goes on. A page served over https cannot reach an
+http:// server (mixed content): the login says so.
 JSON messages `{type, ...}`:
 
 | Direction | Type | Payload |
@@ -338,7 +350,12 @@ The threat model is a trusted private LAN; the goal is to stop casual or acciden
   limit and the master's block on new connections.
 - Sessions are random 256-bit tokens kept in memory; they end on logout or server restart.
 - Login rate limit: 5 failures per IP, then a 30 s cool-down; the screen unlock shares it.
-- The WebSocket `Origin` must match the `Host` header (no cross-site WebSocket hijacking).
+- With the cookie, the WebSocket `Origin` must match the `Host` header (no cross-site WebSocket
+  hijacking); the cookie is `SameSite=Strict`.
+- A frontend on another origin uses the login's token instead, sent explicitly (bearer header,
+  WebSocket subprotocol). CORS is open to **any origin** without credentials (owner's choice,
+  so that any app or server can embed the UI): a page on another site can then try codes
+  against the server, within the login rate limit. A non-default access code matters even more.
 - The server validates, clamps and quantises every value; it never trusts client ranges or name
   lengths (a preset name over 14 characters can crash the DSP firmware).
 - HTTP by default. HTTPS with `--tls-cert` / `--tls-key` (your certificate) or

@@ -1,6 +1,7 @@
 // Application state (Svelte 5 runes) and the WebSocket connection to the server.
 
 import * as api from "./api";
+import { isRemote, sameMinor, wsProtocols, wsUrl } from "./backend";
 import { channelColor } from "./colors";
 import { t } from "./i18n/index.svelte";
 import { setPath } from "./paths";
@@ -85,6 +86,7 @@ class App {
   master = $state<MasterMessage | null>(null);
   /** Why the login screen is shown, e.g. "Disconnected by Alice" (cleared on login). */
   loginNotice = $state("");
+  private versionChecked: string | null = null;
   /** Screen lock: this browser is read-only (the screen stays readable) until the access code
    * is typed (kept by the server on the session, so a reload stays locked). */
   screenLocked = $state(false);
@@ -225,9 +227,8 @@ class App {
     this.listen();
     if (this.retryTimer !== null) clearTimeout(this.retryTimer);
     this.retryTimer = null;
-    const scheme = location.protocol === "https:" ? "wss" : "ws";
     const query = this.deviceId ? `?device=${encodeURIComponent(this.deviceId)}` : "";
-    const ws = new WebSocket(`${scheme}://${location.host}/ws${query}`);
+    const ws = new WebSocket(wsUrl(`/ws${query}`), wsProtocols());
     this.ws = ws;
     this.lastSeen = Date.now();
     ws.onopen = () => {
@@ -289,6 +290,16 @@ class App {
     const delay = this.retryMs * (0.75 + Math.random() * 0.5);
     this.retryMs = Math.min(this.retryMs * 2, RETRY_MAX_MS);
     this.retryTimer = setTimeout(() => this.connect(), delay);
+  }
+
+  /** Another server than the page's may run another version: say so once per server version. */
+  private async checkVersion(server: string | undefined): Promise<void> {
+    if (!server || server === this.versionChecked) return;
+    this.versionChecked = server;
+    const mine = await api.frontendVersion();
+    if (mine && !sameMinor(mine, server)) {
+      this.toast(t("app.version_mismatch", { app: mine, server }), "error", 12000);
+    }
   }
 
   private async checkSession(): Promise<void> {
@@ -367,6 +378,7 @@ class App {
         }
         this.settings = this.hello.settings;
         this.screenLocked = this.hello.screen_locked;
+        if (isRemote()) void this.checkVersion(this.hello.server_version);
         break;
       case "snapshot":
         this.device = msg.state as DeviceState;

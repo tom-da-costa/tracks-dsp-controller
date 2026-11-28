@@ -61,6 +61,7 @@ export const en = {
   "app.fullscreen_exit": "Exit full screen",
   "app.fullscreen_unavailable": "Full screen is not available here",
   "app.fullscreen_ios": "On an iPhone, Safari cannot hide its bars: tap Share › Add to Home Screen, then open the app from its icon.",
+  "app.version_mismatch": "This app is version {app}, the server {server}: some things may not work. Update them to the same version.",
   "app.connecting": "Connecting to the server…",
   "app.connecting_dsp": "Connecting to the server (DSP {dsp})…",
   "app.dsp_unreachable": "DSP unreachable. The server keeps trying…",
@@ -90,6 +91,9 @@ export const en = {
   "error.other": "Error: {message}",
 
   // --- login, shutdown, screen lock -------------------------------------------------------------
+  "login.server": "Server",
+  "login.server_invalid": "Not a server address (e.g. 192.168.1.20:8080)",
+  "login.server_mixed": "This page is served over HTTPS: it cannot reach a server over http://. Use https://, or open the page over http://.",
   "login.code": "Access code",
   "login.name": "Your name",
   "login.name_placeholder": "e.g. FOH phone",

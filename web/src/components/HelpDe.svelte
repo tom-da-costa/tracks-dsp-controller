@@ -21,6 +21,9 @@
       <em>Presets</em>).
     </li>
     <li>Es wird keine Internetverbindung benötigt.</li>
+    <li>
+      <strong>Server:</strong> Der Anmeldebildschirm verbindet sich mit dem Server, der diese Seite geliefert hat. Um einen anderen zu steuern (eine App oder ein anderer Computer mit dem Server), dort seine Adresse eingeben, z. B. <code>192.168.1.20:8080</code>; bereits benutzte Server werden vorgeschlagen.
+    </li>
   </ul>
 </section>
 

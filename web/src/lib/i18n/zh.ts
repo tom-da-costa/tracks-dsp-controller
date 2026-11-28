@@ -50,6 +50,7 @@ export const zh: Messages = {
   "app.fullscreen_exit": "退出全屏",
   "app.fullscreen_unavailable": "此处无法使用全屏",
   "app.fullscreen_ios": "在 iPhone 上，Safari 无法隐藏其工具栏：请点按“共享”›“添加到主屏幕”，然后从图标打开应用。",
+  "app.version_mismatch": "此应用版本为 {app}，服务器版本为 {server}：部分功能可能无法使用。请将两者更新到同一版本。",
   "app.connecting": "正在连接服务器…",
   "app.connecting_dsp": "正在连接服务器（DSP {dsp}）…",
   "app.dsp_unreachable": "无法连接 DSP。服务器会继续尝试…",
@@ -79,6 +80,9 @@ export const zh: Messages = {
   "error.other": "错误：{message}",
 
   // --- login, shutdown, screen lock -------------------------------------------------------------
+  "login.server": "服务器",
+  "login.server_invalid": "不是有效的服务器地址（例如 192.168.1.20:8080）",
+  "login.server_mixed": "此页面通过 HTTPS 提供：无法连接 http:// 服务器。请使用 https://，或通过 http:// 打开此页面。",
   "login.code": "访问码",
   "login.name": "您的名字",
   "login.name_placeholder": "例如：调音台手机",

@@ -50,6 +50,7 @@ export const ru: Messages = {
   "app.fullscreen_exit": "Выйти из полноэкранного режима",
   "app.fullscreen_unavailable": "Полноэкранный режим здесь недоступен",
   "app.fullscreen_ios": "На iPhone Safari не может скрыть свои панели: нажмите «Поделиться» › «На экран „Домой“», затем откройте приложение с его значка.",
+  "app.version_mismatch": "Версия приложения {app}, версия сервера {server}: что-то может не работать. Обновите их до одной версии.",
   "app.connecting": "Подключение к серверу…",
   "app.connecting_dsp": "Подключение к серверу (DSP {dsp})…",
   "app.dsp_unreachable": "DSP недоступен. Сервер продолжает попытки…",
@@ -80,6 +81,9 @@ export const ru: Messages = {
   "error.other": "Ошибка: {message}",
 
   // --- login, shutdown, screen lock -------------------------------------------------------------
+  "login.server": "Сервер",
+  "login.server_invalid": "Это не адрес сервера (напр. 192.168.1.20:8080)",
+  "login.server_mixed": "Эта страница открыта по HTTPS: она не может обратиться к серверу по http://. Используйте https:// или откройте страницу по http://.",
   "login.code": "Код доступа",
   "login.name": "Ваше имя",
   "login.name_placeholder": "напр. телефон у пульта",

@@ -50,6 +50,7 @@ export const de: Messages = {
   "app.fullscreen_exit": "Vollbild beenden",
   "app.fullscreen_unavailable": "Vollbild ist hier nicht verfügbar",
   "app.fullscreen_ios": "Auf dem iPhone kann Safari seine Leisten nicht ausblenden: Teilen › Zum Home-Bildschirm tippen und die App dann über ihr Symbol öffnen.",
+  "app.version_mismatch": "Diese App hat Version {app}, der Server {server}: Manches funktioniert eventuell nicht. Beide auf dieselbe Version bringen.",
   "app.connecting": "Verbindung zum Server…",
   "app.connecting_dsp": "Verbindung zum Server (DSP {dsp})…",
   "app.dsp_unreachable": "DSP nicht erreichbar. Der Server versucht es weiter…",
@@ -81,6 +82,9 @@ export const de: Messages = {
   "error.other": "Fehler: {message}",
 
   // --- login, shutdown, screen lock -------------------------------------------------------------
+  "login.server": "Server",
+  "login.server_invalid": "Keine Serveradresse (z. B. 192.168.1.20:8080)",
+  "login.server_mixed": "Diese Seite wird über HTTPS geladen: Sie kann keinen Server über http:// erreichen. https:// verwenden oder die Seite über http:// öffnen.",
   "login.code": "Zugangscode",
   "login.name": "Ihr Name",
   "login.name_placeholder": "z. B. FOH-Telefon",

@@ -11,6 +11,7 @@ dependencies = [
     "cryptography>=44",
     "fastapi>=0.115",
     "pydantic>=2.9",
+    "starlette>=1.0",  # CORSMiddleware(allow_private_network=...)
     "uvicorn[standard]>=0.32",
 ]
 classifiers = [

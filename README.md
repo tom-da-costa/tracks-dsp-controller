@@ -81,6 +81,8 @@ On a phone, in landscape:
   everything is shown, nothing can be changed (a guest, a phone left at front of house); optional
   HTTPS with your certificate or a self-signed one, on the
   same port.
+- **Another server**: the login screen's *Server* field (the server that served the page by
+  default) connects to another one, for a frontend embedded in an app or served elsewhere.
 - **Five languages**: the whole UI and its help in English, French, German, Russian or Chinese,
   following the browser's language until one is picked (Settings, the login screen or the Help
   page); units and DSP terms (PEQ, HPF, dBu, U01) stay as they are.

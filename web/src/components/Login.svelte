@@ -1,18 +1,34 @@
 <script lang="ts">
   import { LoginError } from "../lib/api";
   import { app } from "../lib/app.svelte";
+  import {
+    backend,
+    blockedAsMixedContent,
+    label,
+    normalise,
+    recentBackends,
+    setBackend,
+  } from "../lib/backend";
   import { i18n, LANG_NAMES, LANGS, t, type Lang } from "../lib/i18n/index.svelte";
 
   let pin = $state("");
   let name = $state(localStorageGet("dsp408.name"));
+  // The server to log in to: the one that served this page, or the last one chosen (an app
+  // embedding the UI picks it here).
+  let server = $state(label(backend()));
+  const recent = recentBackends().map(label);
   // The failed login, in words when shown (follows a change of language).
-  let failure = $state<LoginError | "unreachable" | null>(null);
+  let failure = $state<LoginError | "unreachable" | "bad_server" | "mixed_content" | null>(null);
   const error = $derived(
     failure === null
       ? ""
       : failure === "unreachable"
         ? t("error.unreachable")
-        : app.errorText({ error: failure.code, message: failure.message, owner: failure.owner }),
+        : failure === "bad_server"
+          ? t("login.server_invalid")
+          : failure === "mixed_content"
+            ? t("login.server_mixed")
+            : app.errorText({ error: failure.code, message: failure.message, owner: failure.owner }),
   );
   // Why the login is shown: "Disconnected by <master>" when kicked (the server's close reason).
   const notice = $derived.by(() => {
@@ -34,6 +50,14 @@
     busy = true;
     failure = null;
     app.loginNotice = "";
+    const origin = normalise(server);
+    if (origin === null || blockedAsMixedContent(origin)) {
+      failure = origin === null ? "bad_server" : "mixed_content";
+      busy = false;
+      return;
+    }
+    setBackend(origin);
+    server = label(origin);
     try {
       try {
         localStorage.setItem("dsp408.name", name);
@@ -60,6 +84,23 @@
       </select>
     </label>
     <label>
+      {t("login.server")}
+      <input
+        type="text"
+        inputmode="url"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        placeholder="192.168.1.20:8080"
+        list="login-servers"
+        bind:value={server}
+        required
+      />
+      <datalist id="login-servers">
+        {#each recent as entry (entry)}<option value={entry}></option>{/each}
+      </datalist>
+    </label>
+    <label>
       {t("login.code")}
       <input
         type="password"
@@ -75,7 +116,7 @@
     </label>
     {#if notice}<p class="notice" role="status">{notice}</p>{/if}
     {#if error}<p class="error" role="alert">{error}</p>{/if}
-    <button class="primary" type="submit" disabled={busy || !pin}>{t("login.connect")}</button>
+    <button class="primary" type="submit" disabled={busy || !pin || !server.trim()}>{t("login.connect")}</button>
   </form>
 </main>
 
